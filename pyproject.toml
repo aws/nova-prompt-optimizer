@@ -1,0 +1,143 @@
+[build-system]
+requires = ["hatchling", "setuptools>=61.0", "wheel"]
+build-backend = "hatchling.build"
+
+[project]
+name = "amzn-nova-prompt-optimizer"
+dynamic = ["version"]
+authors = [
+  {name = "Amazon", email = "rcv-team@amazon.com"}
+]
+description = "Nova Prompt Optimizer"
+readme = "README.md"
+dependencies = [
+  "jinja2",
+  "boto3",
+  "botocore",
+  "boto3-stubs",
+  "dspy",
+  "numpy==2.2.6",
+  "virtualenv==20.26.6",
+  "urllib3==2.5.0",
+  "setuptools==78.1.1",
+  "h11==0.16.0"
+]
+requires-python = ">=3.11"
+
+[tool.hatch.envs.default]
+# This controls what version of Python you want to be the default
+# when running any scripts or tools to do things like debug test failures
+# or do general development.  It's lockfile is ./requirements.txt
+python = "3.12"
+dependencies = [
+    "pytest",
+    "mypy",
+]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--durations=5",
+    "--color=yes",
+]
+testpaths = [ "tests" ]
+
+[tool.coverage.run]
+source_pkgs = ["amzn_nova_prompt_optimizer"]
+branch = true
+parallel = true
+
+[tool.coverage.paths]
+"amzn_nova_prompt_optimizer" = ["src/amzn_nova_prompt_optimizer", "**/site-packages/amzn_nova_prompt_optimizer"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+show_missing = true
+# fail_under = 99
+
+[tool.coverage.xml]
+output = "private/brazil-documentation/coverage/coverage.xml"
+
+[tool.coverage.html]
+directory = "private/brazil-documentation/coverage/"
+
+[tool.ruff.lint]
+isort.known-first-party = ["amzn_nova_prompt_optimizer"]
+exclude = [ "./build", ".hatch", "private" ]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.hatch.build]
+directory = "./build"
+
+[tool.hatch.version]
+path = "src/amzn_nova_prompt_optimizer/__version__.py"
+
+[tool.hatch.env]
+requires = [ "hatch-pip-compile" ]
+
+[tool.hatch.envs.default.scripts]
+# These are scripts you can run using `brazil-build run <script-name>`
+versioning = [
+    "bash ./set_version.sh"
+]
+
+copy_proj = [
+    "bash ./copy_proj.sh"
+]
+
+typing = [
+  "mkdir -p .mypy_cache",
+  "mypy --install-types --non-interactive src/amzn_nova_prompt_optimizer tests"
+]
+
+# Create a requirements.txt from project dependencies
+compile = [
+    "python -c 'import tomllib; [print(dependency) for dependency in tomllib.load(open(\"pyproject.toml\", \"rb\"))[\"project\"][\"dependencies\"]]' > build/requirements.txt",
+]
+
+# This command is for updating all your lock files across all environments 
+update = [ "hatch-pip-compile --upgrade --all" ]
+
+release = [
+    "versioning",
+    "copy_proj",
+    "compile",
+    "typing",
+    "hatch test --all --cover",
+]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+# This defines multiple variables you can generate combinations
+# to test underneath different environments.  A separate environment and 
+# lock file will be created for every combination located in `./requirements/`
+python = ["3.12"]
+
+## This environment is used solely to generate a lock file on hatch,
+# and hatch-pip-compile that can be automatically updated
+[tool.hatch.envs.build-tools]
+# This version states what version your build tools build with.  To change it,
+# you will need to:
+# * Remove the `requirements/requirements-build-tools.txt` file
+# * Run `brazil-build run update` to generate a new lock file for the environment
+python = "3.12"
+detached = true
+skip-install = true
+dependencies = [
+  "hatch",
+  "hatch-pip-compile",
+]
+
+# PeruHatch repository and package locking plugin
+[tool.hatch.env.collectors.custom]
+path = ".hatch/hatch_plugin.py"
+
+# This is necessary to use 'uv' as the resolver if this is the top-level package
+# in a monorepo (which is usually the case).  Remove this if copying the
+# package into a monorepo
+[tool.uv.workspace]

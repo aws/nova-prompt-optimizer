@@ -1,0 +1,1 @@
+Analyze the input text and classify it into a JSON object with "urgency", "sentiment", and "categories" keys. Ensure all categories are covered with boolean values, and the output is a valid JSON string without extra formatting.
