@@ -28,28 +28,6 @@ Install the library using
 pip install amzn-nova-prompt-optimizer
 ```
 
-[//]: # (pragma: internal-start)
-### Installation - Internal
-
-You can install this package from the Amazon CodeArtifact repository:
-
-For the same, you require an AWS account to be allow-listed to access the CodeArtifact repository
-
-1. [Follow these steps for Account Allow-Listing](https://docs.hub.amazon.dev/codeartifact/user-guide/allow-listing/#set-up-the-onboard-goshawk-cli)
-2. Refresh credentials for the account allow-listed
-```sh
-ada credentials update --account=<ACCOUNT_ID> --provider=conduit --role=IibsAdminAccess-DO-NOT-DELETE  —once
-```
-3. Login to `amazon` codeartifact domain
-```sh
-aws codeartifact login --tool pip --domain amazon --domain-owner 149122183214 --repository shared --region us-west-2
-```
-4. Install the library using
-```sh
-pip install amzn-nova-prompt-optimizer
-```
-
-[//]: # (pragma: internal-stop)
 
 ## Quick Start
 ### Facility Support Analyzer Dataset
