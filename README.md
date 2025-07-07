@@ -1,36 +1,54 @@
-# NovaPromptOptimizer
+# Nova Prompt Optimizer
 
 A Python SDK for optimizing prompts for Nova.
 
-## Getting Started
+## Table of contents
+* [Installation](#installation)
+* [Quick Start: Facility Support Analyzer Dataset](#quick-start)
+* [Optimization Recommendations](#set-up)
+* [Core Concepts](#core-concepts)
+  * [Input Adapters](#input-adapters)
+    * [1. Dataset Adapter](#1-dataset-adapter)
+    * [2. Prompt Adapter](#2-prompt-adapter)
+    * [3. Metric Adapter](#3-metric-adapter)
+    * [4. Inference Adapter](#4-inference-adapter)
+    * [5. Optimization Adapter](#5-optimization-adapter)
+  * [Optimizers](#optimizers)
+    * [NovaPromptOptimizer](#novapromptoptimizer)
+    * [Other Optimizers](#other-optimizers)
+      * [1.Nova Meta Prompter](#nova-meta-prompter)
+      * [2. DSPy's MIPROv2 Optimizer](#miprov2)
+  * [Evaluator](#evaluator)
+* [Acknowledgements](#acknowledgements)
 
-### Installation
+## Installation
+
 Install the library using
 ```sh
 pip install amzn-nova-prompt-optimizer
 ```
 
+
+## Quick Start
+### Facility Support Analyzer Dataset
+The Facility Support Analyzer dataset consists of emails that are to be classified based on category, urgency and sentiment.
+
+Please see the [samples](samples/facility-support-analyzer/) folder for example notebooks of how to optimize a prompt in the scenario where a [user prompt template is to be optimized](samples/facility-support-analyzer/user_prompt_only) and the scenario where a [user and system prompt is to be optimized together](samples/facility-support-analyzer/system_and_user_prompt)
+
+
 ## Optimization Recommendations
 1. Provide representative real-world evaluation sets and split them into training and testing sets. Ensure dataset is balanced on output label when splitting train and test sets.
 2. For evaluation sets, the ground truth column should be as close to the inference output as possible. e.g. If the inference output is {"answer": "POSITIVE"} ground truth should also be in the same format {"answer": "POSITIVE"}
-3. For Nova Optima, choose the mode (mode= "premier" | ""pro" | "lite" | "micro"). By default, we use "pro".
-4. The `apply` function of the evaluation metric should return a numerical value between 0 and 1 for Nova Optima or MIPROv2.
-
-## How to use the SDK?
-At a high level this can be broken down as:
-
-1. Setup the Input Adapters i.e. Dataset Adapter (Train and Test), Prompt Adapter (Original Prompt), Metric Adapter and Inference Adapter
-2. Run the evaluation for your model of choice using the Test Dataset Adapter and note the baseline score.
-3. Run Nova Optima using the input adapters with the mode based on your current model class i.e. For Claude 3.5 Haiku, if you want to use Nova Lite use mode="lite"
-4. Run the evaluation with the prompt adapter returned by Nova Optima and note the score and compare with baseline. 
+3. For NovaPromptOptimizer, choose the mode (mode= "premier" | ""pro" | "lite" | "micro") based on your model class. By default, we use "pro".
+4. The `apply` function of the evaluation metric should return a numerical value between 0 and 1 for NovaPromptOptimizer or MIPROv2.
 
 
-## Input Adapters
-
+## Core Concepts
+### Input Adapters
 ### 1. Dataset Adapter
 
 **Responsibility:** Ability to read/write datasets from different formats. Uses an intermediary standardized format when communicating with other adapters. 
-It can also read list of JSON object. It can also create Train/Test splits (with stratify capability if set)
+It can also read list of JSON object. It can also create Train/Test splits (with stratify capability if set).
 
 **Requirements:** Currently, you can only provide a singleton set as output column. 
 
@@ -96,7 +114,7 @@ output_columns = {"answer"}
 dataset_adapter = JSONDatasetAdapter(input_columns, output_columns)
 
 # Adapt
-dataset_adapter.adapt(file_path="sample_data.jsonl")
+dataset_adapter.adapt(data_source="sample_data.jsonl")
 
 # Split
 train, test = dataset_adapter.split(0.5)
@@ -111,10 +129,10 @@ train, test = dataset_adapter.split(0.5)
 **Core Functions**
 ```commandline
 # Set the System Prompt for the Adapter
-.set_system_prompt(file_path=, variables=)
+.set_system_prompt(data_source=, variables=)
 
 # Set the User Prompt for the Adapter
-.set_user_prompt(file_path=, variables=)
+.set_user_prompt(data_source=, variables=)
 
 # (Optional) Add few shot examples
 .add_few_shot(examples=, format_type="converse"|"append_to_user_prompt"|"append_to_system_prompt")
@@ -386,7 +404,7 @@ class CustomMetric(MetricAdapter):
 metric_adapter = CustomMetric()
 ```
 
-## 4. Inference Adapter
+### 4. Inference Adapter
 **Responsibility:** Ability to call an inference backend for the models e.g. Bedrock, etc.
 
 **Core Functions**
@@ -409,10 +427,7 @@ inference_adapter = BedrockInferenceAdapter(region_name="us-east-1")
 
 **Supported Inference Adapters:** `BedrockInferenceAdapter`
 
-## 5. Optimizers
-
-#### Optimization Adapter
-
+### 5. Optimization Adapter
 **Responsibility:** Load Optimizer, Prompt Adapter, and Optionally Dataset Adapter, Metric Adapter, and Inference Adapter. Perform Optimization and ability to create a Prompt Adapter with the Optimized Prompt.
 
 **Core Functions**
@@ -421,25 +436,42 @@ inference_adapter = BedrockInferenceAdapter(region_name="us-east-1")
 .optimize() -> PromptAdapter
 ```
 
-### Nova Optima
+## Optimizers
 
-Nova Optima is a combination of Meta Prompting using the Nova Guide on prompting and DSPy's MIPROv2 Optimizer using Nova Prompting Tips. 
-Nova Optima first runs a meta prompter to identify system instructions and user template from the prompt adapter. 
+### NovaPromptOptimizer
+
+NovaPromptOptimizer is a combination of Meta Prompting using the Nova Guide on prompting and DSPy's MIPROv2 Optimizer using Nova Prompting Tips. 
+NovaPromptOptimizer first runs a meta prompter to identify system instructions and user template from the prompt adapter. 
 Then MIPROv2 is run on top of this to optimize system instructions and identify few-shot samples that need to be added. 
 The few shot samples are added as `converse` format so they are added as User/Assistant turns.
 
-**Requirements:** Nova Optima requires Prompt Adapter, Dataset Adapter, Metric Adapter and Inference Adapter.
+**Requirements:** NovaPromptOptimizer requires Prompt Adapter, Dataset Adapter, Metric Adapter and Inference Adapter.
 
 **Optimization Example**
 ```python
-from amzn_nova_prompt_optimizer.core.optimizers import NovaOptima
+from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
 
-nova_optima = NovaOptima(prompt_adapter=prompt_adapter, inference_adapter=inference_adapter, dataset_adapter=train_dataset_adapter, metric_adapter=metric_adapter)
+nova_prompt_optimizer = NovaPromptOptimizer(prompt_adapter=prompt_adapter, inference_adapter=inference_adapter, dataset_adapter=train_dataset_adapter, metric_adapter=metric_adapter)
 
-nova_optima_adapter = nova_optima.optimize(mode="lite", enable_json_fallback=False)
+optimized_prompt_adapter = nova_prompt_optimizer.optimize(mode="lite")
 ```
-Nova Optima uses Premier for Meta Prompting and then uses MIPROv2 with 20 candidates and 50 trials with Premier as Prompting model and task model dependent on the mode it's set at.
+NovaPromptOptimizer uses Premier for Meta Prompting and then uses MIPROv2 with 20 candidates and 50 trials with Premier as Prompting model and task model dependent on the mode it's set at.
 You can specify enable_json_fallback=False to disable the behavior that MIPROv2 will [fallback to use JSONAdapter to parse LM model output](https://github.com/stanfordnlp/dspy/blob/main/dspy/adapters/chat_adapter.py#L44-L51). This will force MIPROv2 use structured output (pydantic model) to parse LM output.
+
+You could also define a custom mode and pass your own parameter values to NovaPromptOptimizer
+
+```python
+from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
+
+nova_prompt_optimizer = NovaPromptOptimizer(prompt_adapter=prompt_adapter, inference_adapter=inference_adapter, dataset_adapter=train_dataset_adapter, metric_adapter=metric_adapter)
+
+optimized_prompt_adapter = nova_prompt_optimizer.optimize(mode="custom", custom_params={"task_model_id": "us.amazon.nova-pro-v1:0",
+    "num_candidates": 10,
+    "num_trials": 15,
+    "max_bootstrapped_demos": 5,
+    "max_labeled_demos": 0
+})
+```
 
 #### Other Optimizers
 #### Nova Meta Prompter
@@ -477,7 +509,16 @@ from amzn_nova_prompt_optimizer.core.optimizers.miprov2.miprov2_optimizer import
 
 mipro_optimization_adapter = MIPROv2OptimizationAdapter(prompt_adapter=prompt_adapter, dataset_adapter=train_dataset_adapter, metric_adapter=metric_adapter)
 
-mipro_prompt_adapter = mipro_optimization_adapter.optimize(task_model_id="us.amazon.nova-lite-v1:0", enable_json_fallback=False)
+mipro_prompt_adapter = mipro_optimization_adapter.optimize(task_model_id="us.amazon.nova-lite-v1:0",
+                                                           prompter_model_id ="us.amazon.nova-premier-v1:0", 
+                                                           num_candidates=None, 
+                                                           num_threads= 2,
+                                                           num_trials=None,
+                                                           max_bootstrapped_demos = 4,
+                                                           max_labeled_demos = 4,
+                                                           minibatch_size = 35,
+                                                           train_split = 0.5,
+                                                           enable_json_fallback = False)
 ```
 
 MIPROv2 uses Premier for Prompting and the task model provided as `task_model_id`. 
@@ -485,7 +526,13 @@ By default, it uses "medium" optimization i.e. Generating 6 instruction candidat
 
 You can specify enable_json_fallback=False to disable the behavior that MIPROv2 will [fallback to use JSONAdapter to parse LM model output](https://github.com/stanfordnlp/dspy/blob/main/dspy/adapters/chat_adapter.py#L44-L51). This will force MIPROv2 use structured output (pydantic model) to parse LM output.
 
-## 6. Evaluator
+MIPROv2's inference output is in a structured format and requires parsing prior to running evaluation.
+
+The output can be found between tokens `[[ ## output_var_name ## ]]` and `[[ ## completed ## ]]`. 
+Hence, if your output variable is `answer` then the inference output can be found between tokens `[[ ## answer ## ]]` and `[[ ## completed ## ]]`
+
+
+## Evaluator
 The SDK also provides a way to baseline prompts and provide evaluation scores.
 The evaluator has the `aggregate_score` and `scores` function.
 
@@ -514,3 +561,6 @@ nova_mp_score = evaluator.aggregate_score(model_id="us.amazon.nova-lite-v1:0")
 ```python
 WARNING amzn_nova_prompt_optimizer.core.inference: Warn: Prompt Variables not found in User Prompt, injecting them at the end of the prompt
 ```
+
+## Acknowledgements
+* Special acknowledgment to [DSPy](https://github.com/stanfordnlp/dspy) – your innovations continue to inspire us.

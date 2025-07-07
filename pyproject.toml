@@ -1,0 +1,30 @@
+[build-system]
+requires = [
+  "build",
+  "setuptools",
+  "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nova-prompt-optimizer"
+description = "A Python SDK for optimizing prompts for Nova."
+dynamic = ["dependencies", "version"]
+requires-python = ">=3.11"
+authors = [
+  {name = "Amazon", email="rcv-team@amazon.com"},
+]
+license = "Apache-2.0"
+readme = "README.md"
+
+[project.optional-dependencies]
+dev = [
+  "build",
+  "setuptools",
+  "twine",
+  "wheel",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "amzn_nova_prompt_optimizer.__version__.VERSION"}
+dependencies = {file = "requirements.txt"}
