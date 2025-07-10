@@ -106,188 +106,15 @@ class TestBedrockInferenceAdapter(unittest.TestCase):
                 profile_name='test_profile'
             )
 
-    @patch('time.time')
-    @patch('time.sleep')
-    def test_apply_rate_limiting_no_limit_reached(self, mock_sleep, mock_time):
-        """Test rate limiting when limit is not reached"""
-        # Arrange
-        mock_time.return_value = 100.0
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=5)
-        
-        # Add some timestamps that are within rate limit
-        adapter.request_timestamps = [99.5, 99.7, 99.9]  # 3 requests in last second
-        
-        # Act
-        adapter._apply_rate_limiting()
-        
-        # Assert
-        mock_sleep.assert_not_called()
-        self.assertEqual(len(adapter.request_timestamps), 4)  # Original 3 + 1 new
-        self.assertEqual(adapter.waiting_requests_count, 0)
-
-    @patch('time.time')
-    @patch('time.sleep')
-    @patch('random.uniform')
-    def test_apply_rate_limiting_limit_reached(self, mock_random, mock_sleep, mock_time):
-        """Test rate limiting when limit is reached"""
-        # Arrange
-        mock_time.side_effect = [100.0, 100.0, 100.1]  # Current time calls
-        mock_random.return_value = 0.9
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=3)
-        
-        # Fill up to rate limit
-        adapter.request_timestamps = [99.5, 99.7, 99.9]  # 3 requests in last second
-        
-        # Act
-        adapter._apply_rate_limiting()
-        
-        # Assert
-        mock_sleep.assert_called_once()
-        # Verify sleep time is positive (exact value depends on random component)
-        sleep_args = mock_sleep.call_args[0]
-        self.assertGreater(sleep_args[0], 0)
-
-    @patch('time.time')
-    @patch('time.sleep')
-    def test_apply_rate_limiting_old_timestamps_removed(self, mock_sleep, mock_time):
-        """Test that old timestamps are properly removed"""
-        # Arrange
-        mock_time.return_value = 100.0
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=5)
-        
-        # Add timestamps - some old (>1 second) and some recent
-        adapter.request_timestamps = [98.5, 98.8, 99.2, 99.5, 99.8]  # Mix of old and recent
-        
-        # Act
-        adapter._apply_rate_limiting()
-        
-        # Assert
-        # Only timestamps from last second should remain (99.2, 99.5, 99.8) + new one
-        self.assertEqual(len(adapter.request_timestamps), 4)
-        for timestamp in adapter.request_timestamps[:-1]:  # Exclude the newly added one
-            self.assertGreaterEqual(timestamp, 99.0)  # All should be within last second
-
-    @patch('time.time')
-    @patch('time.sleep')
-    @patch('random.uniform')
-    def test_apply_rate_limiting_sleep_calculation(self, mock_random, mock_sleep, mock_time):
-        """Test sleep time calculation with predictable random value"""
-        # Arrange
-        mock_time.side_effect = [100.0, 100.0, 100.1]
-        mock_random.return_value = 0.5  # Fixed random value for predictable testing
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=2)
-        
-        # Set up scenario where rate limit is reached
-        adapter.request_timestamps = [99.5, 99.8]  # 2 requests, rate limit is 2
-        adapter.waiting_requests_count = 0
-        
-        # Act
-        adapter._apply_rate_limiting()
-        
-        # Assert
-        mock_sleep.assert_called_once()
-        # Verify the sleep calculation: ((waiting_requests_count/rate_limit) * 1.0) - (current_time - oldest_timestamp) + random
-        # Expected: ((1/2) * 1.0) - (100.0 - 99.5) + 0.5 = 0.5 - 0.5 + 0.5 = 0.5
-        expected_sleep_time = 0.5
-        actual_sleep_time = mock_sleep.call_args[0][0]
-        self.assertAlmostEqual(actual_sleep_time, expected_sleep_time, places=2)
-
-    @patch('time.time')
-    @patch('time.sleep')
-    def test_apply_rate_limiting_waiting_requests_count_management(self, mock_sleep, mock_time):
-        """Test waiting_requests_count is properly managed"""
-        # Arrange
-        mock_time.side_effect = [100.0, 100.0, 100.1]
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=2)
-        
-        # Set up scenario where rate limit is reached
-        adapter.request_timestamps = [99.5, 99.8]
-        adapter.waiting_requests_count = 0
-        
-        # Act
-        adapter._apply_rate_limiting()
-        
-        # Assert
-        self.assertEqual(adapter.waiting_requests_count, 0)  # Should be decremented back to 0
-
-    @patch('time.time')
-    @patch('time.sleep')
-    def test_apply_rate_limiting_negative_sleep_time(self, mock_sleep, mock_time):
-        """Test that negative sleep times don't cause sleep"""
-        # Arrange
-        mock_time.side_effect = [100.0, 100.0, 100.1]
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=2)
-        
-        # Set up scenario where calculated sleep time would be negative
-        adapter.request_timestamps = [98.0, 98.5]  # Old timestamps
-        adapter.waiting_requests_count = 0
-        
-        # Act
-        adapter._apply_rate_limiting()
-        
-        # Assert
-        mock_sleep.assert_not_called()
-
-    def test_apply_rate_limiting_initialization_values(self):
-        """Test that rate limiting attributes are properly initialized"""
-        # Act
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=5)
-        
-        # Assert
-        self.assertEqual(adapter.rate_limit, 5)
-        self.assertEqual(adapter.request_timestamps, [])
-        self.assertEqual(adapter.waiting_requests_count, 0)
-
     def test_apply_rate_limiting_default_rate_limit(self):
         """Test default rate limit value"""
         # Act
         adapter = BedrockInferenceAdapter(region_name=self.test_region)
         
         # Assert
-        self.assertEqual(adapter.rate_limit, 2)  # Default value
+        self.assertEqual(adapter.rate_limiter.rate_limit, 2)  # Default value
 
-    @patch('time.time')
-    @patch('time.sleep')
-    @patch('random.uniform')
-    def test_apply_rate_limiting_multiple_waiting_requests(self,mock_random, mock_sleep, mock_time):
-        """Test behavior with multiple waiting requests"""
-        # Arrange
-        mock_time.side_effect = [100.0, 100.0, 100.1]
-        mock_random.return_value = 0.9
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=2)
-
-        # Set up scenario with multiple waiting requests
-        adapter.request_timestamps = [99.5, 99.8]
-        adapter.waiting_requests_count = 2  # Simulate multiple waiting requests
-
-        # Act
-        adapter._apply_rate_limiting()
-
-        # Assert
-        mock_sleep.assert_called_once()
-        self.assertEqual(adapter.waiting_requests_count, 2)
-
-    @patch('time.time')
-    @patch('time.sleep')
-    @patch('random.uniform')
-    def test_apply_rate_limiting_waiting_requests_count_floor(self,mock_random, mock_sleep, mock_time):
-        """Test that waiting_requests_count doesn't go below 0"""
-        # Arrange
-        mock_time.return_value = 100.0
-        mock_random.return_value = 0.9
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=5)
-        
-        # Set up scenario where waiting_requests_count would go negative
-        adapter.request_timestamps = []
-        adapter.waiting_requests_count = -1  # Start with negative value
-        
-        # Act
-        adapter._apply_rate_limiting()
-        
-        # Assert
-        self.assertEqual(adapter.waiting_requests_count, 0)  # Should be reset to 0
-
-    @patch('amzn_nova_prompt_optimizer.core.inference.adapter.BedrockInferenceAdapter._apply_rate_limiting')
+    @patch('amzn_nova_prompt_optimizer.util.rate_limiter.RateLimiter.apply_rate_limiting')
     def test_call_model_applies_rate_limiting(self, mock_rate_limiting):
         """Test that call_model applies rate limiting"""
         # Arrange
@@ -303,27 +130,6 @@ class TestBedrockInferenceAdapter(unittest.TestCase):
         
         # Assert
         mock_rate_limiting.assert_called_once()
-
-    @patch('time.time')
-    @patch('time.sleep')
-    @patch('random.uniform')
-    def test_apply_rate_limiting_waiting_requests_negative_sleep(self, mock_random, mock_sleep, mock_time):
-        """Test behavior with multiple waiting requests"""
-        # Arrange
-        mock_time.side_effect = [100.0, 100.0, 100.1]
-        mock_random.return_value = 0.01 # low random value for testing negative sleep
-        adapter = BedrockInferenceAdapter(region_name=self.test_region, rate_limit=2)
-
-        # Set up scenario with multiple waiting requests
-        adapter.request_timestamps = [99.1, 99.8]
-        adapter.waiting_requests_count = 0
-
-        # Act
-        adapter._apply_rate_limiting()
-
-        # Assert
-        mock_sleep.assert_not_called()
-        self.assertEqual(adapter.waiting_requests_count, 0)
 
     def test_call_model_with_retries(self):
         """Test call_model retry behavior with throttling"""

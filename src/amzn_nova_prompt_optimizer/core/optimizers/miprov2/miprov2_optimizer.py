@@ -27,6 +27,7 @@ from amzn_nova_prompt_optimizer.core.input_adapters.prompt_adapter import (Promp
                                                                            CONVERSE_FEW_SHOT_FORMAT,
                                                                            PROMPT_VARIABLE_PATTERN)
 from amzn_nova_prompt_optimizer.core.optimizers import OptimizationAdapter
+from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_lm.rate_limited_lm import RateLimitedLM
 from amzn_nova_prompt_optimizer.core.optimizers.nova_prompt_optimizer.nova_grounded_proposer import NovaGroundedProposer
 from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_adapters.custom_chat_adapter import CustomChatAdapter
 
@@ -250,9 +251,9 @@ class MIPROv2OptimizationAdapter(OptimizationAdapter):
             os.environ["AWS_REGION_NAME"] = 'us-west-2'
 
         # Setup dspy.LM
-        task_lm = dspy.LM(f'bedrock/{task_model_id}')
+        task_lm = RateLimitedLM(dspy.LM(f'bedrock/{task_model_id}'), rate_limit=self.inference_adapter.rate_limit)
         logger.info(f"Using {task_model_id} for Evaluation")
-        prompt_lm = dspy.LM(f'bedrock/{prompter_model_id}')
+        prompt_lm = RateLimitedLM(dspy.LM(f'bedrock/{prompter_model_id}'), rate_limit=self.inference_adapter.rate_limit)
         logger.info(f"Using {prompter_model_id} for Prompting")
 
         # Configure DSPy
@@ -371,9 +372,9 @@ class NovaMIPROv2OptimizationAdapter(MIPROv2OptimizationAdapter):
             os.environ["AWS_REGION_NAME"] = 'us-west-2'
 
         # Setup dspy.LM
-        task_lm = dspy.LM(f'bedrock/{task_model_id}')
+        task_lm = RateLimitedLM(dspy.LM(f'bedrock/{task_model_id}'), rate_limit=self.inference_adapter.rate_limit)
         logger.info(f"Using {task_model_id} for Evaluation")
-        prompt_lm = dspy.LM(f'bedrock/{prompter_model_id}')
+        prompt_lm = RateLimitedLM(dspy.LM(f'bedrock/{prompter_model_id}'), rate_limit=self.inference_adapter.rate_limit)
         logger.info(f"Using {prompter_model_id} for Prompting")
 
         # Configure DSPy

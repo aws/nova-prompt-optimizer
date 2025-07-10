@@ -11,4 +11,4 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-VERSION = "1.0.20250707180833"  # pragma: no cover
+VERSION = "1.0.20250710152026"  # pragma: no cover

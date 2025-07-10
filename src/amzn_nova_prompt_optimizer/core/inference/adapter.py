@@ -11,22 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import random
-import time
-import boto3
 import logging
-
-from amzn_nova_prompt_optimizer.core.inference.bedrock_converse import BedrockConverseHandler
-
+import random
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
+
+import boto3
+import time
 from botocore.exceptions import ClientError
+
+from amzn_nova_prompt_optimizer.core.inference.bedrock_converse import BedrockConverseHandler
+from amzn_nova_prompt_optimizer.util.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
 
 class InferenceAdapter(ABC):
-    def __init__(self, region: str):
+    def __init__(self, region: str, rate_limit: int = 2):
         self.region = region
+        self.rate_limit = rate_limit
 
     @abstractmethod
     def call_model(self, model_id: str, system_prompt: str,
@@ -40,18 +42,21 @@ class BedrockInferenceAdapter(InferenceAdapter):
                  region_name: str = 'us-east-1',
                  profile_name: Optional[str] = None,
                  max_retries: int = 5,
-                 rate_limit: float = 2,
+                 rate_limit: int = 2,
                  initial_backoff: int = 1):
         """
         Initialize Bedrock Inference Adapter with AWS credentials
 
         Args:
             region_name: AWS region name
+            profile_name: Optional. AWS credential profile name.
             max_retries: Maximum number of retries for API calls
+            rate_limit: Max TPS of the bedrock call this adapter can make. Default to 2.
         """
-        super().__init__(region=region_name)
+        super().__init__(region=region_name, rate_limit=rate_limit)
         self.initial_backoff = initial_backoff
         self.max_retries = max_retries
+        self.rate_limiter = RateLimiter(rate_limit=self.rate_limit)
 
         # Initialize AWS session with provided credentials
         if profile_name:
@@ -66,15 +71,11 @@ class BedrockInferenceAdapter(InferenceAdapter):
             'bedrock-runtime',
             region_name=region_name
         )
-        self.aws_region = region_name
-        self.rate_limit = rate_limit
-        self.request_timestamps: list[float] = []
-        self.waiting_requests_count = 0
         self.converse_client = BedrockConverseHandler(self.bedrock_client)
 
     def call_model(self, model_id: str, system_prompt: str,
                    messages: List[Dict[str, str]], inf_config: Dict[str, Any]) -> str:
-        self._apply_rate_limiting()
+        self.rate_limiter.apply_rate_limiting()
         return self._call_model_with_retry(model_id, system_prompt, messages, inf_config)
 
     def _call_model_with_retry(self, model_id:str, system_prompt: str,
@@ -106,24 +107,3 @@ class BedrockInferenceAdapter(InferenceAdapter):
     def _calculate_backoff_time(self, retry_count):
         # Exponential backoff with jitter
         return self.initial_backoff * (2 ** retry_count) + random.uniform(0, 1)
-
-    def _apply_rate_limiting(self):
-        current_time = time.time()
-
-        # Remove timestamps older than 1 second
-        self.request_timestamps = [ts for ts in self.request_timestamps if current_time - ts < 1.0]
-
-        # If we've reached the rate limit, sleep until we can make another request
-        if len(self.request_timestamps) >= self.rate_limit:
-            self.waiting_requests_count += 1
-            sleep_time = (((self.waiting_requests_count/self.rate_limit) * 1.0) -
-                          (current_time - self.request_timestamps[0]) + random.uniform(0, 1))
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-
-        self.waiting_requests_count -= 1
-        if self.waiting_requests_count < 0:
-            self.waiting_requests_count = 0
-
-        # Add current timestamp to the list
-        self.request_timestamps.append(time.time())
