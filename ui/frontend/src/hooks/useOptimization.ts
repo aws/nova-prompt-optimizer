@@ -361,9 +361,13 @@ export function useOptimization(options: UseOptimizationOptions = {}) {
     }
   }, [autoLoad, loadHistory, loadModels, loadOptimizers])
 
+  // Alias for loadHistory to match the expected interface
+  const getOptimizationHistory = loadHistory
+
   return {
     // State
     history,
+    optimizationHistory: history.data,
     currentTask,
     results,
     models,
@@ -372,6 +376,7 @@ export function useOptimization(options: UseOptimizationOptions = {}) {
     
     // Actions
     loadHistory,
+    getOptimizationHistory,
     loadTask,
     startOptimization,
     cancelOptimization,

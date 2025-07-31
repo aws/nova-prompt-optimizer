@@ -15,3 +15,6 @@ export * from './evaluation';
 
 // Export optimization components
 export * from './optimization';
+
+// Export annotation components
+export * from './annotation';
