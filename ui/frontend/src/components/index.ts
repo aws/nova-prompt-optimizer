@@ -9,3 +9,6 @@ export * from './dataset';
 
 // Export prompt components
 export * from './prompt';
+
+// Export evaluation components
+export * from './evaluation';

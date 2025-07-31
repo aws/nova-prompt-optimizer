@@ -19,3 +19,4 @@ export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 export { Sheet, SheetPortal, SheetOverlay, SheetTrigger, SheetClose, SheetContent, SheetHeader, SheetFooter, SheetTitle, SheetDescription } from "./sheet"
 export { Separator } from "./separator"
 export { Skeleton } from "./skeleton"
+export { ScrollArea, ScrollBar } from "./scroll-area"
