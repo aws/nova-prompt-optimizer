@@ -6,3 +6,6 @@ export * from './common';
 
 // Export dataset components
 export * from './dataset';
+
+// Export prompt components
+export * from './prompt';
