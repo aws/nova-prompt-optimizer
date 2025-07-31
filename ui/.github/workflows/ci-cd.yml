@@ -1,0 +1,422 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'ui/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'ui/**'
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BACKEND: ${{ github.repository }}/nova-optimizer-backend
+  IMAGE_NAME_FRONTEND: ${{ github.repository }}/nova-optimizer-frontend
+
+jobs:
+  # Backend Testing
+  test-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ui/backend
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+    
+    - name: Set up environment
+      run: |
+        cp .env.example .env
+        echo "DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db" >> .env
+        echo "REDIS_URL=redis://localhost:6379/0" >> .env
+        echo "SECRET_KEY=test_secret_key_for_ci_cd_pipeline_testing" >> .env
+    
+    - name: Run database migrations
+      run: |
+        alembic upgrade head
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+    
+    - name: Run linting
+      run: |
+        flake8 app/ tests/
+        black --check app/ tests/
+        isort --check-only app/ tests/
+    
+    - name: Run type checking
+      run: |
+        mypy app/
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test_secret_key_for_ci_cd_pipeline_testing
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./ui/backend/coverage.xml
+        flags: backend
+        name: backend-coverage
+
+  # Frontend Testing
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ui/frontend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: './ui/frontend/package-lock.json'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linting
+      run: |
+        npm run lint
+        npm run type-check
+    
+    - name: Run unit tests
+      run: npm run test -- --coverage
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./ui/frontend/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+    
+    - name: Build application
+      run: npm run build
+      env:
+        VITE_API_URL: http://localhost:8000
+        VITE_WS_URL: ws://localhost:8000
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-build
+        path: ./ui/frontend/dist
+
+  # E2E Testing
+  test-e2e:
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Start services
+      run: |
+        cd ui
+        cp .env.example .env
+        echo "POSTGRES_PASSWORD=test_password" >> .env
+        echo "REDIS_PASSWORD=test_redis_password" >> .env
+        echo "SECRET_KEY=test_secret_key_for_e2e_testing_pipeline" >> .env
+        echo "AWS_ACCESS_KEY_ID=test_key" >> .env
+        echo "AWS_SECRET_ACCESS_KEY=test_secret" >> .env
+        docker-compose -f docker-compose.prod.yml up -d --build
+        
+        # Wait for services to be ready
+        timeout 300 bash -c 'until curl -f http://localhost:8000/health; do sleep 5; done'
+        timeout 300 bash -c 'until curl -f http://localhost:80/health; do sleep 5; done'
+    
+    - name: Set up Node.js for E2E tests
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: './ui/frontend/package-lock.json'
+    
+    - name: Install E2E dependencies
+      run: |
+        cd ui/frontend
+        npm ci
+        npx playwright install --with-deps
+    
+    - name: Run E2E tests
+      run: |
+        cd ui/frontend
+        npm run test:e2e
+      env:
+        BASE_URL: http://localhost:80
+    
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          ./ui/frontend/test-results/
+          ./ui/frontend/playwright-report/
+    
+    - name: Stop services
+      if: always()
+      run: |
+        cd ui
+        docker-compose -f docker-compose.prod.yml down -v
+
+  # Security Scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner (Backend)
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: './ui/backend'
+        format: 'sarif'
+        output: 'trivy-backend-results.sarif'
+    
+    - name: Upload Trivy scan results (Backend)
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-backend-results.sarif'
+        category: 'backend-security'
+    
+    - name: Run Trivy vulnerability scanner (Frontend)
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: './ui/frontend'
+        format: 'sarif'
+        output: 'trivy-frontend-results.sarif'
+    
+    - name: Upload Trivy scan results (Frontend)
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-frontend-results.sarif'
+        category: 'frontend-security'
+
+  # Build and Push Docker Images
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend, security-scan]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata (Backend)
+      id: meta-backend
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./ui/backend
+        file: ./ui/backend/Dockerfile
+        push: true
+        tags: ${{ steps.meta-backend.outputs.tags }}
+        labels: ${{ steps.meta-backend.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+    
+    - name: Extract metadata (Frontend)
+      id: meta-frontend
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./ui/frontend
+        file: ./ui/frontend/Dockerfile
+        push: true
+        tags: ${{ steps.meta-frontend.outputs.tags }}
+        labels: ${{ steps.meta-frontend.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+        build-args: |
+          VITE_API_URL=${{ secrets.VITE_API_URL || 'http://localhost:8000' }}
+          VITE_WS_URL=${{ secrets.VITE_WS_URL || 'ws://localhost:8000' }}
+          VITE_APP_VERSION=${{ github.sha }}
+
+  # Deploy to Staging
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment logic here
+        # This could involve:
+        # - Updating Kubernetes manifests
+        # - Triggering deployment via webhook
+        # - Using cloud provider CLI tools
+        # - Running deployment scripts
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests against staging..."
+        # Add smoke test logic here
+
+  # Deploy to Production
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add your production deployment logic here
+        # This should include:
+        # - Blue-green or rolling deployment
+        # - Health checks
+        # - Rollback capability
+        # - Monitoring alerts
+    
+    - name: Run production health checks
+      run: |
+        echo "Running production health checks..."
+        # Add production health check logic here
+    
+    - name: Notify deployment
+      if: always()
+      run: |
+        echo "Notifying team of deployment status..."
+        # Add notification logic (Slack, email, etc.)
+
+  # Performance Testing
+  performance-test:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run performance tests
+      run: |
+        echo "Running performance tests..."
+        # Add performance testing logic here
+        # This could use tools like:
+        # - k6
+        # - Artillery
+        # - JMeter
+        # - Custom load testing scripts
+    
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-test-results
+        path: ./performance-results/
+
+  # Cleanup
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Clean up old images
+      run: |
+        echo "Cleaning up old container images..."
+        # Add cleanup logic for old images
+        # This helps manage storage costs
+    
+    - name: Clean up test artifacts
+      run: |
+        echo "Cleaning up test artifacts..."
+        # Add cleanup logic for test data

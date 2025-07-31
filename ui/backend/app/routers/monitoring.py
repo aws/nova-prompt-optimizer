@@ -1,270 +1,279 @@
 """
-API endpoints for performance monitoring and metrics.
+Monitoring and health check endpoints for production deployment.
 """
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
 
-from ..core.monitoring import performance_monitor, alert_manager
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
+from typing import Dict, Any, Optional
+import asyncio
+import time
+import psutil
+import os
+from datetime import datetime, timezone
 
-router = APIRouter(prefix="/monitoring", tags=["monitoring"])
+from app.db.database import get_db
+from app.core.monitoring import get_system_metrics, get_application_metrics
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 
-
-class MetricsQuery(BaseModel):
-    """Query parameters for metrics retrieval."""
-    operation: Optional[str] = None
-    since_hours: Optional[int] = Query(default=24, ge=1, le=168)  # 1 hour to 1 week
-    limit: Optional[int] = Query(default=100, ge=1, le=1000)
-
-
-class SystemMetricsQuery(BaseModel):
-    """Query parameters for system metrics retrieval."""
-    since_hours: Optional[int] = Query(default=24, ge=1, le=168)
-    limit: Optional[int] = Query(default=100, ge=1, le=1000)
+router = APIRouter()
 
 
-class AlertThresholds(BaseModel):
-    """Alert threshold configuration."""
-    cpu_percent: Optional[float] = None
-    memory_percent: Optional[float] = None
-    disk_usage_percent: Optional[float] = None
-    operation_duration_ms: Optional[float] = None
-    memory_usage_mb: Optional[float] = None
-
-
-@router.get("/metrics", response_model=List[Dict[str, Any]])
-async def get_performance_metrics(
-    operation: Optional[str] = Query(None, description="Filter by operation name"),
-    since_hours: int = Query(24, ge=1, le=168, description="Hours to look back"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of metrics")
-):
-    """Get performance metrics with optional filtering."""
-    since = datetime.utcnow() - timedelta(hours=since_hours)
-    
-    metrics = performance_monitor.get_metrics(
-        operation=operation,
-        since=since,
-        limit=limit
-    )
-    
-    return metrics
-
-
-@router.get("/system-metrics", response_model=List[Dict[str, Any]])
-async def get_system_metrics(
-    since_hours: int = Query(24, ge=1, le=168, description="Hours to look back"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of metrics")
-):
-    """Get system performance metrics."""
-    since = datetime.utcnow() - timedelta(hours=since_hours)
-    
-    metrics = performance_monitor.get_system_metrics(
-        since=since,
-        limit=limit
-    )
-    
-    return metrics
-
-
-@router.get("/summary", response_model=Dict[str, Any])
-async def get_performance_summary(
-    operation: Optional[str] = Query(None, description="Filter by operation name")
-):
-    """Get performance summary statistics."""
-    summary = performance_monitor.get_performance_summary(operation=operation)
-    return summary
-
-
-@router.get("/operations", response_model=List[str])
-async def get_monitored_operations():
-    """Get list of all monitored operations."""
-    operations = set()
-    for metric in performance_monitor.metrics:
-        operations.add(metric.operation)
-    
-    return sorted(list(operations))
-
-
-@router.get("/health", response_model=Dict[str, Any])
-async def get_system_health():
-    """Get current system health status."""
-    import psutil
-    
-    # Get latest system metrics
-    if performance_monitor.system_metrics:
-        latest_metrics = performance_monitor.system_metrics[-1]
-        
-        # Determine health status
-        health_status = "healthy"
-        issues = []
-        
-        if latest_metrics.cpu_percent > 80:
-            health_status = "warning"
-            issues.append(f"High CPU usage: {latest_metrics.cpu_percent:.1f}%")
-        
-        if latest_metrics.memory_percent > 85:
-            health_status = "critical" if health_status != "critical" else health_status
-            issues.append(f"High memory usage: {latest_metrics.memory_percent:.1f}%")
-        
-        if latest_metrics.disk_usage_percent > 90:
-            health_status = "critical"
-            issues.append(f"High disk usage: {latest_metrics.disk_usage_percent:.1f}%")
-        
-        return {
-            "status": health_status,
-            "timestamp": latest_metrics.timestamp.isoformat(),
-            "metrics": latest_metrics.to_dict(),
-            "issues": issues
-        }
-    else:
-        # Fallback to current system stats
-        cpu_percent = psutil.cpu_percent(interval=1)
-        memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
-        
-        health_status = "healthy"
-        issues = []
-        
-        if cpu_percent > 80:
-            health_status = "warning"
-            issues.append(f"High CPU usage: {cpu_percent:.1f}%")
-        
-        if memory.percent > 85:
-            health_status = "critical" if health_status != "critical" else health_status
-            issues.append(f"High memory usage: {memory.percent:.1f}%")
-        
-        if disk.percent > 90:
-            health_status = "critical"
-            issues.append(f"High disk usage: {disk.percent:.1f}%")
-        
-        return {
-            "status": health_status,
-            "timestamp": datetime.utcnow().isoformat(),
-            "metrics": {
-                "cpu_percent": cpu_percent,
-                "memory_percent": memory.percent,
-                "memory_available_mb": memory.available / (1024 * 1024),
-                "disk_usage_percent": disk.percent
-            },
-            "issues": issues
-        }
-
-
-@router.get("/alerts/thresholds", response_model=Dict[str, float])
-async def get_alert_thresholds():
-    """Get current alert thresholds."""
-    return alert_manager.alert_thresholds
-
-
-@router.put("/alerts/thresholds")
-async def update_alert_thresholds(thresholds: AlertThresholds):
-    """Update alert thresholds."""
-    updated_thresholds = {}
-    
-    if thresholds.cpu_percent is not None:
-        if not 0 <= thresholds.cpu_percent <= 100:
-            raise HTTPException(status_code=400, detail="CPU threshold must be between 0 and 100")
-        alert_manager.alert_thresholds['cpu_percent'] = thresholds.cpu_percent
-        updated_thresholds['cpu_percent'] = thresholds.cpu_percent
-    
-    if thresholds.memory_percent is not None:
-        if not 0 <= thresholds.memory_percent <= 100:
-            raise HTTPException(status_code=400, detail="Memory threshold must be between 0 and 100")
-        alert_manager.alert_thresholds['memory_percent'] = thresholds.memory_percent
-        updated_thresholds['memory_percent'] = thresholds.memory_percent
-    
-    if thresholds.disk_usage_percent is not None:
-        if not 0 <= thresholds.disk_usage_percent <= 100:
-            raise HTTPException(status_code=400, detail="Disk usage threshold must be between 0 and 100")
-        alert_manager.alert_thresholds['disk_usage_percent'] = thresholds.disk_usage_percent
-        updated_thresholds['disk_usage_percent'] = thresholds.disk_usage_percent
-    
-    if thresholds.operation_duration_ms is not None:
-        if thresholds.operation_duration_ms < 0:
-            raise HTTPException(status_code=400, detail="Operation duration threshold must be positive")
-        alert_manager.alert_thresholds['operation_duration_ms'] = thresholds.operation_duration_ms
-        updated_thresholds['operation_duration_ms'] = thresholds.operation_duration_ms
-    
-    if thresholds.memory_usage_mb is not None:
-        if thresholds.memory_usage_mb < 0:
-            raise HTTPException(status_code=400, detail="Memory usage threshold must be positive")
-        alert_manager.alert_thresholds['memory_usage_mb'] = thresholds.memory_usage_mb
-        updated_thresholds['memory_usage_mb'] = thresholds.memory_usage_mb
-    
+@router.get("/health")
+async def health_check():
+    """Basic health check endpoint."""
     return {
-        "message": "Alert thresholds updated successfully",
-        "updated_thresholds": updated_thresholds
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "nova-prompt-optimizer-api",
+        "version": "1.0.0"
     }
 
 
-@router.get("/slow-operations", response_model=List[Dict[str, Any]])
-async def get_slow_operations(
-    threshold_ms: float = Query(5000, ge=100, description="Minimum duration in milliseconds"),
-    since_hours: int = Query(24, ge=1, le=168, description="Hours to look back"),
-    limit: int = Query(50, ge=1, le=500, description="Maximum number of operations")
-):
-    """Get slow operations above the specified threshold."""
-    since = datetime.utcnow() - timedelta(hours=since_hours)
+@router.get("/health/detailed")
+async def detailed_health_check(db: Session = Depends(get_db)):
+    """Detailed health check with dependency status."""
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "nova-prompt-optimizer-api",
+        "version": "1.0.0",
+        "checks": {}
+    }
     
-    slow_operations = []
-    for metric in performance_monitor.metrics:
-        if (metric.timestamp >= since and 
-            metric.duration_ms >= threshold_ms):
-            slow_operations.append(metric.to_dict())
+    overall_healthy = True
     
-    # Sort by duration (slowest first) and limit
-    slow_operations = sorted(slow_operations, key=lambda x: x['duration_ms'], reverse=True)
-    return slow_operations[:limit]
-
-
-@router.get("/memory-intensive-operations", response_model=List[Dict[str, Any]])
-async def get_memory_intensive_operations(
-    threshold_mb: float = Query(100, ge=1, description="Minimum memory usage in MB"),
-    since_hours: int = Query(24, ge=1, le=168, description="Hours to look back"),
-    limit: int = Query(50, ge=1, le=500, description="Maximum number of operations")
-):
-    """Get memory-intensive operations above the specified threshold."""
-    since = datetime.utcnow() - timedelta(hours=since_hours)
+    # Database health check
+    try:
+        start_time = time.time()
+        db.execute(text("SELECT 1"))
+        db_response_time = (time.time() - start_time) * 1000
+        
+        health_status["checks"]["database"] = {
+            "status": "healthy",
+            "response_time_ms": round(db_response_time, 2)
+        }
+    except Exception as e:
+        health_status["checks"]["database"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+        overall_healthy = False
     
-    memory_intensive = []
-    for metric in performance_monitor.metrics:
-        if (metric.timestamp >= since and 
-            metric.memory_usage_mb >= threshold_mb):
-            memory_intensive.append(metric.to_dict())
+    # Redis health check (if configured)
+    try:
+        import redis
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        r = redis.from_url(redis_url)
+        
+        start_time = time.time()
+        r.ping()
+        redis_response_time = (time.time() - start_time) * 1000
+        
+        health_status["checks"]["redis"] = {
+            "status": "healthy",
+            "response_time_ms": round(redis_response_time, 2)
+        }
+    except Exception as e:
+        health_status["checks"]["redis"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+        overall_healthy = False
     
-    # Sort by memory usage (highest first) and limit
-    memory_intensive = sorted(memory_intensive, key=lambda x: x['memory_usage_mb'], reverse=True)
-    return memory_intensive[:limit]
+    # AWS connectivity check
+    try:
+        import boto3
+        from botocore.exceptions import ClientError, NoCredentialsError
+        
+        start_time = time.time()
+        client = boto3.client('bedrock-runtime', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+        # Just check if we can create the client and have credentials
+        client.meta.region_name  # This will raise an error if credentials are invalid
+        aws_response_time = (time.time() - start_time) * 1000
+        
+        health_status["checks"]["aws"] = {
+            "status": "healthy",
+            "response_time_ms": round(aws_response_time, 2),
+            "region": client.meta.region_name
+        }
+    except (NoCredentialsError, ClientError) as e:
+        health_status["checks"]["aws"] = {
+            "status": "unhealthy",
+            "error": "AWS credentials not configured or invalid"
+        }
+        overall_healthy = False
+    except Exception as e:
+        health_status["checks"]["aws"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+        overall_healthy = False
+    
+    # File system health check
+    try:
+        upload_path = os.getenv("UPLOAD_PATH", "/app/uploads")
+        if os.path.exists(upload_path):
+            # Check if directory is writable
+            test_file = os.path.join(upload_path, ".health_check")
+            with open(test_file, "w") as f:
+                f.write("health_check")
+            os.remove(test_file)
+            
+            # Get disk usage
+            disk_usage = psutil.disk_usage(upload_path)
+            free_space_gb = disk_usage.free / (1024**3)
+            
+            health_status["checks"]["filesystem"] = {
+                "status": "healthy",
+                "upload_path": upload_path,
+                "free_space_gb": round(free_space_gb, 2)
+            }
+        else:
+            health_status["checks"]["filesystem"] = {
+                "status": "unhealthy",
+                "error": f"Upload path does not exist: {upload_path}"
+            }
+            overall_healthy = False
+    except Exception as e:
+        health_status["checks"]["filesystem"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+        overall_healthy = False
+    
+    # Update overall status
+    health_status["status"] = "healthy" if overall_healthy else "unhealthy"
+    
+    # Return appropriate HTTP status code
+    status_code = 200 if overall_healthy else 503
+    return JSONResponse(content=health_status, status_code=status_code)
 
 
-@router.post("/monitoring/start")
-async def start_monitoring(interval_seconds: int = Query(30, ge=5, le=300)):
-    """Start system metrics monitoring."""
-    performance_monitor.start_monitoring(interval_seconds)
-    return {"message": f"Monitoring started with {interval_seconds}s interval"}
+@router.get("/metrics")
+async def get_metrics():
+    """Get application metrics for monitoring."""
+    try:
+        system_metrics = get_system_metrics()
+        app_metrics = get_application_metrics()
+        
+        return {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "system": system_metrics,
+            "application": app_metrics
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get metrics: {str(e)}")
 
 
-@router.post("/monitoring/stop")
-async def stop_monitoring():
-    """Stop system metrics monitoring."""
-    performance_monitor.stop_monitoring()
-    return {"message": "Monitoring stopped"}
+@router.get("/metrics/prometheus")
+async def get_prometheus_metrics():
+    """Get metrics in Prometheus format."""
+    try:
+        system_metrics = get_system_metrics()
+        app_metrics = get_application_metrics()
+        
+        # Generate Prometheus format metrics
+        prometheus_metrics = []
+        
+        # System metrics
+        prometheus_metrics.append(f"# HELP system_cpu_percent CPU usage percentage")
+        prometheus_metrics.append(f"# TYPE system_cpu_percent gauge")
+        prometheus_metrics.append(f"system_cpu_percent {system_metrics['cpu_percent']}")
+        
+        prometheus_metrics.append(f"# HELP system_memory_percent Memory usage percentage")
+        prometheus_metrics.append(f"# TYPE system_memory_percent gauge")
+        prometheus_metrics.append(f"system_memory_percent {system_metrics['memory_percent']}")
+        
+        prometheus_metrics.append(f"# HELP system_disk_percent Disk usage percentage")
+        prometheus_metrics.append(f"# TYPE system_disk_percent gauge")
+        prometheus_metrics.append(f"system_disk_percent {system_metrics['disk_percent']}")
+        
+        # Application metrics
+        prometheus_metrics.append(f"# HELP app_active_optimizations Active optimization tasks")
+        prometheus_metrics.append(f"# TYPE app_active_optimizations gauge")
+        prometheus_metrics.append(f"app_active_optimizations {app_metrics['active_optimizations']}")
+        
+        prometheus_metrics.append(f"# HELP app_total_datasets Total datasets uploaded")
+        prometheus_metrics.append(f"# TYPE app_total_datasets counter")
+        prometheus_metrics.append(f"app_total_datasets {app_metrics['total_datasets']}")
+        
+        prometheus_metrics.append(f"# HELP app_total_prompts Total prompts created")
+        prometheus_metrics.append(f"# TYPE app_total_prompts counter")
+        prometheus_metrics.append(f"app_total_prompts {app_metrics['total_prompts']}")
+        
+        return "\n".join(prometheus_metrics)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get Prometheus metrics: {str(e)}")
 
 
-@router.get("/monitoring/status")
-async def get_monitoring_status():
-    """Get monitoring status."""
+@router.get("/status")
+async def get_status():
+    """Get detailed application status."""
     return {
-        "active": performance_monitor._monitoring_active,
-        "total_metrics": len(performance_monitor.metrics),
-        "total_system_metrics": len(performance_monitor.system_metrics),
-        "oldest_metric": (
-            performance_monitor.metrics[0].timestamp.isoformat() 
-            if performance_monitor.metrics else None
-        ),
-        "newest_metric": (
-            performance_monitor.metrics[-1].timestamp.isoformat() 
-            if performance_monitor.metrics else None
-        )
+        "service": "nova-prompt-optimizer-api",
+        "version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "uptime_seconds": time.time() - psutil.boot_time(),
+        "python_version": f"{psutil.sys.version_info.major}.{psutil.sys.version_info.minor}.{psutil.sys.version_info.micro}",
+        "process_id": os.getpid(),
+        "configuration": {
+            "debug": os.getenv("DEBUG", "false").lower() == "true",
+            "log_level": os.getenv("LOG_LEVEL", "info"),
+            "max_file_size": os.getenv("MAX_FILE_SIZE", "104857600"),
+            "api_workers": os.getenv("API_WORKERS", "4"),
+            "aws_region": os.getenv("AWS_REGION", "us-east-1")
+        }
+    }
+
+
+@router.get("/readiness")
+async def readiness_check(db: Session = Depends(get_db)):
+    """Kubernetes readiness probe endpoint."""
+    try:
+        # Check database connectivity
+        db.execute(text("SELECT 1"))
+        
+        # Check if critical directories exist
+        upload_path = os.getenv("UPLOAD_PATH", "/app/uploads")
+        if not os.path.exists(upload_path):
+            raise Exception(f"Upload directory not found: {upload_path}")
+        
+        return {"status": "ready"}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Service not ready: {str(e)}")
+
+
+@router.get("/liveness")
+async def liveness_check():
+    """Kubernetes liveness probe endpoint."""
+    try:
+        # Basic application health check
+        # Check if the application can respond
+        current_time = time.time()
+        
+        # Check memory usage (fail if over 90%)
+        memory_percent = psutil.virtual_memory().percent
+        if memory_percent > 90:
+            raise Exception(f"Memory usage too high: {memory_percent}%")
+        
+        return {
+            "status": "alive",
+            "timestamp": current_time,
+            "memory_percent": memory_percent
+        }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Service not alive: {str(e)}")
+
+
+@router.post("/shutdown")
+async def graceful_shutdown():
+    """Graceful shutdown endpoint for container orchestration."""
+    # This would typically trigger a graceful shutdown process
+    # For now, just return a success response
+    return {
+        "status": "shutdown_initiated",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "message": "Graceful shutdown initiated"
     }
