@@ -14,7 +14,7 @@ requires-python = ">=3.11"
 authors = [
   {name = "Amazon", email="nova-prompt-optimizer@amazon.com"},
 ]
-license = "Apache-2.0"
+license = {text = "Apache-2.0"}
 readme = "README.md"
 
 [project.optional-dependencies]

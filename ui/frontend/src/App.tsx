@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { AppProvider } from '@/store'
 import { AppLayout } from '@/components/common/Layout'
 import { Dashboard } from '@/pages/Dashboard'
 import { DatasetManagement } from '@/pages/DatasetManagement'
@@ -9,18 +10,20 @@ import { ResultsAnalysis } from '@/pages/ResultsAnalysis'
 
 function App() {
   return (
-    <Router>
-      <AppLayout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/datasets" element={<DatasetManagement />} />
-          <Route path="/prompts" element={<PromptWorkbench />} />
-          <Route path="/optimize" element={<OptimizationWorkflow />} />
-          <Route path="/annotate" element={<AnnotationWorkspace />} />
-          <Route path="/results" element={<ResultsAnalysis />} />
-        </Routes>
-      </AppLayout>
-    </Router>
+    <AppProvider>
+      <Router>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/datasets" element={<DatasetManagement />} />
+            <Route path="/prompts" element={<PromptWorkbench />} />
+            <Route path="/optimize" element={<OptimizationWorkflow />} />
+            <Route path="/annotate" element={<AnnotationWorkspace />} />
+            <Route path="/results" element={<ResultsAnalysis />} />
+          </Routes>
+        </AppLayout>
+      </Router>
+    </AppProvider>
   )
 }
 
