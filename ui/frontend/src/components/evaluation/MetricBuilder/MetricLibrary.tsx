@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { 
-  Search, 
-  Star, 
-  Users, 
+import {
+  Search,
+  Star,
+  Users,
   Calendar,
   Code,
   Tag,
@@ -40,10 +40,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   [MetricCategory.CUSTOM]: 'Custom'
 }
 
-export function MetricLibrary({ 
-  onImport, 
+export function MetricLibrary({
+  onImport,
   onPreview,
-  className 
+  className
 }: MetricLibraryProps) {
   const {
     libraryItems,
@@ -321,7 +321,7 @@ export function MetricLibrary({
                   <CardDescription className="mb-3">
                     {item.description}
                   </CardDescription>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex flex-wrap gap-1">
                       <Badge variant="outline" className="text-xs">
@@ -339,7 +339,7 @@ export function MetricLibrary({
                         </Badge>
                       )}
                     </div>
-                    
+
                     {item.author && (
                       <div className="text-xs text-muted-foreground">
                         by {item.author}

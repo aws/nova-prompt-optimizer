@@ -20,3 +20,6 @@ export { Sheet, SheetPortal, SheetOverlay, SheetTrigger, SheetClose, SheetConten
 export { Separator } from "./separator"
 export { Skeleton } from "./skeleton"
 export { ScrollArea, ScrollBar } from "./scroll-area"
+export { Slider } from "./slider"
+export { Switch } from "./switch"
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./tooltip"

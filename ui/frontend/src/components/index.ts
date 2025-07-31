@@ -12,3 +12,6 @@ export * from './prompt';
 
 // Export evaluation components
 export * from './evaluation';
+
+// Export optimization components
+export * from './optimization';
