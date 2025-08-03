@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Prompt Optimizer</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <h1 class="logo">
+                        <span class="logo-icon">🚀</span>
+                        Nova Prompt Optimizer
+                    </h1>
+                    <nav class="nav">
+                        <button class="nav-btn active" data-view="datasets">
+                            📊 Datasets
+                        </button>
+                        <button class="nav-btn" data-view="prompts">
+                            ✏️ Prompts
+                        </button>
+                        <button class="nav-btn" data-view="optimization">
+                            ⚡ Optimize
+                        </button>
+                        <button class="nav-btn" data-view="results">
+                            📈 Results
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="container">
+                <!-- Datasets View -->
+                <div id="datasets-view" class="view active">
+                    <div class="view-header">
+                        <h2>Dataset Management</h2>
+                        <p>Upload and manage your training datasets</p>
+                    </div>
+
+                    <div class="upload-section">
+                        <div class="upload-card">
+                            <div class="upload-area" id="upload-area">
+                                <div class="upload-icon">📁</div>
+                                <h3>Upload Dataset</h3>
+                                <p>Drag and drop your CSV or JSONL file here, or click to browse</p>
+                                <input type="file" id="file-input" accept=".csv,.jsonl,.json" hidden>
+                                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                                    Choose File
+                                </button>
+                            </div>
+                            
+                            <div class="upload-form" id="upload-form" style="display: none;">
+                                <h4>Dataset Details</h4>
+                                <div class="form-group">
+                                    <label for="dataset-name">Name</label>
+                                    <input type="text" id="dataset-name" placeholder="Enter dataset name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="dataset-description">Description</label>
+                                    <textarea id="dataset-description" placeholder="Describe your dataset"></textarea>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-secondary" onclick="cancelUpload()">Cancel</button>
+                                    <button class="btn btn-primary" onclick="uploadDataset()">Upload</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="datasets-list">
+                        <h3>Your Datasets</h3>
+                        <div id="datasets-container">
+                            <div class="empty-state">
+                                <div class="empty-icon">📊</div>
+                                <h4>No datasets yet</h4>
+                                <p>Upload your first dataset to get started</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prompts View -->
+                <div id="prompts-view" class="view">
+                    <div class="view-header">
+                        <h2>Prompt Management</h2>
+                        <p>Create and edit your optimization prompts</p>
+                        <button class="btn btn-primary" onclick="createNewPrompt()">
+                            ➕ New Prompt
+                        </button>
+                    </div>
+
+                    <div class="prompts-list">
+                        <div id="prompts-container">
+                            <div class="empty-state">
+                                <div class="empty-icon">✏️</div>
+                                <h4>No prompts yet</h4>
+                                <p>Create your first prompt to begin optimization</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prompt Editor Modal -->
+                    <div id="prompt-modal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 id="prompt-modal-title">Create New Prompt</h3>
+                                <button class="modal-close" onclick="closePromptModal()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="prompt-name">Name</label>
+                                    <input type="text" id="prompt-name" placeholder="Enter prompt name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="prompt-description">Description</label>
+                                    <textarea id="prompt-description" placeholder="Describe your prompt"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="system-prompt">System Prompt</label>
+                                    <textarea id="system-prompt" placeholder="You are a helpful assistant..." rows="4"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-prompt">User Prompt</label>
+                                    <textarea id="user-prompt" placeholder="Classify this text: {{input}}" rows="6"></textarea>
+                                    <div class="prompt-help">
+                                        <small>Use {{variable}} syntax for template variables</small>
+                                    </div>
+                                </div>
+                                <div id="variables-detected" class="variables-section" style="display: none;">
+                                    <h4>Detected Variables</h4>
+                                    <div id="variables-list"></div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" onclick="closePromptModal()">Cancel</button>
+                                <button class="btn btn-primary" onclick="savePrompt()">Save Prompt</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optimization View -->
+                <div id="optimization-view" class="view">
+                    <div class="view-header">
+                        <h2>Optimization Workflow</h2>
+                        <p>Run prompt optimization with your datasets</p>
+                    </div>
+
+                    <div class="optimization-setup">
+                        <div class="setup-card">
+                            <h3>Configuration</h3>
+                            <div class="form-group">
+                                <label for="opt-dataset">Select Dataset</label>
+                                <select id="opt-dataset">
+                                    <option value="">Choose a dataset...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="opt-prompt">Select Prompt</label>
+                                <select id="opt-prompt">
+                                    <option value="">Choose a prompt...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="opt-mode">Optimization Mode</label>
+                                <select id="opt-mode">
+                                    <option value="micro">Micro (Quick test)</option>
+                                    <option value="lite">Lite (Development)</option>
+                                    <option value="pro" selected>Pro (Recommended)</option>
+                                    <option value="premier">Premier (High-stakes)</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary btn-large" onclick="startOptimization()">
+                                🚀 Start Optimization
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="optimization-progress" class="progress-section" style="display: none;">
+                        <div class="progress-card">
+                            <h3>Optimization in Progress</h3>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill"></div>
+                            </div>
+                            <div class="progress-info">
+                                <div class="progress-text" id="progress-text">Initializing...</div>
+                                <div class="progress-percent" id="progress-percent">0%</div>
+                            </div>
+                            <div class="progress-details" id="progress-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Status:</span>
+                                    <span class="detail-value" id="status-value">Running</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Started:</span>
+                                    <span class="detail-value" id="started-value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results View -->
+                <div id="results-view" class="view">
+                    <div class="view-header">
+                        <h2>Optimization Results</h2>
+                        <p>View and compare your optimization results</p>
+                    </div>
+
+                    <div id="results-container">
+                        <div class="empty-state">
+                            <div class="empty-icon">📈</div>
+                            <h4>No results yet</h4>
+                            <p>Run an optimization to see results here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Processing...</div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="/static/js/app.js"></script>
+    <script type="module" src="/static/js/dataset.js"></script>
+    <script type="module" src="/static/js/prompt.js"></script>
+    <script type="module" src="/static/js/optimization.js"></script>
+    <script type="module" src="/static/js/utils.js"></script>
+</body>
+</html>
