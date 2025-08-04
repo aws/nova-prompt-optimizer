@@ -18,16 +18,16 @@
                         Nova Prompt Optimizer
                     </h1>
                     <nav class="nav">
-                        <button class="nav-btn active" data-view="datasets">
+                        <button class="nav-btn active" data-view="datasets" onclick="switchToView('datasets')">
                             📊 Datasets
                         </button>
-                        <button class="nav-btn" data-view="prompts">
+                        <button class="nav-btn" data-view="prompts" onclick="switchToView('prompts')">
                             ✏️ Prompts
                         </button>
-                        <button class="nav-btn" data-view="optimization">
+                        <button class="nav-btn" data-view="optimization" onclick="switchToView('optimization')">
                             ⚡ Optimize
                         </button>
-                        <button class="nav-btn" data-view="results">
+                        <button class="nav-btn" data-view="results" onclick="switchToView('results')">
                             📈 Results
                         </button>
                     </nav>
@@ -43,6 +43,9 @@
                     <div class="view-header">
                         <h2>Dataset Management</h2>
                         <p>Upload and manage your training datasets</p>
+                        <button onclick="forceReloadData()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+                            🔄 Reload Data
+                        </button>
                     </div>
 
                     <div class="upload-section">
@@ -52,7 +55,7 @@
                                 <h3>Upload Dataset</h3>
                                 <p>Drag and drop your CSV or JSONL file here, or click to browse</p>
                                 <input type="file" id="file-input" accept=".csv,.jsonl,.json" hidden>
-                                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                                <button class="btn btn-primary" onclick="openFileDialog()">
                                     Choose File
                                 </button>
                             </div>
@@ -84,6 +87,58 @@
                                 <p>Upload your first dataset to get started</p>
                             </div>
                         </div>
+                        
+                        <!-- Immediate test -->
+                        <script>
+                            console.log('🧪 Immediate test: checking datasets container...');
+                            const container = document.getElementById('datasets-container');
+                            console.log('📦 Container found:', !!container);
+                            
+                            // Test API immediately
+                            fetch('/api/datasets')
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('📊 Immediate API test:', data);
+                                    console.log('📊 Datasets count:', data.datasets?.length || 0);
+                                    
+                                    if (data.datasets && data.datasets.length > 0 && container) {
+                                        console.log('🔄 Replacing empty state with actual data...');
+                                        
+                                        // Store datasets globally for optimization
+                                        window.datasets = new Map();
+                                        data.datasets.forEach(dataset => {
+                                            window.datasets.set(dataset.id, dataset);
+                                        });
+                                        console.log('📊 Stored datasets globally:', window.datasets.size);
+                                        
+                                        const html = data.datasets.map(dataset => `
+                                            <div class="dataset-item">
+                                                <div class="item-header">
+                                                    <h4 class="item-title">${dataset.name}</h4>
+                                                    <div class="item-actions">
+                                                        <button class="btn btn-small" onclick="viewDataset('${dataset.id}')">
+                                                            👁️ View
+                                                        </button>
+                                                        <button class="btn btn-small btn-danger" onclick="deleteDataset('${dataset.id}')">
+                                                            🗑️ Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <p class="item-description">${dataset.description || 'No description'}</p>
+                                                <div class="item-meta">
+                                                    <small>Created: ${new Date(dataset.created_at).toLocaleDateString()}</small>
+                                                </div>
+                                            </div>
+                                        `).join('');
+                                        
+                                        container.innerHTML = html;
+                                        console.log('✅ Datasets displayed successfully!');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('❌ Immediate API test failed:', error);
+                                });
+                        </script>
                     </div>
                 </div>
 
@@ -105,6 +160,59 @@
                                 <p>Create your first prompt to begin optimization</p>
                             </div>
                         </div>
+                        
+                        <!-- Immediate prompts test -->
+                        <script>
+                            console.log('🧪 Immediate test: checking prompts container...');
+                            const promptsContainer = document.getElementById('prompts-container');
+                            console.log('📝 Prompts container found:', !!promptsContainer);
+                            
+                            // Test prompts API immediately
+                            fetch('/api/prompts')
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('📝 Immediate prompts API test:', data);
+                                    console.log('📝 Prompts count:', data.prompts?.length || 0);
+                                    
+                                    if (data.prompts && data.prompts.length > 0 && promptsContainer) {
+                                        console.log('🔄 Replacing empty prompts state with actual data...');
+                                        
+                                        // Store prompts globally for optimization
+                                        window.prompts = new Map();
+                                        data.prompts.forEach(prompt => {
+                                            window.prompts.set(prompt.id, prompt);
+                                        });
+                                        console.log('📝 Stored prompts globally:', window.prompts.size);
+                                        
+                                        const html = data.prompts.map(prompt => `
+                                            <div class="prompt-item">
+                                                <div class="item-header">
+                                                    <h4 class="item-title">${prompt.name}</h4>
+                                                    <div class="item-actions">
+                                                        <button class="btn btn-small" onclick="editPrompt('${prompt.id}')">
+                                                            ✏️ Edit
+                                                        </button>
+                                                        <button class="btn btn-small btn-danger" onclick="deletePrompt('${prompt.id}')">
+                                                            🗑️ Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <p class="item-description">${prompt.description || 'No description'}</p>
+                                                <div class="item-meta">
+                                                    <small>Variables: ${prompt.variables?.join(', ') || 'None'}</small>
+                                                    <small>Created: ${new Date(prompt.created_at).toLocaleDateString()}</small>
+                                                </div>
+                                            </div>
+                                        `).join('');
+                                        
+                                        promptsContainer.innerHTML = html;
+                                        console.log('✅ Prompts displayed successfully!');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('❌ Immediate prompts API test failed:', error);
+                                });
+                        </script>
                     </div>
 
                     <!-- Prompt Editor Modal -->
@@ -147,11 +255,116 @@
                     </div>
                 </div>
 
+                <!-- Dataset Viewer Modal -->
+                <div id="dataset-viewer-modal" class="modal" style="display: none;">
+                    <div class="modal-content dataset-viewer">
+                        <div class="modal-header">
+                            <h3 id="dataset-viewer-title">Dataset Viewer</h3>
+                            <button class="modal-close" onclick="closeDatasetViewer()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <!-- Dataset Metadata Section -->
+                            <div class="dataset-metadata">
+                                <div class="metadata-grid">
+                                    <div class="metadata-item">
+                                        <span class="metadata-label">Name:</span>
+                                        <span class="metadata-value" id="viewer-dataset-name">-</span>
+                                    </div>
+                                    <div class="metadata-item">
+                                        <span class="metadata-label">Filename:</span>
+                                        <span class="metadata-value" id="viewer-dataset-filename">-</span>
+                                    </div>
+                                    <div class="metadata-item">
+                                        <span class="metadata-label">Rows:</span>
+                                        <span class="metadata-value" id="viewer-dataset-rows">-</span>
+                                    </div>
+                                    <div class="metadata-item">
+                                        <span class="metadata-label">Size:</span>
+                                        <span class="metadata-value" id="viewer-dataset-size">-</span>
+                                    </div>
+                                    <div class="metadata-item">
+                                        <span class="metadata-label">Created:</span>
+                                        <span class="metadata-value" id="viewer-dataset-created">-</span>
+                                    </div>
+                                    <div class="metadata-item">
+                                        <span class="metadata-label">Input Columns:</span>
+                                        <span class="metadata-value" id="viewer-input-columns">-</span>
+                                    </div>
+                                    <div class="metadata-item">
+                                        <span class="metadata-label">Output Columns:</span>
+                                        <span class="metadata-value" id="viewer-output-columns">-</span>
+                                    </div>
+                                </div>
+                                <div class="metadata-description">
+                                    <span class="metadata-label">Description:</span>
+                                    <p id="viewer-dataset-description">-</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Dataset Controls -->
+                            <div class="dataset-controls">
+                                <div class="controls-left">
+                                    <label for="rows-per-page">Rows per page:</label>
+                                    <select id="rows-per-page" onchange="updateDatasetView()">
+                                        <option value="10">10</option>
+                                        <option value="25" selected>25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                                <div class="controls-right">
+                                    <button class="btn btn-small" onclick="exportDatasetView()">
+                                        💾 Export View
+                                    </button>
+                                    <button class="btn btn-small" onclick="refreshDatasetView()">
+                                        🔄 Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Dataset Data Table -->
+                            <div class="dataset-table-container">
+                                <div id="dataset-loading" class="loading-indicator" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <span>Loading dataset...</span>
+                                </div>
+                                <table id="dataset-table" class="dataset-table">
+                                    <thead id="dataset-table-head">
+                                        <!-- Column headers will be populated here -->
+                                    </thead>
+                                    <tbody id="dataset-table-body">
+                                        <!-- Data rows will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Pagination -->
+                            <div class="dataset-pagination">
+                                <div class="pagination-info">
+                                    <span id="pagination-info">Showing 0 - 0 of 0 rows</span>
+                                </div>
+                                <div class="pagination-controls">
+                                    <button class="btn btn-small" id="prev-page" onclick="previousPage()" disabled>
+                                        ← Previous
+                                    </button>
+                                    <span id="page-info">Page 1 of 1</span>
+                                    <button class="btn btn-small" id="next-page" onclick="nextPage()" disabled>
+                                        Next →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Optimization View -->
                 <div id="optimization-view" class="view">
                     <div class="view-header">
                         <h2>Optimization Workflow</h2>
                         <p>Run prompt optimization with your datasets</p>
+                        <button onclick="forceLoadOptimization()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+                            🔄 Reload Options
+                        </button>
                     </div>
 
                     <div class="optimization-setup">
@@ -205,6 +418,63 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Advanced Logging Panel -->
+                        <div class="logging-panel">
+                            <div class="logging-header">
+                                <h4>🔍 Advanced Logging</h4>
+                                <div class="logging-controls">
+                                    <button class="btn btn-small" onclick="toggleLogLevel('debug')" id="debug-toggle">
+                                        🐛 Debug
+                                    </button>
+                                    <button class="btn btn-small" onclick="toggleLogLevel('info')" id="info-toggle">
+                                        ℹ️ Info
+                                    </button>
+                                    <button class="btn btn-small" onclick="toggleLogLevel('warning')" id="warning-toggle">
+                                        ⚠️ Warnings
+                                    </button>
+                                    <button class="btn btn-small" onclick="toggleLogLevel('error')" id="error-toggle">
+                                        ❌ Errors
+                                    </button>
+                                    <button class="btn btn-small" onclick="clearLogs()">
+                                        🗑️ Clear
+                                    </button>
+                                    <button class="btn btn-small" onclick="exportLogs()">
+                                        💾 Export
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="logging-content">
+                                <div class="log-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Total Logs:</span>
+                                        <span class="stat-value" id="total-logs">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Errors:</span>
+                                        <span class="stat-value error" id="error-count">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Warnings:</span>
+                                        <span class="stat-value warning" id="warning-count">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Auto-scroll:</span>
+                                        <label class="switch">
+                                            <input type="checkbox" id="auto-scroll" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="log-container" id="log-container">
+                                    <div class="log-entry info">
+                                        <span class="log-timestamp">00:00:00</span>
+                                        <span class="log-level">INFO</span>
+                                        <span class="log-message">Logging system initialized</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -213,6 +483,9 @@
                     <div class="view-header">
                         <h2>Optimization Results</h2>
                         <p>View and compare your optimization results</p>
+                        <button onclick="loadOptimizationResults()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+                            🔄 Refresh Results
+                        </button>
                     </div>
 
                     <div id="results-container">
@@ -222,6 +495,117 @@
                             <p>Run an optimization to see results here</p>
                         </div>
                     </div>
+                    
+                    <!-- Immediate results loading -->
+                    <script>
+                        console.log('🧪 Immediate test: checking results container...');
+                        const resultsContainer = document.getElementById('results-container');
+                        console.log('📈 Results container found:', !!resultsContainer);
+                        
+                        // Test results API immediately
+                        fetch('/api/optimization/runs')
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('📈 Immediate results API test:', data);
+                                console.log('📈 Results count:', data.runs?.length || 0);
+                                
+                                if (data.runs && data.runs.length > 0 && resultsContainer) {
+                                    console.log('🔄 Replacing empty results state with actual data...');
+                                    
+                                    // Store results globally
+                                    window.optimizationResults = data.runs;
+                                    console.log('📈 Stored results globally:', window.optimizationResults.length);
+                                    
+                                    const html = data.runs.map(result => `
+                                        <div class="result-card">
+                                            <div class="result-header">
+                                                <h4 class="result-title">Optimization ${result.id}</h4>
+                                                <div class="result-status ${result.status}">
+                                                    ${result.status === 'completed' ? '✅' : result.status === 'running' ? '⏳' : result.status === 'failed' ? '❌' : '🔄'} 
+                                                    ${result.status.toUpperCase()}
+                                                </div>
+                                            </div>
+                                            <div class="result-details">
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Mode:</span>
+                                                    <span class="detail-value">${result.mode}</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Created:</span>
+                                                    <span class="detail-value">${new Date(result.created_at).toLocaleString()}</span>
+                                                </div>
+                                                ${result.completed_at ? `
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Completed:</span>
+                                                    <span class="detail-value">${new Date(result.completed_at).toLocaleString()}</span>
+                                                </div>
+                                                ` : ''}
+                                                ${result.progress ? `
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Progress:</span>
+                                                    <span class="detail-value">${Math.round(result.progress * 100)}%</span>
+                                                </div>
+                                                ` : ''}
+                                            </div>
+                                            ${result.results ? `
+                                            <div class="result-metrics">
+                                                <h5>Performance Metrics</h5>
+                                                <div class="metrics-grid">
+                                                    <div class="metric-item">
+                                                        <span class="metric-label">Original Score</span>
+                                                        <span class="metric-value">${(result.results.original_score * 100).toFixed(1)}%</span>
+                                                    </div>
+                                                    <div class="metric-item">
+                                                        <span class="metric-label">Optimized Score</span>
+                                                        <span class="metric-value improved">${(result.results.optimized_score * 100).toFixed(1)}%</span>
+                                                    </div>
+                                                    <div class="metric-item">
+                                                        <span class="metric-label">Improvement</span>
+                                                        <span class="metric-value improvement">+${((result.results.optimized_score - result.results.original_score) * 100).toFixed(1)}%</span>
+                                                    </div>
+                                                </div>
+                                                ${result.results.optimized_prompt ? `
+                                                <div class="optimized-prompt">
+                                                    <h6>Optimized Prompt</h6>
+                                                    <div class="prompt-content">
+                                                        <pre>${result.results.optimized_prompt}</pre>
+                                                    </div>
+                                                    <div class="prompt-actions">
+                                                        <button class="btn btn-small" onclick="copyPrompt('${result.id}')">
+                                                            📋 Copy
+                                                        </button>
+                                                        <button class="btn btn-small" onclick="exportResult('${result.id}')">
+                                                            💾 Export
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                ` : ''}
+                                            </div>
+                                            ` : ''}
+                                            <div class="result-actions">
+                                                <button class="btn btn-small" onclick="viewResultDetails('${result.id}')">
+                                                    👁️ View Details
+                                                </button>
+                                                ${result.status === 'completed' ? `
+                                                <button class="btn btn-small" onclick="rerunOptimization('${result.id}')">
+                                                    🔄 Re-run
+                                                </button>
+                                                ` : ''}
+                                                <button class="btn btn-small btn-danger" onclick="deleteResult('${result.id}')">
+                                                    🗑️ Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('');
+                                    
+                                    resultsContainer.innerHTML = html;
+                                    console.log('✅ Results displayed successfully!');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('❌ Immediate results API test failed:', error);
+                            });
+                    </script>
                 </div>
             </div>
         </main>
@@ -237,10 +621,1405 @@
     </div>
 
     <!-- JavaScript -->
-    <script type="module" src="/static/js/app.js"></script>
-    <script type="module" src="/static/js/dataset.js"></script>
-    <script type="module" src="/static/js/prompt.js"></script>
-    <script type="module" src="/static/js/optimization.js"></script>
-    <script type="module" src="/static/js/utils.js"></script>
+    <script>
+        // Immediate navigation function - available right away
+        window.switchToView = function(viewName) {
+            console.log(`🖱️ switchToView called: ${viewName}`);
+            
+            // Update navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            const targetBtn = document.querySelector(`[data-view="${viewName}"]`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
+            
+            // Update views
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            const targetView = document.getElementById(`${viewName}-view`);
+            
+            if (targetView) {
+                targetView.classList.add('active');
+                console.log(`✅ Switched to ${viewName} view`);
+                
+                // Load view-specific data (with fallbacks for when functions aren't ready)
+                setTimeout(() => {
+                    try {
+                        if (viewName === 'datasets' && typeof window.loadDatasetsStandalone === 'function') {
+                            console.log('📊 Loading datasets...');
+                            window.loadDatasetsStandalone();
+                        } else if (viewName === 'prompts' && typeof window.loadPromptsStandalone === 'function') {
+                            console.log('📝 Loading prompts...');
+                            window.loadPromptsStandalone();
+                        } else if (viewName === 'optimization' && typeof window.loadOptimizationOptionsStandalone === 'function') {
+                            console.log('⚡ Loading optimization...');
+                            window.loadOptimizationOptionsStandalone();
+                        } else if (viewName === 'results' && typeof window.renderResultsStandalone === 'function') {
+                            console.log('📈 Loading results...');
+                            window.renderResultsStandalone();
+                        }
+                    } catch (error) {
+                        console.log(`⏳ ${viewName} functions not ready yet, will retry...`);
+                        // Retry after modules are loaded
+                        setTimeout(() => {
+                            try {
+                                if (viewName === 'datasets' && typeof window.loadDatasetsStandalone === 'function') {
+                                    window.loadDatasetsStandalone();
+                                } else if (viewName === 'prompts' && typeof window.loadPromptsStandalone === 'function') {
+                                    window.loadPromptsStandalone();
+                                } else if (viewName === 'optimization' && typeof window.loadOptimizationOptionsStandalone === 'function') {
+                                    window.loadOptimizationOptionsStandalone();
+                                } else if (viewName === 'results' && typeof window.renderResultsStandalone === 'function') {
+                                    window.renderResultsStandalone();
+                                }
+                            } catch (retryError) {
+                                console.log(`❌ Failed to load ${viewName} data:`, retryError);
+                            }
+                        }, 2000);
+                    }
+                }, 100);
+            } else {
+                console.error(`❌ ${viewName} view not found`);
+            }
+        };
+        
+        // Force reload data function
+        window.forceReloadData = async function() {
+            console.log('🔄 Force reloading all data...');
+            
+            try {
+                // Clear existing data
+                window.datasets = new Map();
+                window.prompts = new Map();
+                
+                // Force reload datasets
+                if (typeof window.loadDatasetsStandalone === 'function') {
+                    console.log('📊 Force loading datasets...');
+                    await window.loadDatasetsStandalone();
+                } else {
+                    console.log('❌ loadDatasetsStandalone not available');
+                }
+                
+                // Force reload prompts
+                if (typeof window.loadPromptsStandalone === 'function') {
+                    console.log('📝 Force loading prompts...');
+                    await window.loadPromptsStandalone();
+                } else {
+                    console.log('❌ loadPromptsStandalone not available');
+                }
+                
+                // Force reload optimization options
+                if (typeof window.loadOptimizationOptionsStandalone === 'function') {
+                    console.log('⚡ Force loading optimization options...');
+                    window.loadOptimizationOptionsStandalone();
+                }
+                
+                console.log('✅ Force reload complete!');
+                alert('Data reloaded! Check if your datasets and prompts are now visible.');
+                
+            } catch (error) {
+                console.error('❌ Force reload error:', error);
+                alert('Error reloading data. Check console for details.');
+            }
+        };
+        
+        // Backward compatibility
+        window.switchToPrompts = () => window.switchToView('prompts');
+        
+        // Immediate prompt functions - available right away
+        window.createNewPrompt = function() {
+            console.log('➕ Create new prompt');
+            
+            // Clear the modal
+            document.getElementById('prompt-modal-title').textContent = 'Create New Prompt';
+            document.getElementById('prompt-name').value = '';
+            document.getElementById('prompt-description').value = '';
+            document.getElementById('system-prompt').value = '';
+            document.getElementById('user-prompt').value = '';
+            
+            // Remove any stored prompt ID
+            const modal = document.getElementById('prompt-modal');
+            if (modal.dataset.promptId) {
+                delete modal.dataset.promptId;
+            }
+            
+            // Show the modal
+            modal.style.display = 'block';
+        };
+        
+        window.closePromptModal = function() {
+            console.log('❌ Close prompt modal');
+            document.getElementById('prompt-modal').style.display = 'none';
+        };
+        
+        window.editPrompt = function(promptId) {
+            console.log('✏️ Edit prompt:', promptId);
+            
+            // Get the prompt data from window.prompts
+            const prompt = window.prompts?.get(promptId);
+            if (!prompt) {
+                alert('Prompt not found!');
+                return;
+            }
+            
+            // Fill the modal with existing data
+            document.getElementById('prompt-modal-title').textContent = 'Edit Prompt';
+            document.getElementById('prompt-name').value = prompt.name || '';
+            document.getElementById('prompt-description').value = prompt.description || '';
+            document.getElementById('system-prompt').value = prompt.system_prompt || '';
+            document.getElementById('user-prompt').value = prompt.user_prompt || '';
+            
+            // Store the prompt ID for saving
+            document.getElementById('prompt-modal').dataset.promptId = promptId;
+            
+            // Show the modal
+            document.getElementById('prompt-modal').style.display = 'block';
+        };
+        
+        window.deletePrompt = async function(promptId) {
+            console.log('🗑️ Delete prompt:', promptId);
+            
+            if (!confirm('Are you sure you want to delete this prompt?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/prompts/${promptId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    // Remove from local storage
+                    window.prompts?.delete(promptId);
+                    
+                    // Reload prompts to refresh the display
+                    if (typeof window.loadPromptsStandalone === 'function') {
+                        await window.loadPromptsStandalone();
+                    } else {
+                        // Fallback: reload the page
+                        window.location.reload();
+                    }
+                    
+                    console.log('✅ Prompt deleted successfully');
+                    alert('Prompt deleted successfully!');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error('❌ Failed to delete prompt:', error);
+                alert('Failed to delete prompt. Please try again.');
+            }
+        };
+        
+        window.savePrompt = async function() {
+            console.log('💾 Save prompt');
+            
+            const modal = document.getElementById('prompt-modal');
+            const promptId = modal.dataset.promptId;
+            const isEdit = !!promptId;
+            
+            // Get form data
+            const promptData = {
+                name: document.getElementById('prompt-name').value.trim(),
+                description: document.getElementById('prompt-description').value.trim(),
+                system_prompt: document.getElementById('system-prompt').value.trim(),
+                user_prompt: document.getElementById('user-prompt').value.trim()
+            };
+            
+            // Validate required fields
+            if (!promptData.name) {
+                alert('Please enter a prompt name');
+                return;
+            }
+            
+            if (!promptData.system_prompt && !promptData.user_prompt) {
+                alert('Please enter either a system prompt or user prompt');
+                return;
+            }
+            
+            try {
+                let response;
+                
+                if (isEdit) {
+                    // Update existing prompt
+                    response = await fetch(`/api/prompts/${promptId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(promptData)
+                    });
+                } else {
+                    // Create new prompt
+                    response = await fetch('/api/prompts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(promptData)
+                    });
+                }
+                
+                if (response.ok) {
+                    const savedPrompt = await response.json();
+                    
+                    // Update local storage
+                    if (!window.prompts) {
+                        window.prompts = new Map();
+                    }
+                    window.prompts.set(savedPrompt.id, savedPrompt);
+                    
+                    // Reload prompts to refresh the display
+                    if (typeof window.loadPromptsStandalone === 'function') {
+                        await window.loadPromptsStandalone();
+                    } else {
+                        // Fallback: reload the page
+                        window.location.reload();
+                    }
+                    
+                    // Close modal
+                    window.closePromptModal();
+                    
+                    console.log(`✅ Prompt ${isEdit ? 'updated' : 'created'} successfully`);
+                    alert(`Prompt ${isEdit ? 'updated' : 'created'} successfully!`);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error(`❌ Failed to ${isEdit ? 'update' : 'create'} prompt:`, error);
+                alert(`Failed to ${isEdit ? 'update' : 'create'} prompt. Please try again.`);
+            }
+        };
+        
+        // Immediate optimization loading function
+        window.loadOptimizationOptionsStandalone = function() {
+            console.log('⚡ Loading optimization options (immediate)...');
+            
+            const datasetSelect = document.getElementById('opt-dataset');
+            const promptSelect = document.getElementById('opt-prompt');
+            
+            if (!datasetSelect || !promptSelect) {
+                console.error('❌ Optimization select elements not found');
+                return;
+            }
+            
+            // Clear existing options
+            datasetSelect.innerHTML = '<option value="">Choose a dataset...</option>';
+            promptSelect.innerHTML = '<option value="">Choose a prompt...</option>';
+            
+            // Add datasets
+            if (window.datasets) {
+                if (window.datasets instanceof Map) {
+                    window.datasets.forEach(dataset => {
+                        const option = document.createElement('option');
+                        option.value = dataset.id;
+                        option.textContent = dataset.name;
+                        datasetSelect.appendChild(option);
+                    });
+                } else if (Array.isArray(window.datasets)) {
+                    window.datasets.forEach(dataset => {
+                        const option = document.createElement('option');
+                        option.value = dataset.id;
+                        option.textContent = dataset.name;
+                        datasetSelect.appendChild(option);
+                    });
+                }
+                console.log(`✅ Added ${datasetSelect.options.length - 1} datasets to dropdown`);
+            } else {
+                console.log('⚠️ No datasets available for optimization');
+            }
+            
+            // Add prompts
+            if (window.prompts) {
+                if (window.prompts instanceof Map) {
+                    window.prompts.forEach(prompt => {
+                        const option = document.createElement('option');
+                        option.value = prompt.id;
+                        option.textContent = prompt.name;
+                        promptSelect.appendChild(option);
+                    });
+                } else if (Array.isArray(window.prompts)) {
+                    window.prompts.forEach(prompt => {
+                        const option = document.createElement('option');
+                        option.value = prompt.id;
+                        option.textContent = prompt.name;
+                        promptSelect.appendChild(option);
+                    });
+                }
+                console.log(`✅ Added ${promptSelect.options.length - 1} prompts to dropdown`);
+            } else {
+                console.log('⚠️ No prompts available for optimization');
+            }
+            
+            console.log('✅ Optimization options loaded');
+        };
+        
+        // Force load optimization options
+        window.forceLoadOptimization = async function() {
+            console.log('🔄 Force loading optimization options...');
+            
+            try {
+                // First, ensure we have the latest data
+                if (typeof window.loadDatasetsStandalone === 'function') {
+                    console.log('📊 Reloading datasets...');
+                    await window.loadDatasetsStandalone();
+                }
+                
+                if (typeof window.loadPromptsStandalone === 'function') {
+                    console.log('📝 Reloading prompts...');
+                    await window.loadPromptsStandalone();
+                }
+                
+                // Small delay to ensure data is loaded
+                setTimeout(() => {
+                    console.log('⚡ Loading optimization dropdowns...');
+                    window.loadOptimizationOptionsStandalone();
+                    
+                    // Check results
+                    const datasetSelect = document.getElementById('opt-dataset');
+                    const promptSelect = document.getElementById('opt-prompt');
+                    
+                    const datasetCount = datasetSelect ? datasetSelect.options.length - 1 : 0;
+                    const promptCount = promptSelect ? promptSelect.options.length - 1 : 0;
+                    
+                    alert(`Optimization options reloaded!\nDatasets: ${datasetCount}\nPrompts: ${promptCount}`);
+                }, 500);
+                
+            } catch (error) {
+                console.error('❌ Force load optimization error:', error);
+                alert('Error reloading optimization options. Check console for details.');
+            }
+        };
+        
+        // Start optimization function
+        window.startOptimization = async function() {
+            console.log('🚀 Start optimization');
+            
+            // Initialize logging system
+            window.OptimizationLogger.init();
+            window.OptimizationLogger.info('Optimization workflow started');
+            
+            const datasetId = document.getElementById('opt-dataset').value;
+            const promptId = document.getElementById('opt-prompt').value;
+            const mode = document.getElementById('opt-mode').value;
+            
+            // Validate selections
+            if (!datasetId) {
+                window.OptimizationLogger.error('No dataset selected');
+                alert('Please select a dataset');
+                return;
+            }
+            
+            if (!promptId) {
+                window.OptimizationLogger.error('No prompt selected');
+                alert('Please select a prompt');
+                return;
+            }
+            
+            window.OptimizationLogger.info(`Configuration validated`, {
+                dataset: datasetId,
+                prompt: promptId,
+                mode: mode
+            });
+            
+            console.log('🎯 Starting optimization with:', {
+                dataset: datasetId,
+                prompt: promptId,
+                mode: mode
+            });
+            
+            // Show progress section
+            const progressSection = document.getElementById('optimization-progress');
+            if (progressSection) {
+                progressSection.style.display = 'block';
+                window.OptimizationLogger.debug('Progress section displayed');
+            }
+            
+            // Update progress
+            const progressText = document.getElementById('progress-text');
+            const progressPercent = document.getElementById('progress-percent');
+            const progressFill = document.getElementById('progress-fill');
+            
+            if (progressText) progressText.textContent = 'Starting optimization...';
+            if (progressPercent) progressPercent.textContent = '0%';
+            if (progressFill) progressFill.style.width = '0%';
+            
+            window.OptimizationLogger.info('Initializing optimization request');
+            
+            try {
+                // Get dataset and prompt details for logging
+                const dataset = window.datasets?.get(datasetId);
+                const prompt = window.prompts?.get(promptId);
+                
+                if (dataset) {
+                    window.OptimizationLogger.info(`Using dataset: ${dataset.name} (${dataset.row_count} rows)`);
+                }
+                if (prompt) {
+                    window.OptimizationLogger.info(`Using prompt: ${prompt.name}`);
+                    if (prompt.variables) {
+                        window.OptimizationLogger.debug(`Prompt variables: ${prompt.variables.join(', ')}`);
+                    }
+                }
+                
+                window.OptimizationLogger.info(`Optimization mode: ${mode}`);
+                window.OptimizationLogger.info('Sending request to backend...');
+                
+                // Call the optimization API
+                const response = await fetch('/api/optimization/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        dataset_id: datasetId,
+                        prompt_id: promptId,
+                        mode: mode
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    window.OptimizationLogger.info(`Optimization started successfully`, result);
+                    console.log('✅ Optimization started:', result);
+                    
+                    if (progressText) progressText.textContent = 'Optimization in progress...';
+                    if (progressPercent) progressPercent.textContent = '10%';
+                    if (progressFill) progressFill.style.width = '10%';
+                    
+                    window.OptimizationLogger.info('Backend accepted optimization request');
+                    window.OptimizationLogger.debug('Starting progress simulation...');
+                    
+                    // Simulate progress updates (replace with WebSocket in production)
+                    const progressSteps = [
+                        { percent: 20, text: 'Loading dataset...', delay: 2000 },
+                        { percent: 30, text: 'Analyzing prompt structure...', delay: 3000 },
+                        { percent: 45, text: 'Running meta-prompting...', delay: 5000 },
+                        { percent: 60, text: 'Generating optimization candidates...', delay: 8000 },
+                        { percent: 75, text: 'Evaluating performance...', delay: 10000 },
+                        { percent: 90, text: 'Finalizing results...', delay: 12000 },
+                        { percent: 100, text: 'Optimization complete!', delay: 15000 }
+                    ];
+                    
+                    for (const step of progressSteps) {
+                        await new Promise(resolve => setTimeout(resolve, step.delay - (progressSteps.indexOf(step) > 0 ? progressSteps[progressSteps.indexOf(step) - 1].delay : 0)));
+                        
+                        if (progressText) progressText.textContent = step.text;
+                        if (progressPercent) progressPercent.textContent = `${step.percent}%`;
+                        if (progressFill) progressFill.style.width = `${step.percent}%`;
+                        
+                        window.OptimizationLogger.info(`Progress: ${step.percent}% - ${step.text}`);
+                        
+                        if (step.percent === 100) {
+                            window.OptimizationLogger.info('🎉 Optimization workflow completed successfully!');
+                        }
+                    }
+                    
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+            } catch (error) {
+                window.OptimizationLogger.error('Optimization failed', error.message);
+                console.error('❌ Optimization failed:', error);
+                alert('Failed to start optimization. Please try again.');
+                
+                // Hide progress section
+                if (progressSection) {
+                    progressSection.style.display = 'none';
+                }
+            }
+        };
+        
+        // Advanced Logging System
+        window.OptimizationLogger = {
+            logs: [],
+            logCounts: { debug: 0, info: 0, warning: 0, error: 0 },
+            visibleLevels: { debug: true, info: true, warning: true, error: true },
+            startTime: null,
+            
+            init: function() {
+                this.startTime = new Date();
+                this.updateStats();
+                this.setupLogLevelButtons();
+            },
+            
+            log: function(level, message, data = null) {
+                const timestamp = new Date();
+                const elapsed = this.startTime ? timestamp - this.startTime : 0;
+                const timeStr = this.formatTime(elapsed);
+                
+                const logEntry = {
+                    timestamp: timestamp,
+                    timeStr: timeStr,
+                    level: level.toUpperCase(),
+                    message: message,
+                    data: data
+                };
+                
+                this.logs.push(logEntry);
+                this.logCounts[level.toLowerCase()]++;
+                
+                this.addLogToDOM(logEntry);
+                this.updateStats();
+                
+                // Auto-scroll if enabled
+                if (document.getElementById('auto-scroll').checked) {
+                    this.scrollToBottom();
+                }
+                
+                // Console logging for debugging
+                console.log(`[${level.toUpperCase()}] ${message}`, data || '');
+            },
+            
+            debug: function(message, data) { this.log('debug', message, data); },
+            info: function(message, data) { this.log('info', message, data); },
+            warning: function(message, data) { this.log('warning', message, data); },
+            error: function(message, data) { this.log('error', message, data); },
+            
+            addLogToDOM: function(logEntry) {
+                const container = document.getElementById('log-container');
+                if (!container) return;
+                
+                const logElement = document.createElement('div');
+                logElement.className = `log-entry ${logEntry.level.toLowerCase()}`;
+                logElement.innerHTML = `
+                    <span class="log-timestamp">${logEntry.timeStr}</span>
+                    <span class="log-level ${logEntry.level}">${logEntry.level}</span>
+                    <span class="log-message">${logEntry.message}</span>
+                `;
+                
+                // Apply visibility filter
+                if (!this.visibleLevels[logEntry.level.toLowerCase()]) {
+                    logElement.classList.add('hidden');
+                }
+                
+                container.appendChild(logElement);
+            },
+            
+            formatTime: function(milliseconds) {
+                const seconds = Math.floor(milliseconds / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                
+                const h = hours.toString().padStart(2, '0');
+                const m = (minutes % 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                
+                return `${h}:${m}:${s}`;
+            },
+            
+            updateStats: function() {
+                document.getElementById('total-logs').textContent = this.logs.length;
+                document.getElementById('error-count').textContent = this.logCounts.error;
+                document.getElementById('warning-count').textContent = this.logCounts.warning;
+            },
+            
+            setupLogLevelButtons: function() {
+                ['debug', 'info', 'warning', 'error'].forEach(level => {
+                    const button = document.getElementById(`${level}-toggle`);
+                    if (button) {
+                        button.classList.add('active'); // Start with all levels visible
+                    }
+                });
+            },
+            
+            scrollToBottom: function() {
+                const container = document.getElementById('log-container');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            },
+            
+            clear: function() {
+                this.logs = [];
+                this.logCounts = { debug: 0, info: 0, warning: 0, error: 0 };
+                const container = document.getElementById('log-container');
+                if (container) {
+                    container.innerHTML = '';
+                }
+                this.updateStats();
+                this.info('Logs cleared');
+            },
+            
+            export: function() {
+                const logText = this.logs.map(log => 
+                    `[${log.timeStr}] ${log.level}: ${log.message}`
+                ).join('\n');
+                
+                const blob = new Blob([logText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `optimization-logs-${new Date().toISOString().slice(0, 19)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.info('Logs exported to file');
+            },
+            
+            toggleLevel: function(level) {
+                this.visibleLevels[level] = !this.visibleLevels[level];
+                const button = document.getElementById(`${level}-toggle`);
+                
+                if (this.visibleLevels[level]) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+                
+                // Update DOM visibility
+                const entries = document.querySelectorAll(`.log-entry.${level}`);
+                entries.forEach(entry => {
+                    if (this.visibleLevels[level]) {
+                        entry.classList.remove('hidden');
+                    } else {
+                        entry.classList.add('hidden');
+                    }
+                });
+            }
+        };
+        
+        // Global logging functions
+        window.toggleLogLevel = function(level) {
+            window.OptimizationLogger.toggleLevel(level);
+        };
+        
+        window.clearLogs = function() {
+            window.OptimizationLogger.clear();
+        };
+        
+        window.exportLogs = function() {
+            window.OptimizationLogger.export();
+        };
+        
+        // Results Management Functions
+        window.loadOptimizationResults = async function() {
+            console.log('📈 Loading optimization results...');
+            
+            try {
+                const response = await fetch('/api/optimization/runs');
+                const data = await response.json();
+                
+                console.log('📈 Results loaded:', data);
+                
+                const resultsContainer = document.getElementById('results-container');
+                if (!resultsContainer) {
+                    console.error('❌ Results container not found');
+                    return;
+                }
+                
+                if (data.runs && data.runs.length > 0) {
+                    // Store results globally
+                    window.optimizationResults = data.runs;
+                    
+                    // Render results (same logic as immediate loading)
+                    const html = data.runs.map(result => `
+                        <div class="result-card">
+                            <div class="result-header">
+                                <h4 class="result-title">Optimization ${result.id}</h4>
+                                <div class="result-status ${result.status}">
+                                    ${result.status === 'completed' ? '✅' : result.status === 'running' ? '⏳' : result.status === 'failed' ? '❌' : '🔄'} 
+                                    ${result.status.toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="result-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">Mode:</span>
+                                    <span class="detail-value">${result.mode}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Created:</span>
+                                    <span class="detail-value">${new Date(result.created_at).toLocaleString()}</span>
+                                </div>
+                                ${result.completed_at ? `
+                                <div class="detail-row">
+                                    <span class="detail-label">Completed:</span>
+                                    <span class="detail-value">${new Date(result.completed_at).toLocaleString()}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                            ${result.results ? `
+                            <div class="result-metrics">
+                                <h5>Performance Metrics</h5>
+                                <div class="metrics-grid">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Original Score</span>
+                                        <span class="metric-value">${(result.results.original_score * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Optimized Score</span>
+                                        <span class="metric-value improved">${(result.results.optimized_score * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Improvement</span>
+                                        <span class="metric-value improvement">+${((result.results.optimized_score - result.results.original_score) * 100).toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                            <div class="result-actions">
+                                <button class="btn btn-small" onclick="viewResultDetails('${result.id}')">
+                                    👁️ View Details
+                                </button>
+                                ${result.status === 'completed' ? `
+                                <button class="btn btn-small" onclick="copyPrompt('${result.id}')">
+                                    📋 Copy Prompt
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    resultsContainer.innerHTML = html;
+                    console.log('✅ Results rendered successfully');
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📈</div>
+                            <h4>No results yet</h4>
+                            <p>Run an optimization to see results here</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('❌ Failed to load results:', error);
+                alert('Failed to load optimization results. Please try again.');
+            }
+        };
+        
+        window.viewResultDetails = async function(resultId) {
+            console.log('👁️ View result details:', resultId);
+            
+            try {
+                const response = await fetch(`/api/optimization/${resultId}`);
+                const result = await response.json();
+                
+                console.log('📈 Result details:', result);
+                
+                // Create a detailed view modal or expand the card
+                let detailsHtml = `
+                    <div class="result-details-modal">
+                        <h3>Optimization ${result.id} - Details</h3>
+                        <div class="details-content">
+                            <div class="detail-section">
+                                <h4>Configuration</h4>
+                                <p><strong>Dataset ID:</strong> ${result.dataset_id}</p>
+                                <p><strong>Prompt ID:</strong> ${result.prompt_id}</p>
+                                <p><strong>Mode:</strong> ${result.mode}</p>
+                                <p><strong>Status:</strong> ${result.status}</p>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Timeline</h4>
+                                <p><strong>Created:</strong> ${new Date(result.created_at).toLocaleString()}</p>
+                                ${result.completed_at ? `<p><strong>Completed:</strong> ${new Date(result.completed_at).toLocaleString()}</p>` : ''}
+                                <p><strong>Progress:</strong> ${Math.round((result.progress || 0) * 100)}%</p>
+                                ${result.current_step ? `<p><strong>Current Step:</strong> ${result.current_step}</p>` : ''}
+                            </div>
+                            
+                            ${result.results ? `
+                            <div class="detail-section">
+                                <h4>Results</h4>
+                                <p><strong>Original Score:</strong> ${(result.results.original_score * 100).toFixed(1)}%</p>
+                                <p><strong>Optimized Score:</strong> ${(result.results.optimized_score * 100).toFixed(1)}%</p>
+                                <p><strong>Improvement:</strong> +${((result.results.optimized_score - result.results.original_score) * 100).toFixed(1)}%</p>
+                                
+                                ${result.results.optimized_prompt ? `
+                                <div class="optimized-prompt-section">
+                                    <h5>Optimized Prompt</h5>
+                                    <pre class="prompt-display">${result.results.optimized_prompt}</pre>
+                                    <button class="btn btn-primary" onclick="copyToClipboard('${result.results.optimized_prompt.replace(/'/g, "\\'")}')">
+                                        📋 Copy Optimized Prompt
+                                    </button>
+                                </div>
+                                ` : ''}
+                            </div>
+                            ` : ''}
+                            
+                            ${result.error ? `
+                            <div class="detail-section error">
+                                <h4>Error</h4>
+                                <p class="error-message">${result.error}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <button class="btn btn-secondary" onclick="closeDetailsModal()">Close</button>
+                    </div>
+                `;
+                
+                // Show in a modal or alert for now
+                alert(`Optimization ${result.id} Details:\n\nStatus: ${result.status}\nMode: ${result.mode}\nProgress: ${Math.round((result.progress || 0) * 100)}%\n\n${result.results ? `Original Score: ${(result.results.original_score * 100).toFixed(1)}%\nOptimized Score: ${(result.results.optimized_score * 100).toFixed(1)}%\nImprovement: +${((result.results.optimized_score - result.results.original_score) * 100).toFixed(1)}%` : 'No results yet'}`);
+                
+            } catch (error) {
+                console.error('❌ Failed to load result details:', error);
+                alert('Failed to load result details. Please try again.');
+            }
+        };
+        
+        window.copyPrompt = async function(resultId) {
+            console.log('📋 Copy prompt for result:', resultId);
+            
+            try {
+                const response = await fetch(`/api/optimization/${resultId}`);
+                const result = await response.json();
+                
+                if (result.results && result.results.optimized_prompt) {
+                    await navigator.clipboard.writeText(result.results.optimized_prompt);
+                    alert('Optimized prompt copied to clipboard!');
+                } else {
+                    alert('No optimized prompt available for this result.');
+                }
+                
+            } catch (error) {
+                console.error('❌ Failed to copy prompt:', error);
+                alert('Failed to copy prompt. Please try again.');
+            }
+        };
+        
+        window.copyToClipboard = async function(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                alert('Copied to clipboard!');
+            } catch (error) {
+                console.error('❌ Failed to copy to clipboard:', error);
+                alert('Failed to copy to clipboard.');
+            }
+        };
+        
+        // Dataset Management Functions
+        window.deleteDataset = async function(datasetId) {
+            console.log('🗑️ Delete dataset:', datasetId);
+            
+            if (!confirm('Are you sure you want to delete this dataset? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/datasets/${datasetId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    // Remove from local storage
+                    window.datasets?.delete(datasetId);
+                    
+                    // Reload datasets to refresh the display
+                    if (typeof window.loadDatasetsStandalone === 'function') {
+                        await window.loadDatasetsStandalone();
+                    } else {
+                        // Fallback: reload the page
+                        window.location.reload();
+                    }
+                    
+                    console.log('✅ Dataset deleted successfully');
+                    alert('Dataset deleted successfully!');
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('❌ Failed to delete dataset:', error);
+                alert('Failed to delete dataset. Please try again.');
+            }
+        };
+        
+        window.viewDataset = async function(datasetId) {
+            console.log('👁️ View dataset:', datasetId);
+            
+            try {
+                // Show loading
+                const modal = document.getElementById('dataset-viewer-modal');
+                modal.style.display = 'block';
+                document.getElementById('dataset-loading').style.display = 'flex';
+                
+                // Get dataset metadata
+                const response = await fetch(`/api/datasets/${datasetId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const dataset = await response.json();
+                
+                // Populate metadata
+                document.getElementById('dataset-viewer-title').textContent = `Dataset: ${dataset.name}`;
+                document.getElementById('viewer-dataset-name').textContent = dataset.name;
+                document.getElementById('viewer-dataset-filename').textContent = dataset.filename;
+                document.getElementById('viewer-dataset-rows').textContent = dataset.row_count || 'Unknown';
+                document.getElementById('viewer-dataset-size').textContent = dataset.file_size ? `${(dataset.file_size / 1024).toFixed(1)} KB` : 'Unknown';
+                document.getElementById('viewer-dataset-created').textContent = new Date(dataset.created_at).toLocaleString();
+                document.getElementById('viewer-input-columns').textContent = dataset.input_columns ? dataset.input_columns.join(', ') : 'None specified';
+                document.getElementById('viewer-output-columns').textContent = dataset.output_columns ? dataset.output_columns.join(', ') : 'None specified';
+                document.getElementById('viewer-dataset-description').textContent = dataset.description || 'No description provided';
+                
+                // Store dataset info globally for pagination
+                window.currentDataset = {
+                    id: datasetId,
+                    info: dataset,
+                    currentPage: 1,
+                    rowsPerPage: 25,
+                    totalRows: dataset.row_count || 0
+                };
+                
+                // Load first page of data
+                await loadDatasetPage(1);
+                
+            } catch (error) {
+                console.error('❌ Failed to view dataset:', error);
+                document.getElementById('dataset-loading').style.display = 'none';
+                alert('Failed to load dataset. Please try again.');
+                closeDatasetViewer();
+            }
+        };
+        
+        window.closeDatasetViewer = function() {
+            console.log('❌ Close dataset viewer');
+            document.getElementById('dataset-viewer-modal').style.display = 'none';
+            window.currentDataset = null;
+        };
+        
+        window.loadDatasetPage = async function(page) {
+            if (!window.currentDataset) return;
+            
+            try {
+                document.getElementById('dataset-loading').style.display = 'flex';
+                
+                const limit = window.currentDataset.rowsPerPage;
+                const offset = (page - 1) * limit;
+                
+                // Get dataset preview data
+                const response = await fetch(`/api/datasets/${window.currentDataset.id}/preview?limit=${limit}&offset=${offset}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update current page info
+                window.currentDataset.currentPage = page;
+                
+                // Populate table
+                populateDatasetTable(data.data, data.columns);
+                
+                // Update pagination info
+                updatePaginationInfo();
+                
+                document.getElementById('dataset-loading').style.display = 'none';
+                
+            } catch (error) {
+                console.error('❌ Failed to load dataset page:', error);
+                document.getElementById('dataset-loading').style.display = 'none';
+                alert('Failed to load dataset page. Please try again.');
+            }
+        };
+        
+        window.populateDatasetTable = function(data, columns) {
+            const thead = document.getElementById('dataset-table-head');
+            const tbody = document.getElementById('dataset-table-body');
+            
+            // Clear existing content
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="100%" style="text-align: center; padding: 2rem; color: #666;">No data available</td></tr>';
+                return;
+            }
+            
+            // Create header row
+            const headerRow = document.createElement('tr');
+            columns.forEach(column => {
+                const th = document.createElement('th');
+                th.textContent = column;
+                
+                // Add column type styling
+                const dataset = window.currentDataset.info;
+                if (dataset.input_columns && dataset.input_columns.includes(column)) {
+                    th.classList.add('input-column');
+                    th.title = 'Input Column';
+                } else if (dataset.output_columns && dataset.output_columns.includes(column)) {
+                    th.classList.add('output-column');
+                    th.title = 'Output Column';
+                }
+                
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            
+            // Create data rows
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                columns.forEach(column => {
+                    const td = document.createElement('td');
+                    const value = row[column];
+                    
+                    // Handle different data types
+                    if (value === null || value === undefined) {
+                        td.textContent = '';
+                        td.style.color = '#999';
+                        td.style.fontStyle = 'italic';
+                    } else if (typeof value === 'object') {
+                        td.textContent = JSON.stringify(value);
+                    } else {
+                        td.textContent = String(value);
+                    }
+                    
+                    // Add column type styling
+                    const dataset = window.currentDataset.info;
+                    if (dataset.input_columns && dataset.input_columns.includes(column)) {
+                        td.classList.add('input-column');
+                    } else if (dataset.output_columns && dataset.output_columns.includes(column)) {
+                        td.classList.add('output-column');
+                    }
+                    
+                    // Add tooltip for long content
+                    if (td.textContent.length > 50) {
+                        td.title = td.textContent;
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        };
+        
+        window.updatePaginationInfo = function() {
+            if (!window.currentDataset) return;
+            
+            const { currentPage, rowsPerPage, totalRows } = window.currentDataset;
+            const startRow = (currentPage - 1) * rowsPerPage + 1;
+            const endRow = Math.min(currentPage * rowsPerPage, totalRows);
+            const totalPages = Math.ceil(totalRows / rowsPerPage);
+            
+            document.getElementById('pagination-info').textContent = `Showing ${startRow} - ${endRow} of ${totalRows} rows`;
+            document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+            
+            // Update button states
+            document.getElementById('prev-page').disabled = currentPage <= 1;
+            document.getElementById('next-page').disabled = currentPage >= totalPages;
+        };
+        
+        window.previousPage = function() {
+            if (window.currentDataset && window.currentDataset.currentPage > 1) {
+                loadDatasetPage(window.currentDataset.currentPage - 1);
+            }
+        };
+        
+        window.nextPage = function() {
+            if (window.currentDataset) {
+                const totalPages = Math.ceil(window.currentDataset.totalRows / window.currentDataset.rowsPerPage);
+                if (window.currentDataset.currentPage < totalPages) {
+                    loadDatasetPage(window.currentDataset.currentPage + 1);
+                }
+            }
+        };
+        
+        window.updateDatasetView = function() {
+            if (window.currentDataset) {
+                const newRowsPerPage = parseInt(document.getElementById('rows-per-page').value);
+                window.currentDataset.rowsPerPage = newRowsPerPage;
+                loadDatasetPage(1); // Reset to first page
+            }
+        };
+        
+        window.refreshDatasetView = function() {
+            if (window.currentDataset) {
+                loadDatasetPage(window.currentDataset.currentPage);
+            }
+        };
+        
+        window.exportDatasetView = function() {
+            if (window.currentDataset) {
+                // Trigger download of the full dataset
+                downloadDataset(window.currentDataset.id);
+            }
+        };
+        
+        window.downloadDataset = async function(datasetId) {
+            console.log('💾 Download dataset:', datasetId);
+            
+            try {
+                const response = await fetch(`/api/datasets/${datasetId}/download`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const dataset = window.datasets?.get(datasetId);
+                    const filename = dataset ? dataset.filename : `dataset_${datasetId}.csv`;
+                    
+                    // Create download link
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    console.log('✅ Dataset downloaded successfully');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error('❌ Failed to download dataset:', error);
+                alert('Failed to download dataset. Please try again.');
+            }
+        };
+    </script>
+    
+    <script type="module">
+        // Debug function to test optimization dropdowns
+        window.debugOptimization = function() {
+            console.log('🐛 Debug optimization dropdowns');
+            
+            // Check if elements exist
+            const datasetSelect = document.getElementById('opt-dataset');
+            const promptSelect = document.getElementById('opt-prompt');
+            
+            console.log('📦 Dataset select element:', datasetSelect);
+            console.log('📝 Prompt select element:', promptSelect);
+            
+            // Check if data exists
+            console.log('📊 window.datasets:', window.datasets);
+            console.log('📝 window.prompts:', window.prompts);
+            
+            // Check if function exists
+            console.log('🔧 loadOptimizationOptionsStandalone exists:', typeof window.loadOptimizationOptionsStandalone);
+            
+            // Try to call the function
+            if (typeof window.loadOptimizationOptionsStandalone === 'function') {
+                console.log('🔄 Calling loadOptimizationOptionsStandalone...');
+                window.loadOptimizationOptionsStandalone();
+            } else {
+                console.log('❌ loadOptimizationOptionsStandalone not available');
+            }
+            
+            // Check dropdown contents after
+            setTimeout(() => {
+                console.log('📊 Dataset options:', datasetSelect?.options.length || 0);
+                console.log('📝 Prompt options:', promptSelect?.options.length || 0);
+            }, 100);
+        };
+        
+        // Debug function to test dataset loading
+        window.debugDatasets = async function() {
+            console.log('🐛 Debug datasets function called');
+            console.log('📊 window.datasets:', window.datasets);
+            console.log('📊 window.datasets size:', window.datasets?.size || 0);
+            
+            // Test API directly
+            try {
+                const response = await fetch('/api/datasets');
+                const data = await response.json();
+                console.log('📊 API response:', data);
+                console.log('📊 API datasets count:', data.datasets?.length || 0);
+            } catch (error) {
+                console.error('❌ API error:', error);
+            }
+            
+            // Test loading function
+            if (typeof window.loadDatasetsStandalone === 'function') {
+                console.log('🔄 Calling loadDatasetsStandalone...');
+                await window.loadDatasetsStandalone();
+            } else {
+                console.log('❌ loadDatasetsStandalone not available');
+            }
+            
+            // Check container
+            const container = document.getElementById('datasets-container');
+            console.log('📦 Datasets container:', container);
+            console.log('📦 Container content length:', container?.innerHTML?.length || 0);
+        };
+            
+            // Test API directly
+            try {
+                const response = await fetch('/api/datasets');
+                const data = await response.json();
+                console.log('🌐 API Response:', data);
+                console.log(`📊 Found ${data.datasets?.length || 0} datasets`);
+                
+                if (data.datasets && data.datasets.length > 0) {
+                    console.log('📋 Dataset list:');
+                    data.datasets.forEach((dataset, index) => {
+                        console.log(`   ${index + 1}. ${dataset.name} (ID: ${dataset.id})`);
+                    });
+                }
+                
+                // Test container
+                const container = document.getElementById('datasets-container');
+                console.log('📦 Container found:', !!container);
+                if (container) {
+                    console.log('📦 Container content:', container.innerHTML.substring(0, 100) + '...');
+                }
+                
+                // Test if load function exists
+                console.log('🔧 loadDatasetsStandalone exists:', typeof window.loadDatasetsStandalone);
+                
+                // Try to call load function
+                if (typeof window.loadDatasetsStandalone === 'function') {
+                    console.log('🔄 Calling loadDatasetsStandalone...');
+                    await window.loadDatasetsStandalone();
+                } else {
+                    console.log('❌ loadDatasetsStandalone not available');
+                }
+                
+            } catch (error) {
+                console.error('❌ Debug error:', error);
+            }
+        };
+        
+        // Debug navigation setup
+        console.log('🚀 Starting application initialization...');
+        
+        // Immediate navigation setup for testing
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📄 DOM loaded - setting up immediate navigation...');
+            setupImmediateNavigation();
+        });
+        
+        // Immediate navigation setup function
+        function setupImmediateNavigation() {
+            console.log('🧭 Setting up immediate navigation...');
+            
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const views = document.querySelectorAll('.view');
+            
+            console.log('Nav buttons found:', navButtons.length);
+            console.log('Views found:', views.length);
+            
+            navButtons.forEach((btn, index) => {
+                console.log(`Button ${index}: data-view="${btn.dataset.view}"`);
+                
+                // Remove any existing listeners
+                btn.removeEventListener('click', handleNavClick);
+                
+                // Add new listener
+                btn.addEventListener('click', handleNavClick);
+            });
+            
+            console.log('✅ Immediate navigation setup complete');
+        }
+        
+        // Navigation click handler
+        function handleNavClick(e) {
+            const targetView = e.target.dataset.view;
+            console.log('🖱️ Navigation clicked:', targetView);
+            
+            // Update navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            // Update views
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            const targetViewElement = document.getElementById(`${targetView}-view`);
+            
+            if (targetViewElement) {
+                targetViewElement.classList.add('active');
+                console.log('✅ Switched to view:', targetView);
+                
+                // Handle view-specific loading
+                if (targetView === 'prompts') {
+                    console.log('📝 Loading prompts view...');
+                    if (typeof window.loadPromptsStandalone === 'function') {
+                        window.loadPromptsStandalone();
+                    } else {
+                        console.log('⏳ loadPromptsStandalone not ready yet, will retry...');
+                        setTimeout(() => {
+                            if (typeof window.loadPromptsStandalone === 'function') {
+                                window.loadPromptsStandalone();
+                            }
+                        }, 1000);
+                    }
+                }
+            } else {
+                console.error('❌ Target view not found:', `${targetView}-view`);
+            }
+        }
+        
+        // Force load data immediately when page is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM loaded - forcing data load...');
+            
+            // Force load datasets multiple times with delays
+            setTimeout(() => {
+                console.log('🔄 Force loading datasets (attempt 1)...');
+                if (typeof window.loadDatasetsStandalone === 'function') {
+                    window.loadDatasetsStandalone();
+                }
+            }, 100);
+            
+            setTimeout(() => {
+                console.log('🔄 Force loading datasets (attempt 2)...');
+                if (typeof window.loadDatasetsStandalone === 'function') {
+                    window.loadDatasetsStandalone();
+                }
+            }, 1000);
+            
+            setTimeout(() => {
+                console.log('🔄 Force loading datasets (attempt 3)...');
+                if (typeof window.loadDatasetsStandalone === 'function') {
+                    window.loadDatasetsStandalone();
+                }
+            }, 2000);
+        });
+        
+        // Also try when window loads
+        window.addEventListener('load', function() {
+            console.log('🌐 Window loaded - forcing data load...');
+            setTimeout(() => {
+                if (typeof window.loadDatasetsStandalone === 'function') {
+                    console.log('🔄 Final force load of datasets...');
+                    window.loadDatasetsStandalone();
+                }
+            }, 500);
+        });
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Load scripts sequentially
+        loadScript('./static/js/utils.js').then(() => {
+            return loadScript('./static/js/app.js');
+        }).then(() => {
+            return Promise.all([
+                loadScript('./static/js/dataset.js').catch(() => console.log('dataset.js not found, skipping')),
+                loadScript('./static/js/prompt.js').catch(() => console.log('prompt.js not found, skipping')),
+                loadScript('./static/js/optimization.js').catch(() => console.log('optimization.js not found, skipping'))
+            ]);
+        }).then(() => {
+            console.log('✅ All modules loaded successfully');
+            // Re-setup navigation after modules are loaded to ensure everything works
+            setupImmediateNavigation();
+            
+            // Force load datasets immediately after modules are ready
+            console.log('🔄 Force loading datasets after module load...');
+            setTimeout(async () => {
+                if (typeof window.loadDatasetsStandalone === 'function') {
+                    console.log('📊 Calling loadDatasetsStandalone after timeout...');
+                    await window.loadDatasetsStandalone();
+                } else {
+                    console.log('❌ loadDatasetsStandalone still not available');
+                }
+            }, 500);
+        }).catch(error => {
+            console.error('Failed to load application modules:', error);
+            document.body.innerHTML = `
+                <div style="padding: 2rem; text-align: center; color: #d32f2f;">
+                    <h2>⚠️ Application Loading Error</h2>
+                    <p>Failed to load application modules. Please refresh the page.</p>
+                    <button onclick="location.reload()" style="padding: 0.5rem 1rem; margin-top: 1rem;">
+                        🔄 Refresh Page
+                    </button>
+                </div>
+            `;
+        });
+    </script>
 </body>
 </html>

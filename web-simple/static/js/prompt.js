@@ -317,17 +317,31 @@ class PromptManager {
 }
 
 // Extend the main app with prompt management
-if (window.app) {
-    window.app.promptManager = new PromptManager(window.app);
-    
-    // Add methods to main app
-    window.app.createNewPrompt = () => window.app.promptManager.createNewPrompt();
-    window.app.editPrompt = (id) => window.app.promptManager.editPrompt(id);
-    window.app.savePrompt = () => window.app.promptManager.savePrompt();
-    window.app.deletePrompt = (id) => window.app.promptManager.deletePrompt(id);
-    window.app.closePromptModal = () => window.app.promptManager.closePromptModal();
-    window.app.exportPrompt = (id) => window.app.promptManager.exportPrompt(id);
+function initializePromptManager() {
+    if (window.app && window.app.initPromise) {
+        window.app.initPromise.then(() => {
+            window.app.promptManager = new PromptManager(window.app);
+            
+            // Add methods to main app
+            window.app.createNewPrompt = () => window.app.promptManager.createNewPrompt();
+            window.app.editPrompt = (id) => window.app.promptManager.editPrompt(id);
+            window.app.savePrompt = () => window.app.promptManager.savePrompt();
+            window.app.deletePrompt = (id) => window.app.promptManager.deletePrompt(id);
+            window.app.closePromptModal = () => window.app.promptManager.closePromptModal();
+            window.app.exportPrompt = (id) => window.app.promptManager.exportPrompt(id);
+            
+            console.log('✅ Prompt manager initialized');
+        }).catch(error => {
+            console.error('❌ Failed to initialize prompt manager:', error);
+        });
+    } else {
+        // Retry after a short delay if app isn't ready
+        setTimeout(initializePromptManager, 100);
+    }
 }
+
+// Initialize when this module loads
+initializePromptManager();
 
 // Global functions for HTML onclick handlers
 window.createNewPrompt = () => window.app?.createNewPrompt();

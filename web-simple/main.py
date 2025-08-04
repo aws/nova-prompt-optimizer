@@ -19,7 +19,7 @@ import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # Add the SDK to the path
@@ -66,13 +66,86 @@ static_dir.mkdir(exist_ok=True)
 templates_dir.mkdir(exist_ok=True)
 uploads_dir.mkdir(exist_ok=True)
 
+# Create data directory for persistent storage
+data_dir = Path(__file__).parent / "data"
+data_dir.mkdir(exist_ok=True)
+
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 templates = Jinja2Templates(directory=str(templates_dir))
 
-# In-memory storage for demo (replace with database in production)
-datasets = {}
-prompts = {}
-optimizations = {}
+# Persistent storage files
+DATASETS_FILE = data_dir / "datasets.json"
+PROMPTS_FILE = data_dir / "prompts.json"
+OPTIMIZATIONS_FILE = data_dir / "optimizations.json"
+
+# Persistent storage functions
+def load_datasets() -> Dict:
+    """Load datasets from persistent storage"""
+    if DATASETS_FILE.exists():
+        try:
+            with open(DATASETS_FILE, 'r') as f:
+                data = json.load(f)
+                logger.info(f"Loaded {len(data)} datasets from persistent storage")
+                return data
+        except Exception as e:
+            logger.error(f"Error loading datasets: {e}")
+    return {}
+
+def save_datasets(datasets_data: Dict):
+    """Save datasets to persistent storage"""
+    try:
+        with open(DATASETS_FILE, 'w') as f:
+            json.dump(datasets_data, f, indent=2, default=str)
+        logger.info(f"Saved {len(datasets_data)} datasets to persistent storage")
+    except Exception as e:
+        logger.error(f"Error saving datasets: {e}")
+
+def load_prompts() -> Dict:
+    """Load prompts from persistent storage"""
+    if PROMPTS_FILE.exists():
+        try:
+            with open(PROMPTS_FILE, 'r') as f:
+                data = json.load(f)
+                logger.info(f"Loaded {len(data)} prompts from persistent storage")
+                return data
+        except Exception as e:
+            logger.error(f"Error loading prompts: {e}")
+    return {}
+
+def save_prompts(prompts_data: Dict):
+    """Save prompts to persistent storage"""
+    try:
+        with open(PROMPTS_FILE, 'w') as f:
+            json.dump(prompts_data, f, indent=2, default=str)
+        logger.info(f"Saved {len(prompts_data)} prompts to persistent storage")
+    except Exception as e:
+        logger.error(f"Error saving prompts: {e}")
+
+def load_optimizations() -> Dict:
+    """Load optimizations from persistent storage"""
+    if OPTIMIZATIONS_FILE.exists():
+        try:
+            with open(OPTIMIZATIONS_FILE, 'r') as f:
+                data = json.load(f)
+                logger.info(f"Loaded {len(data)} optimizations from persistent storage")
+                return data
+        except Exception as e:
+            logger.error(f"Error loading optimizations: {e}")
+    return {}
+
+def save_optimizations(optimizations_data: Dict):
+    """Save optimizations to persistent storage"""
+    try:
+        with open(OPTIMIZATIONS_FILE, 'w') as f:
+            json.dump(optimizations_data, f, indent=2, default=str)
+        logger.info(f"Saved {len(optimizations_data)} optimizations to persistent storage")
+    except Exception as e:
+        logger.error(f"Error saving optimizations: {e}")
+
+# Load data from persistent storage
+datasets = load_datasets()
+prompts = load_prompts()
+optimizations = load_optimizations()
 active_websockets = {}
 
 class ConnectionManager:
@@ -102,6 +175,13 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # Routes
+
+@app.get("/test-simple")
+async def test_simple():
+    """Simple test page for debugging data loading"""
+    with open("test_simple.html", "r") as f:
+        html_content = f.read()
+    return HTMLResponse(content=html_content)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -167,6 +247,9 @@ async def upload_dataset(
         
         datasets[dataset_id] = dataset_record
         
+        # Save to persistent storage
+        save_datasets(datasets)
+        
         logger.info(f"Dataset uploaded: {dataset_id} ({file.filename})")
         return dataset_record
         
@@ -186,6 +269,179 @@ async def get_dataset(dataset_id: str):
         raise HTTPException(status_code=404, detail="Dataset not found")
     return datasets[dataset_id]
 
+@app.get("/api/datasets/{dataset_id}/preview")
+async def get_dataset_preview(dataset_id: str, limit: int = 50, offset: int = 0):
+    """Get dataset preview with pagination support"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    dataset = datasets[dataset_id]
+    file_path = Path(dataset["file_path"])
+    
+    try:
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Dataset file not found")
+        
+        preview_data = []
+        columns = []
+        
+        if dataset["filename"].endswith('.csv'):
+            import pandas as pd
+            df = pd.read_csv(file_path)
+            
+            # Get column names
+            columns = df.columns.tolist()
+            
+            # Apply pagination
+            end_idx = offset + limit
+            paginated_df = df.iloc[offset:end_idx]
+            preview_data = paginated_df.to_dict('records')
+            
+        elif dataset["filename"].endswith('.json') or dataset["filename"].endswith('.jsonl'):
+            import json
+            
+            # Read JSON data
+            if dataset["filename"].endswith('.jsonl'):
+                # JSONL format - one JSON object per line
+                with open(file_path, 'r') as f:
+                    lines = f.readlines()
+                    
+                # Apply pagination to lines
+                paginated_lines = lines[offset:offset + limit]
+                preview_data = [json.loads(line.strip()) for line in paginated_lines if line.strip()]
+            else:
+                # Regular JSON format
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                    
+                if isinstance(data, list):
+                    # Apply pagination
+                    preview_data = data[offset:offset + limit]
+                else:
+                    preview_data = [data] if offset == 0 else []
+            
+            # Extract column names from first record
+            if preview_data:
+                columns = list(preview_data[0].keys())
+        
+        return {
+            "data": preview_data,
+            "columns": columns,
+            "offset": offset,
+            "limit": limit,
+            "total_rows": dataset.get("row_count", len(preview_data))
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to load dataset preview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/datasets/{dataset_id}/export")
+async def export_dataset(dataset_id: str, format: str = "csv"):
+    """Export dataset in specified format"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    dataset = datasets[dataset_id]
+    file_path = Path(dataset["file_path"])
+    
+    try:
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Dataset file not found")
+        
+        if format.lower() == "csv":
+            if dataset["filename"].endswith('.csv'):
+                # Return original CSV file
+                from fastapi.responses import FileResponse
+                return FileResponse(
+                    file_path,
+                    media_type="text/csv",
+                    filename=f"{dataset['name']}.csv"
+                )
+            else:
+                # Convert JSONL to CSV
+                import pandas as pd
+                with open(file_path, 'r') as f:
+                    if dataset["filename"].endswith('.jsonl'):
+                        lines = f.readlines()
+                        data = [json.loads(line) for line in lines if line.strip()]
+                    else:
+                        data = json.load(f)
+                        if not isinstance(data, list):
+                            data = [data]
+                
+                df = pd.DataFrame(data)
+                
+                # Create temporary CSV file
+                import tempfile
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp_file:
+                    df.to_csv(tmp_file.name, index=False)
+                    
+                from fastapi.responses import FileResponse
+                return FileResponse(
+                    tmp_file.name,
+                    media_type="text/csv",
+                    filename=f"{dataset['name']}.csv"
+                )
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported export format")
+            
+    except Exception as e:
+        logger.error(f"Failed to export dataset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/datasets/{dataset_id}")
+async def delete_dataset(dataset_id: str):
+    """Delete a dataset"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    dataset = datasets[dataset_id]
+    
+    try:
+        # Delete the physical file
+        file_path = Path(dataset["file_path"])
+        if file_path.exists():
+            file_path.unlink()
+            logger.info(f"Deleted dataset file: {file_path}")
+        
+        # Remove from datasets dictionary
+        deleted_dataset = datasets.pop(dataset_id)
+        
+        # Save to persistent storage
+        save_datasets(datasets)
+        
+        logger.info(f"Dataset deleted: {dataset_id}")
+        return {"message": "Dataset deleted successfully", "deleted_dataset": deleted_dataset}
+        
+    except Exception as e:
+        logger.error(f"Failed to delete dataset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/datasets/{dataset_id}/download")
+async def download_dataset(dataset_id: str):
+    """Download dataset file"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    dataset = datasets[dataset_id]
+    file_path = Path(dataset["file_path"])
+    
+    try:
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Dataset file not found")
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            file_path,
+            media_type="application/octet-stream",
+            filename=dataset["filename"]
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to download dataset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Prompt Management API
 
 @app.post("/api/prompts")
@@ -203,6 +459,10 @@ async def create_prompt(prompt_data: dict):
     }
     
     prompts[prompt_id] = prompt_record
+    
+    # Save to persistent storage
+    save_prompts(prompts)
+    
     logger.info(f"Prompt created: {prompt_id}")
     return prompt_record
 
@@ -227,8 +487,25 @@ async def update_prompt(prompt_id: str, prompt_data: dict):
     prompts[prompt_id].update(prompt_data)
     prompts[prompt_id]["updated_at"] = datetime.now().isoformat()
     
+    # Save to persistent storage
+    save_prompts(prompts)
+    
     logger.info(f"Prompt updated: {prompt_id}")
     return prompts[prompt_id]
+
+@app.delete("/api/prompts/{prompt_id}")
+async def delete_prompt(prompt_id: str):
+    """Delete a prompt"""
+    if prompt_id not in prompts:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    
+    deleted_prompt = prompts.pop(prompt_id)
+    
+    # Save to persistent storage
+    save_prompts(prompts)
+    
+    logger.info(f"Prompt deleted: {prompt_id}")
+    return {"message": "Prompt deleted successfully", "deleted_prompt": deleted_prompt}
 
 # Optimization API
 
@@ -253,6 +530,9 @@ async def start_optimization(optimization_request: dict):
         
         optimizations[optimization_id] = optimization_record
         
+        # Save to persistent storage
+        save_optimizations(optimizations)
+        
         # Start optimization in background
         asyncio.create_task(run_optimization(optimization_id, optimization_request))
         
@@ -263,17 +543,17 @@ async def start_optimization(optimization_request: dict):
         logger.error(f"Failed to start optimization: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/optimization/runs")
+async def list_optimization_runs():
+    """List all optimization runs"""
+    return {"runs": list(optimizations.values())}
+
 @app.get("/api/optimization/{optimization_id}")
 async def get_optimization_status(optimization_id: str):
     """Get optimization status"""
     if optimization_id not in optimizations:
         raise HTTPException(status_code=404, detail="Optimization not found")
     return optimizations[optimization_id]
-
-@app.get("/api/optimization/runs")
-async def list_optimization_runs():
-    """List all optimization runs"""
-    return {"runs": list(optimizations.values())}
 
 # WebSocket for real-time updates
 
@@ -343,6 +623,9 @@ async def run_optimization(optimization_id: str, request: dict):
             }
         }
         
+        # Save to persistent storage
+        save_optimizations(optimizations)
+        
         await manager.send_message(optimization_id, {
             "type": "completed",
             "optimization_id": optimization_id,
@@ -355,6 +638,9 @@ async def run_optimization(optimization_id: str, request: dict):
         logger.error(f"Optimization failed: {optimization_id} - {e}")
         optimization["status"] = "failed"
         optimization["error"] = str(e)
+        
+        # Save to persistent storage
+        save_optimizations(optimizations)
         
         await manager.send_message(optimization_id, {
             "type": "error",
