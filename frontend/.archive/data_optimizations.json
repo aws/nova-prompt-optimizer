@@ -1,0 +1,949 @@
+[
+  {
+    "id": 1,
+    "name": "Sample_opt",
+    "prompt_id": 2,
+    "prompt_name": "Sample_Promp",
+    "dataset_id": 2,
+    "dataset_name": "Sample_Prompt_dataset",
+    "max_records": 1,
+    "rate_limit": 2,
+    "algorithm": "nova_optimizer",
+    "description": "No description provided",
+    "started_at": "2025-08-07 00:25:34",
+    "status": "Stopped",
+    "progress": 0
+  },
+  {
+    "id": 2,
+    "name": "opt 2",
+    "prompt_id": 2,
+    "prompt_name": "Sample_Promp",
+    "dataset_id": 2,
+    "dataset_name": "Sample_Prompt_dataset",
+    "max_records": 1,
+    "rate_limit": 2,
+    "algorithm": "nova_optimizer",
+    "description": "No description provided",
+    "started_at": "2025-08-07 00:34:47",
+    "status": "Stopped",
+    "progress": 0
+  },
+  {
+    "id": 3,
+    "name": "Opt 3",
+    "prompt_id": 2,
+    "prompt_name": "Sample_Promp",
+    "dataset_id": 2,
+    "dataset_name": "Sample_Prompt_dataset",
+    "max_records": 1,
+    "rate_limit": 2,
+    "algorithm": "nova_optimizer",
+    "description": "No description provided",
+    "started_at": "2025-08-07 00:41:57",
+    "status": "Stopped",
+    "progress": 70
+  },
+  {
+    "id": 4,
+    "name": "opt 4",
+    "prompt_id": 2,
+    "prompt_name": "Sample_Promp",
+    "dataset_id": 2,
+    "dataset_name": "Sample_Prompt_dataset",
+    "max_records": 1,
+    "rate_limit": 2,
+    "algorithm": "nova_optimizer",
+    "description": "No description provided",
+    "started_at": "2025-08-07 01:19:51",
+    "status": "Stopped",
+    "progress": 55,
+    "live_updates": [
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "\ud83d\ude80 STARTING OPTIMIZATION: opt 4 (ID: 4)",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "\ud83d\udcca Configuration:",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "   \u2022 Prompt: Sample_Promp",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "   \u2022 Dataset: Sample_Prompt_dataset",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "   \u2022 Max Records: 1",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "   \u2022 Rate Limit: 2 RPM",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "   \u2022 Algorithm: nova_optimizer",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "\ud83d\udd27 PHASE 1: Initialization",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:51",
+        "message": "   \u2022 Loading prompt template...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:52",
+        "message": "   \u2022 Loading dataset (1 records)...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:53",
+        "message": "   \u2022 Validating configuration...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:53",
+        "message": "   \u2705 Initialization complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:53",
+        "message": "\ud83d\udccb PHASE 2: Data Preparation",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:53",
+        "message": "   \u2022 Parsing dataset structure...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:54",
+        "message": "   \u2022 Extracting variables from prompt template...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:55",
+        "message": "   \u2022 Creating train/test split (80/20)...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:56",
+        "message": "   \u2022 Train set: 0 records, Test set: 1 records",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:56",
+        "message": "   \u2705 Data preparation complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:56",
+        "message": "\ud83d\udcc8 PHASE 3: Baseline Evaluation",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:56",
+        "message": "   \u2022 Running baseline prompt on test set...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:56",
+        "message": "   \u2022 Rate limiting: 30.00s between requests",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:19:56",
+        "message": "   \u2022 Processing record 1/1 (Rate: 2 RPM)",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:20:26",
+        "message": "   \u2022 Baseline performance: 0.650",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:20:26",
+        "message": "   \u2705 Baseline evaluation complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:20:26",
+        "message": "\ud83e\udde0 PHASE 4: Running nova_optimizer",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:20:26",
+        "message": "   \u2022 Initializing Nova Prompt Optimizer...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:20:27",
+        "message": "   \u2022 Meta-prompting phase: Analyzing prompt structure...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:20:29",
+        "message": "   \u2022 Identified system instructions and user template",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:20:29",
+        "message": "   \u2022 MIPROv2 phase: Generating candidate prompts...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:20:32",
+        "message": "   \u2022 Iteration 1/3: Testing candidate prompts...",
+        "level": "info",
+        "data": {}
+      }
+    ],
+    "candidate_prompts": [
+      {
+        "id": "baseline",
+        "type": "Original Prompt",
+        "system_prompt": "",
+        "user_prompt": "Analyze this text: {{input}} and provide insights.",
+        "score": 0.65
+      }
+    ],
+    "performance_history": [
+      {
+        "iteration": "Baseline",
+        "score": 0.65
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Opt 5",
+    "prompt_id": 2,
+    "prompt_name": "Sample_Promp",
+    "dataset_id": 2,
+    "dataset_name": "Sample_Prompt_dataset",
+    "max_records": 1,
+    "rate_limit": 2,
+    "algorithm": "nova_optimizer",
+    "description": "No description provided",
+    "started_at": "2025-08-07 01:30:42",
+    "status": "Stopped",
+    "progress": 85,
+    "live_updates": [
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "\ud83d\ude80 STARTING OPTIMIZATION: Opt 5 (ID: 5)",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "\ud83d\udcca Configuration:",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "   \u2022 Prompt: Sample_Promp",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "   \u2022 Dataset: Sample_Prompt_dataset",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "   \u2022 Max Records: 1",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "   \u2022 Rate Limit: 2 RPM",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "   \u2022 Algorithm: nova_optimizer",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "\ud83d\udd27 PHASE 1: Initialization",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:42",
+        "message": "   \u2022 Loading prompt template...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:43",
+        "message": "   \u2022 Loading dataset (1 records)...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:44",
+        "message": "   \u2022 Validating configuration...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:44",
+        "message": "   \u2705 Initialization complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:44",
+        "message": "\ud83d\udccb PHASE 2: Data Preparation",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:44",
+        "message": "   \u2022 Parsing dataset structure...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:45",
+        "message": "   \u2022 Extracting variables from prompt template...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:46",
+        "message": "   \u2022 Creating train/test split (80/20)...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:47",
+        "message": "   \u2022 Train set: 0 records, Test set: 1 records",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:47",
+        "message": "   \u2705 Data preparation complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:47",
+        "message": "\ud83d\udcc8 PHASE 3: Baseline Evaluation",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:47",
+        "message": "   \u2022 Running baseline prompt on test set...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:47",
+        "message": "   \u2022 Rate limiting: 30.00s between requests",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:30:47",
+        "message": "   \u2022 Processing record 1/1 (Rate: 2 RPM)",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:17",
+        "message": "   \u2022 Baseline performance: 0.650",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:17",
+        "message": "   \u2705 Baseline evaluation complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:17",
+        "message": "\ud83e\udde0 PHASE 4: Running nova_optimizer",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:17",
+        "message": "   \u2022 Initializing Nova Prompt Optimizer...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:18",
+        "message": "   \u2022 Meta-prompting phase: Analyzing prompt structure...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:20",
+        "message": "   \u2022 Identified system instructions and user template",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:20",
+        "message": "   \u2022 MIPROv2 phase: Generating candidate prompts...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:23",
+        "message": "   \u2022 Iteration 1/3: Testing candidate prompts...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:31:23",
+        "message": "     - Candidate 1/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:32:23",
+        "message": "     - Candidate 2/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:33:23",
+        "message": "     - Candidate 3/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:34:23",
+        "message": "     - Candidate 4/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:35:23",
+        "message": "     - Candidate 5/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:36:23",
+        "message": "   \u2022 Iteration 1 best score: 0.730 (+0.080)",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:36:23",
+        "message": "   \u2022 Iteration 2/3: Testing candidate prompts...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:36:23",
+        "message": "     - Candidate 1/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:37:23",
+        "message": "     - Candidate 2/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:38:23",
+        "message": "     - Candidate 3/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:39:23",
+        "message": "     - Candidate 4/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:40:23",
+        "message": "     - Candidate 5/5: Evaluating performance...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:41:23",
+        "message": "   \u2022 Iteration 2 best score: 0.810 (+0.160)",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:41:23",
+        "message": "   \u2022 Iteration 3/3: Testing candidate prompts...",
+        "level": "info",
+        "data": {}
+      }
+    ],
+    "candidate_prompts": [
+      {
+        "id": "baseline",
+        "type": "Original Prompt",
+        "system_prompt": "",
+        "user_prompt": "Analyze this text: {{input}} and provide insights.",
+        "score": 0.65
+      },
+      {
+        "id": "iter1_cand1",
+        "type": "Iteration 1 - Candidate 1",
+        "system_prompt": "You are an expert analyst. Provide detailed, structured analysis.",
+        "user_prompt": "Analyze the following text comprehensively: {{input}}\n\nProvide:\n1. Summary\n2. Key insights\n3. Recommendations",
+        "score": 0.7300000000000001
+      },
+      {
+        "id": "iter1_cand2",
+        "type": "Iteration 1 - Candidate 2",
+        "system_prompt": "You are a professional text analyzer with expertise in extracting meaningful insights.",
+        "user_prompt": "Please perform a thorough analysis of: {{input}}\n\nStructure your response with:\n- Executive Summary\n- Detailed Analysis\n- Action Items",
+        "score": 0.7600000000000001
+      },
+      {
+        "id": "iter1_cand3",
+        "type": "Iteration 1 - Candidate 3",
+        "system_prompt": "You are an AI assistant specialized in text analysis and insight generation.",
+        "user_prompt": "Examine this text: {{input}}\n\nProvide analysis including:\n\u2022 Context and background\n\u2022 Key themes and patterns\n\u2022 Strategic implications",
+        "score": 0.7300000000000001
+      },
+      {
+        "id": "iter1_cand4",
+        "type": "Iteration 1 - Candidate 4",
+        "system_prompt": "You are an expert analyst (Iteration 1, Candidate 4).",
+        "user_prompt": "Analyze: {{input}} - Variation 4",
+        "score": 0.7600000000000001
+      },
+      {
+        "id": "iter1_cand5",
+        "type": "Iteration 1 - Candidate 5",
+        "system_prompt": "You are an expert analyst (Iteration 1, Candidate 5).",
+        "user_prompt": "Analyze: {{input}} - Variation 5",
+        "score": 0.7900000000000001
+      },
+      {
+        "id": "iter2_cand1",
+        "type": "Iteration 2 - Candidate 1",
+        "system_prompt": "You are an expert analyst. Provide detailed, structured analysis.",
+        "user_prompt": "Analyze the following text comprehensively: {{input}}\n\nProvide:\n1. Summary\n2. Key insights\n3. Recommendations",
+        "score": 0.78
+      },
+      {
+        "id": "iter2_cand2",
+        "type": "Iteration 2 - Candidate 2",
+        "system_prompt": "You are a professional text analyzer with expertise in extracting meaningful insights.",
+        "user_prompt": "Please perform a thorough analysis of: {{input}}\n\nStructure your response with:\n- Executive Summary\n- Detailed Analysis\n- Action Items",
+        "score": 0.81
+      },
+      {
+        "id": "iter2_cand3",
+        "type": "Iteration 2 - Candidate 3",
+        "system_prompt": "You are an AI assistant specialized in text analysis and insight generation.",
+        "user_prompt": "Examine this text: {{input}}\n\nProvide analysis including:\n\u2022 Context and background\n\u2022 Key themes and patterns\n\u2022 Strategic implications",
+        "score": 0.78
+      },
+      {
+        "id": "iter2_cand4",
+        "type": "Iteration 2 - Candidate 4",
+        "system_prompt": "You are an expert analyst (Iteration 2, Candidate 4).",
+        "user_prompt": "Analyze: {{input}} - Variation 4",
+        "score": 0.81
+      },
+      {
+        "id": "iter2_cand5",
+        "type": "Iteration 2 - Candidate 5",
+        "system_prompt": "You are an expert analyst (Iteration 2, Candidate 5).",
+        "user_prompt": "Analyze: {{input}} - Variation 5",
+        "score": 0.8400000000000001
+      }
+    ],
+    "performance_history": [
+      {
+        "iteration": "Baseline",
+        "score": 0.65
+      },
+      {
+        "iteration": "Iteration 1",
+        "score": 0.73
+      },
+      {
+        "iteration": "Iteration 2",
+        "score": 0.81
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "opt 6",
+    "prompt_id": 2,
+    "prompt_name": "Sample_Promp",
+    "dataset_id": 2,
+    "dataset_name": "Sample_Prompt_dataset",
+    "max_records": 1,
+    "rate_limit": 2,
+    "algorithm": "nova_optimizer",
+    "description": "No description provided",
+    "started_at": "2025-08-07 01:48:15",
+    "status": "Stopped",
+    "progress": 55,
+    "live_updates": [
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "\ud83d\ude80 STARTING OPTIMIZATION: opt 6 (ID: 6)",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "\ud83d\udcca Configuration:",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "   \u2022 Prompt: Sample_Promp",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "   \u2022 Dataset: Sample_Prompt_dataset",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "   \u2022 Max Records: 1",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "   \u2022 Rate Limit: 2 RPM",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "   \u2022 Algorithm: nova_optimizer",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "\ud83d\udd27 PHASE 1: Initialization",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:15",
+        "message": "   \u2022 Loading prompt template...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:16",
+        "message": "   \u2022 Loading dataset (1 records)...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:17",
+        "message": "   \u2022 Validating configuration...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:18",
+        "message": "   \u2705 Initialization complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:18",
+        "message": "\ud83d\udccb PHASE 2: Data Preparation",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:18",
+        "message": "   \u2022 Parsing dataset structure...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:19",
+        "message": "   \u2022 Extracting variables from prompt template...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:20",
+        "message": "   \u2022 Creating train/test split (80/20)...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:21",
+        "message": "   \u2022 Train set: 0 records, Test set: 1 records",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:21",
+        "message": "   \u2705 Data preparation complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:21",
+        "message": "\ud83d\udcc8 PHASE 3: Baseline Evaluation",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:21",
+        "message": "   \u2022 Running baseline prompt on test set...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:21",
+        "message": "   \u2022 Rate limiting: 30.00s between requests",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:21",
+        "message": "   \u2022 Processing record 1/1 (Rate: 2 RPM)",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:51",
+        "message": "   \u2022 Baseline performance: 0.650",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:51",
+        "message": "   \u2705 Baseline evaluation complete",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:51",
+        "message": "\ud83e\udde0 PHASE 4: Running nova_optimizer",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:51",
+        "message": "   \u2022 Initializing Nova Prompt Optimizer...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:52",
+        "message": "   \u2022 Meta-prompting phase: Analyzing prompt structure...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:54",
+        "message": "   \u2022 Identified system instructions and user template",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:54",
+        "message": "   \u2022 MIPROv2 phase: Generating candidate prompts...",
+        "level": "info",
+        "data": {}
+      },
+      {
+        "type": "log",
+        "timestamp": "01:48:57",
+        "message": "   \u2022 Iteration 1/3: Testing candidate prompts...",
+        "level": "info",
+        "data": {}
+      }
+    ],
+    "candidate_prompts": [
+      {
+        "id": "baseline",
+        "type": "Original Prompt",
+        "system_prompt": "",
+        "user_prompt": "Analyze this text: {{input}} and provide insights.",
+        "score": 0.65
+      }
+    ],
+    "performance_history": [
+      {
+        "iteration": "Baseline",
+        "score": 0.65
+      }
+    ]
+  }
+]
