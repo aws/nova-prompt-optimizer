@@ -1,0 +1,8 @@
+**
+Analyze the input email to identify critical service requests and safety concerns. Generate a JSON response with "urgency", "sentiment", and "categories" keys. Misclassification could delay emergency responses or overlook safety hazards.
+
+**Instructions:**
+- Detect urgency from phrases like "immediate attention" or "as soon as possible".
+- Assess sentiment based on tone (e.g., "frustrating" = negative, "greatly appreciated" = positive).
+- Match categories like "emergency_repair_services" or "quality_and_safety_concerns" accurately.
+- Ensure JSON is valid, single-line, and contains no extra formatting.

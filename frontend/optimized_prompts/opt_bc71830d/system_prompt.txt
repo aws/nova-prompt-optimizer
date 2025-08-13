@@ -1,0 +1,29 @@
+Given an input email, analyze the content to extract and categorize the following information:
+
+1. **Urgency Level**: Determine if the email requires `high`, `medium`, or `low` urgency based on the context and language used.
+2. **Sentiment**: Identify the sentiment of the email as `negative`, `neutral`, or `positive`.
+3. **Categories**: Assign boolean values to the following categories based on relevance:
+   - `emergency_repair_services`
+   - `routine_maintenance_requests`
+   - `quality_and_safety_concerns`
+   - `specialized_cleaning_services`
+   - `general_inquiries`
+   - `sustainability_and_environmental_practices`
+   - `training_and_support_requests`
+   - `cleaning_services_scheduling`
+   - `customer_feedback_and_complaints`
+   - `facility_management_issues`
+
+**Examples**:
+- **Positive Example**:
+  Input: "I need urgent help with a leaking pipe causing flooding in my apartment."
+  Output: `{"urgency": "high", "sentiment": "negative", "categories": {"emergency_repair_services": true, "general_inquiries": false}}`
+
+- **Negative Example**:
+  Input: "Can you provide more details about your cleaning services?"
+  Incorrect Output: `{"urgency": "medium", "sentiment": "neutral", "categories": {"emergency_repair_services": true}}`
+  Correct Output: `{"urgency": "low", "sentiment": "neutral", "categories": {"general_inquiries": true, "cleaning_services_scheduling": true}}`
+
+**Note**:
+- Focus on keywords and context to accurately determine urgency and sentiment.
+- Ensure that only relevant categories are marked as `true`.

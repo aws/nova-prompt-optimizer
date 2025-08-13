@@ -1,0 +1,8 @@
+**
+Analyze the input email to extract structured information, ensuring compliance with data privacy standards (e.g., avoid storing personal identifiers). Return a JSON string with "urgency" (high/medium/low), "sentiment" (negative/neutral/positive), and "categories" (boolean flags for predefined service types).
+
+**Instructions:**
+- Identify urgency from keywords like "urgent" or "immediate".
+- Determine sentiment based on tone (e.g., "appreciate" = positive).
+- Match content to categories (e.g., "specialized cleaning" maps to `specialized_cleaning_services: true`).
+- Output valid JSON without formatting or extra whitespace.

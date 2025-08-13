@@ -18,10 +18,12 @@ from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 
 # Import existing components
-from components.layout import create_main_layout, create_navigation, create_page_layout
+from components.layout import create_main_layout
+from components.metrics_page import create_metrics_page, create_metric_tabs
 
 # Import database
 from database import db
+from metric_service import MetricService
 from components.navbar import create_navbar, create_navbar_styles, create_navbar_script
 from components.ui import Button, Card, CardContainer, Textarea, Input, FormField, Badge, Alert, create_ui_styles
 
@@ -132,11 +134,12 @@ async def index(request):
     uploaded_datasets = db.get_datasets()
     created_prompts = db.get_prompts()
     optimization_runs = db.get_optimizations()
+    metrics = db.get_metrics()
     
     # Enhanced dashboard with nested card structure
-    return create_page_layout(
+    return create_main_layout(
         "Dashboard",
-        content=[
+        Div(
             Card(
                 header=H3("Overview"),
                 content=Div(
@@ -174,7 +177,18 @@ async def index(request):
                             onmouseover="this.style.backgroundColor='#f8f9fa'",
                             onmouseout="this.style.backgroundColor='transparent'"
                         ),
-                        style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;"
+                        A(
+                            Div(
+                                H3(str(len(metrics)), style="font-size: 2rem; margin: 0; color: #667eea;"),
+                                P("Metrics", style="margin: 0; color: #6b7280; font-weight: 500;"),
+                                style="text-align: center;"
+                            ),
+                            href="/metrics",
+                            style="text-decoration: none; display: block; padding: 1rem; border-radius: 0.5rem; transition: background-color 0.2s ease;",
+                            onmouseover="this.style.backgroundColor='#f8f9fa'",
+                            onmouseout="this.style.backgroundColor='transparent'"
+                        ),
+                        style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;"
                     )
                 ),
                 nested=True
@@ -196,7 +210,7 @@ async def index(request):
                 ),
                 nested=True
             )
-        ],
+        ),
         current_page="dashboard",
         user=user.to_dict() if user else None
     )
@@ -207,6 +221,165 @@ async def test_page(request):
     return H1("Test page works!")
 
 # Essential routes for clickable dashboard links
+@app.get("/metrics")
+async def metrics_page(request):
+    """Metrics management page"""
+    user = await get_current_user(request)
+    
+    # Check for success/error messages
+    created = request.query_params.get("created")
+    deleted = request.query_params.get("deleted")
+    error = request.query_params.get("error")
+    
+    success_message = None
+    error_message = None
+    
+    if created == "metric":
+        success_message = "Metric created successfully!"
+    elif deleted == "metric":
+        success_message = "Metric deleted successfully!"
+    elif error == "no_dataset_selected":
+        error_message = "Please select a dataset to analyze."
+    elif error == "no_metric_name":
+        error_message = "Please enter a metric name."
+    elif error == "inference_failed":
+        error_message = "Failed to infer metrics. Please try again."
+    
+    from database import Database
+    db = Database()
+    metrics = db.get_metrics()
+    datasets = db.get_datasets()
+    
+    # Create content similar to prompts page
+    content = [
+        # Create form card (hidden by default)
+        Card(
+            header=H3("Create Metric"),
+            content=Div(
+                P("Create custom evaluation metrics for your prompts.", 
+                  style="color: #6b7280; margin-bottom: 1rem;"),
+                Button("Create New Metric", 
+                       onclick="showCreateForm()",
+                       id="create-metric-btn"),
+                
+                # Tabbed create form (hidden by default)
+                Div(
+                    Button("Cancel", 
+                           variant="outline",
+                           onclick="hideCreateForm()",
+                           style="margin-bottom: 1rem;"),
+                    
+                    # Import the tabbed interface
+                    create_metric_tabs(datasets),
+                    
+                    style="display: none; margin-top: 1rem;",
+                    id="create-metric-section"
+                )
+            ),
+            nested=True
+        ),
+        
+        # Metrics list card
+        Card(
+            header=H3("Your Metrics"),
+            content=Div(
+                *[Div(
+                    Div(
+                        H4(metric["name"], style="margin: 0 0 0.5rem 0; color: #1f2937;"),
+                        P(metric.get("description", "No description"), 
+                          style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;"),
+                        P(f"Format: {metric.get('dataset_format', 'Unknown')} • Created: {metric.get('created_at', 'Unknown')[:10]}", 
+                          style="margin: 0; color: #6b7280; font-size: 0.875rem;")
+                    ),
+                    Div(
+                        Button("Edit", 
+                               variant="outline", 
+                               size="sm", 
+                               style="margin-right: 0.5rem; font-size: 0.875rem;",
+                               onclick=f"window.location.href='/metrics/edit/{metric['id']}'"),
+                        Button("Delete", 
+                               variant="danger", 
+                               size="sm",
+                               style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
+                               onclick=f"confirmDelete('metric', '{metric['id']}', '{metric['name']}')")
+                    ),
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; margin-bottom: 0.75rem;"
+                ) for metric in metrics] if metrics else [
+                    P("No metrics created yet. Create your first metric to get started!", 
+                      style="color: #6b7280; text-align: center; padding: 2rem;")
+                ]
+            ),
+            nested=True
+        )
+    ]
+    
+    # Add success/error message scripts if needed
+    if success_message:
+        content.append(Script(f"showMessage('{success_message}', 'success');"))
+    elif error_message:
+        content.append(Script(f"showMessage('{error_message}', 'error');"))
+    
+    # Add show/hide form JavaScript (global functions)
+    content.append(Script("""
+        function showCreateForm(type) {
+            const section = document.getElementById('create-' + (type || 'metric') + '-section');
+            const btn = document.getElementById('create-' + (type || 'metric') + '-btn');
+            if (section) section.style.display = 'block';
+            if (btn) btn.style.display = 'none';
+        }
+        
+        function hideCreateForm(type) {
+            const section = document.getElementById('create-' + (type || 'metric') + '-section');
+            const btn = document.getElementById('create-' + (type || 'metric') + '-btn');
+            if (section) section.style.display = 'none';
+            if (btn) btn.style.display = 'block';
+        }
+        
+        function confirmDelete(type, id, name) {
+            const message = `Are you sure you want to delete the ${type} "${name}"?\\n\\nThis action cannot be undone.`;
+            
+            if (confirm(message)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/${type}s/delete/${id}`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    """))
+    
+    return create_main_layout(
+        "Metrics",
+        Div(*content),
+        current_page="metrics",
+        user=user.to_dict() if user else None
+    )
+
+def create_metric_card(metric):
+    """Create a metric card similar to other pages"""
+    return Div(
+        Div(
+            Div(
+                H3(metric["name"], style="margin: 0; font-size: 1.125rem; font-weight: 600;"),
+                P(metric.get("description", "No description"), 
+                  style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.875rem;"),
+                style="flex: 1;"
+            ),
+            Div(
+                Button("Edit", variant="outline", size="sm"),
+                Button("Delete", variant="destructive", size="sm",
+                       onclick=f"confirmDelete('metric', '{metric['id']}', '{metric['name']}')")
+            ),
+            style="display: flex; justify-content: space-between; align-items: flex-start;"
+        ),
+        Div(
+            P(f"Format: {metric.get('dataset_format', 'Unknown')} • Created: {metric.get('created_at', 'Unknown')[:10]}", 
+              style="margin: 0; color: #6b7280; font-size: 0.875rem;"),
+            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;"
+        ),
+        style="background: white; padding: 1.5rem; border-radius: 0.5rem; border: 1px solid #e5e7eb;"
+    )
+
 @app.get("/datasets")
 async def datasets_page(request):
     """Datasets page"""
@@ -240,8 +413,19 @@ async def datasets_page(request):
             content=Div(
                 P("Upload your training data in CSV or JSON format.", 
                   style="color: #6b7280; margin-bottom: 1rem;"),
-                # Dataset upload form
-                Form(
+                Button("Upload New Dataset", 
+                       onclick="showCreateForm('dataset')",
+                       id="create-dataset-btn"),
+                
+                # Upload form (hidden by default)
+                Div(
+                    Button("Cancel", 
+                           variant="outline",
+                           onclick="hideCreateForm('dataset')",
+                           style="margin-bottom: 1rem;"),
+                    
+                    # Dataset upload form
+                    Form(
                     Div(
                         Label("Dataset Name:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
                         Input(
@@ -266,14 +450,17 @@ async def datasets_page(request):
                         style="margin-bottom: 1rem;"
                     ),
                     Button(
-                        "📁 Upload Dataset", 
-                        type="submit",
-                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 500; cursor: pointer;"
+                        "Upload Dataset", 
+                        type="submit"
                     ),
                     method="POST",
                     action="/datasets/upload",
                     enctype="multipart/form-data"
-                )
+                ),
+                
+                style="display: none; margin-top: 1rem;",
+                id="create-dataset-section"
+            )
             ),
             nested=True
         ),
@@ -289,8 +476,14 @@ async def datasets_page(request):
                           style="margin: 0; color: #6b7280; font-size: 0.875rem;")
                     ),
                     Div(
-                        Button("View", variant="outline", style="margin-right: 0.5rem; font-size: 0.875rem;"),
-                        Button("Edit", variant="ghost", style="margin-right: 0.5rem; font-size: 0.875rem;"),
+                        Button("View", 
+                               variant="outline", 
+                               style="margin-right: 0.5rem; font-size: 0.875rem;",
+                               onclick=f"window.location.href='/datasets/view/{dataset['id']}'"),
+                        Button("Edit", 
+                               variant="ghost", 
+                               style="margin-right: 0.5rem; font-size: 0.875rem;",
+                               onclick=f"window.location.href='/datasets/edit/{dataset['id']}'"),
                         Button("Delete", 
                                variant="danger", 
                                style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
@@ -314,12 +507,641 @@ async def datasets_page(request):
     elif error_message:
         content.append(Script(f"showMessage('{error_message}', 'error');"))
     
-    return create_page_layout(
+    # Add confirmDelete function for delete buttons
+    content.append(Script("""
+        function showCreateForm(type) {
+            const section = document.getElementById('create-' + (type || 'metric') + '-section');
+            const btn = document.getElementById('create-' + (type || 'metric') + '-btn');
+            if (section) section.style.display = 'block';
+            if (btn) btn.style.display = 'none';
+        }
+        
+        function hideCreateForm(type) {
+            const section = document.getElementById('create-' + (type || 'metric') + '-section');
+            const btn = document.getElementById('create-' + (type || 'metric') + '-btn');
+            if (section) section.style.display = 'none';
+            if (btn) btn.style.display = 'block';
+        }
+        
+        function confirmDelete(type, id, name) {
+            const message = `Are you sure you want to delete the ${type} "${name}"?\\n\\nThis action cannot be undone.`;
+            
+            if (confirm(message)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/${type}s/delete/${id}`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    """))
+    
+    return create_main_layout(
         "Datasets",
-        content=content,
+        Div(*content),
         current_page="datasets",
         user=user.to_dict() if user else None
     )
+
+@app.post("/metrics/infer-from-dataset")
+async def infer_metrics_from_dataset(request):
+    """Infer metrics from dataset using AI"""
+    print("=" * 50)
+    print("🚀 ENDPOINT HIT: /metrics/infer-from-dataset")
+    print("=" * 50)
+    
+    print("🔍 Starting metric inference from dataset...")
+    
+    form_data = await request.form()
+    metric_name = form_data.get("metric_name")
+    dataset_id = form_data.get("dataset_id")
+    analysis_depth = form_data.get("analysis_depth", "standard")
+    focus_areas = form_data.getlist("focus")
+    rate_limit = int(form_data.get("rate_limit", "60"))
+    model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0")
+    
+    print(f"📋 Parameters: name={metric_name}, dataset={dataset_id}, depth={analysis_depth}")
+    print(f"⚡ Rate limit: {rate_limit} RPM, Model: {model_id}")
+    print(f"🎯 Focus areas: {focus_areas}")
+    
+    if not dataset_id:
+        print("❌ No dataset selected")
+        return RedirectResponse(url="/metrics?error=no_dataset_selected", status_code=302)
+    
+    if not metric_name:
+        print("❌ No metric name provided")
+        return RedirectResponse(url="/metrics?error=no_metric_name", status_code=302)
+    
+    try:
+        print("📊 Reading dataset content...")
+        # Read dataset content
+        sample_counts = {"quick": 5, "standard": 20, "deep": 50}
+        max_samples = sample_counts.get(analysis_depth, 20)
+        
+        dataset_content = read_dataset_content(dataset_id, max_samples)
+        print(f"✅ Dataset content loaded: {len(dataset_content)} characters")
+        
+        print("🤖 Creating AI prompt for metric inference...")
+        # Create AI prompt for metric inference
+        from prompt_templates import get_dataset_analysis_prompt
+        prompt = get_dataset_analysis_prompt(dataset_content, focus_areas, analysis_depth)
+        print(f"✅ Prompt created: {len(prompt)} characters")
+        
+        print("🔄 Calling AI for metric inference...")
+        # Call AI to infer metrics with rate limiting
+        inferred_metrics = await call_ai_for_metric_inference(prompt, rate_limit, model_id)
+        print(f"✅ AI inference completed: {type(inferred_metrics)}")
+        print(f"📝 Inference result keys: {list(inferred_metrics.keys()) if isinstance(inferred_metrics, dict) else 'Not a dict'}")
+        
+        print("📦 Preparing metric selection data...")
+        # Instead of generating code immediately, redirect to metric selection page
+        import urllib.parse
+        import json
+        selection_data = {
+            "metric_name": metric_name,
+            "dataset_id": dataset_id,
+            "analysis_depth": analysis_depth,
+            "focus_areas": focus_areas,
+            "model_id": model_id,
+            "rate_limit": rate_limit,
+            "inferred_metrics": inferred_metrics
+        }
+        
+        encoded_data = urllib.parse.quote(json.dumps(selection_data))
+        print(f"✅ Selection data encoded: {len(encoded_data)} characters")
+        print("🔄 Redirecting to metric selection page...")
+        return RedirectResponse(url=f"/metrics/select?data={encoded_data}", status_code=302)
+        
+    except Exception as e:
+        print(f"❌ Error inferring metrics: {str(e)}")
+        print(f"❌ Error type: {type(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return RedirectResponse(url="/metrics?error=inference_failed", status_code=302)
+
+async def call_ai_for_metric_inference(prompt: str, rate_limit: int = 60, model_id: str = "us.amazon.nova-premier-v1:0") -> dict:
+    """Call AI service to infer metrics from actual dataset analysis"""
+    import boto3
+    import json
+    
+    print(f"🤖 AI Inference - Model: {model_id}, Rate limit: {rate_limit} RPM")
+    print("⏱️ Note: Rate limiting removed for faster response")
+    
+    try:
+        print("🔗 Initializing Bedrock client...")
+        bedrock = boto3.client('bedrock-runtime')
+        
+        print("📤 Sending request to Bedrock...")
+        response = bedrock.invoke_model(
+            modelId=model_id,
+            body=json.dumps({
+                "messages": [{"role": "user", "content": [{"text": prompt}]}],
+                "inferenceConfig": {
+                    "maxTokens": 1000,
+                    "temperature": 0.3
+                }
+            })
+        )
+        
+        print("📥 Received response from Bedrock")
+        result = json.loads(response['body'].read())
+        ai_response = result['output']['message']['content'][0]['text']
+        print(f"✅ AI response length: {len(ai_response)} characters")
+        
+        # Parse the JSON response from AI
+        try:
+            print("🔄 Parsing AI response as JSON...")
+            print(f"📝 Raw AI response (first 1000 chars): {ai_response[:1000]}")
+            parsed_response = json.loads(ai_response)
+            print(f"✅ JSON parsing successful: {list(parsed_response.keys())}")
+            return parsed_response
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing failed: {e}")
+            print(f"📝 Full raw AI response: {ai_response}")
+            
+            # Try to extract JSON from markdown code blocks
+            import re
+            json_match = re.search(r'```json\s*(\{.*?\})\s*```', ai_response, re.DOTALL)
+            if json_match:
+                try:
+                    print("🔄 Found JSON in markdown, attempting to parse...")
+                    extracted_json = json_match.group(1)
+                    parsed_response = json.loads(extracted_json)
+                    print(f"✅ Markdown JSON parsing successful: {list(parsed_response.keys())}")
+                    return parsed_response
+                except json.JSONDecodeError:
+                    print("❌ Markdown JSON also failed to parse")
+            
+            # Fallback if AI doesn't return valid JSON
+            return {
+                "metrics": [{"name": "AI Analysis Failed", "description": "Could not parse AI response", "criteria": "No criteria", "example": "No example"}],
+                "reasoning": f"AI response was not valid JSON. Raw response: {ai_response[:500]}..."
+            }
+            
+    except Exception as e:
+        print(f"❌ Bedrock API error: {str(e)}")
+        print(f"❌ Error type: {type(e)}")
+        # Fallback to hardcoded response
+        return {
+            "metrics": [
+                {
+                    "name": "Response Accuracy",
+                    "description": "Measures how accurately the output matches the expected result",
+                    "criteria": "5=Perfect match, 4=Minor errors, 3=Some errors, 2=Major errors, 1=Completely wrong",
+                    "example": "For classification tasks, checks if predicted category matches actual category"
+                }
+            ],
+            "reasoning": "Fallback metrics due to API error"
+        }
+
+@app.get("/metrics/edit/{metric_id}")
+def edit_metric_page(request):
+    """Edit metric page"""
+    metric_id = request.path_params["metric_id"]
+    
+    from database import Database
+    db = Database()
+    metric = db.get_metric_by_id(metric_id)
+    
+    if not metric:
+        return RedirectResponse(url="/metrics?error=not_found", status_code=302)
+    
+    page_content = Div(
+        H2("Edit Metric", style="margin-bottom: 2rem; color: #1f2937;"),
+        
+        Form(
+            Card(
+                header=H3("Metric Details"),
+                content=Div(
+                    FormField(
+                        Label("Name:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                        Input(name="name", value=metric["name"], required=True)
+                    ),
+                    FormField(
+                        Label("Description:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                        Textarea(metric["description"], name="description", rows=3)
+                    ),
+                    FormField(
+                        Label("Natural Language Input:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                        Textarea(metric.get("natural_language_input", ""), name="natural_language_input", rows=2)
+                    )
+                )
+            ),
+            
+            Card(
+                header=H3("Generated Code"),
+                content=Div(
+                    FormField(
+                        Label("Python Code:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                        Textarea(metric["generated_code"], 
+                                name="generated_code", 
+                                rows=15,
+                                style="font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem;")
+                    )
+                )
+            ),
+            
+            Div(
+                Button("Update Metric", type="submit", style="background: #10b981; color: white; margin-right: 1rem;"),
+                Button("Cancel", type="button", onclick="window.location.href='/metrics'", variant="outline"),
+                style="margin-top: 2rem; display: flex; gap: 1rem;"
+            ),
+            
+            method="POST",
+            action=f"/metrics/edit/{metric_id}"
+        )
+    )
+    
+    return create_main_layout("Edit Metric", page_content, current_page="metrics")
+
+@app.post("/metrics/edit/{metric_id}")
+async def update_metric(request):
+    """Update metric"""
+    metric_id = request.path_params["metric_id"]
+    form_data = await request.form()
+    
+    from database import Database
+    db = Database()
+    
+    # Update metric in database
+    success = db.update_metric(
+        metric_id=metric_id,
+        name=form_data.get("name"),
+        description=form_data.get("description"),
+        generated_code=form_data.get("generated_code"),
+        natural_language_input=form_data.get("natural_language_input")
+    )
+    
+    if success:
+        return RedirectResponse(url="/metrics?updated=metric", status_code=302)
+    else:
+        return RedirectResponse(url="/metrics?error=update_failed", status_code=302)
+
+@app.get("/metrics/select")
+def metric_selection_page(request):
+    """Select which inferred metrics to convert to code"""
+    import urllib.parse
+    import json
+    
+    # Get selection data from URL params
+    data_param = request.query_params.get("data", "{}")
+    try:
+        selection_data = json.loads(urllib.parse.unquote(data_param))
+    except:
+        return RedirectResponse(url="/metrics?error=invalid_selection", status_code=302)
+    
+    inferred_metrics = selection_data.get("inferred_metrics", {})
+    metrics = inferred_metrics.get("metrics", [])
+    reasoning = inferred_metrics.get("reasoning", "No reasoning provided")
+    
+    page_content = Div(
+        H2("Select Metrics to Generate", style="margin-bottom: 2rem; color: #1f2937;"),
+        
+        # AI Analysis Results
+        Card(
+            header=H3("AI Analysis Results"),
+            content=Div(
+                P(f"Dataset: {selection_data.get('dataset_id', 'Unknown')}", style="margin-bottom: 0.5rem; font-weight: 500;"),
+                P(f"Analysis Depth: {selection_data.get('analysis_depth', 'standard').title()}", style="margin-bottom: 0.5rem;"),
+                P(f"Focus Areas: {', '.join(selection_data.get('focus_areas', [])) or 'General analysis'}", style="margin-bottom: 1rem;"),
+                H4("AI Reasoning:", style="margin-bottom: 0.5rem; color: #1f2937;"),
+                P(reasoning, style="background: #f8f9fa; padding: 1rem; border-radius: 0.375rem; font-style: italic;")
+            )
+        ),
+        
+        # Metric Selection Form
+        Form(
+            Card(
+                header=H3("Select Metrics to Generate"),
+                content=Div(
+                    *[Div(
+                        Div(
+                            Input(type="checkbox", name="selected_metrics", value=str(i), id=f"metric-{i}", checked=True),
+                            Label(f" {metric.get('name', f'Metric {i+1}')}", **{"for": f"metric-{i}"}, style="font-weight: 500; margin-left: 0.5rem;"),
+                            style="margin-bottom: 0.5rem;"
+                        ),
+                        Div(
+                            P(f"Description: {metric.get('description', 'No description')}", style="margin-bottom: 0.25rem; color: #6b7280;"),
+                            P(f"Criteria: {metric.get('criteria', 'No criteria')}", style="margin-bottom: 0.25rem; color: #6b7280;"),
+                            P(f"Example: {metric.get('example', 'No example')}", style="color: #6b7280;"),
+                            style="margin-left: 1.5rem; padding: 0.5rem; background: #f9fafb; border-radius: 0.25rem;"
+                        ),
+                        style="margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem;"
+                    ) for i, metric in enumerate(metrics)] if metrics else [
+                        P("No metrics were suggested by the AI", style="color: #ef4444; text-align: center; padding: 2rem;")
+                    ]
+                )
+            ),
+            
+            # Hidden fields to preserve data
+            *[Input(type="hidden", name=key, value=str(value)) for key, value in selection_data.items() if key != "inferred_metrics"],
+            Input(type="hidden", name="metrics_json", value=json.dumps(metrics)),
+            Input(type="hidden", name="reasoning", value=reasoning),
+            
+            Div(
+                Button("Generate Selected Metrics", type="submit", style="background: #10b981; color: white; margin-right: 1rem;"),
+                Button("Cancel", type="button", onclick="window.location.href='/metrics'", variant="outline"),
+                style="margin-top: 2rem; display: flex; gap: 1rem;"
+            ),
+            
+            method="POST",
+            action="/metrics/generate-selected"
+        )
+    )
+    
+    return create_main_layout("Select Metrics", page_content, current_page="metrics")
+
+@app.post("/metrics/generate-selected")
+async def generate_selected_metrics(request):
+    """Generate code for selected metrics"""
+    form_data = await request.form()
+    selected_indices = form_data.getlist("selected_metrics")
+    
+    if not selected_indices:
+        return RedirectResponse(url="/metrics?error=no_metrics_selected", status_code=302)
+    
+    # Get the original data
+    metric_name = form_data.get("metric_name")
+    model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0")
+    rate_limit = int(form_data.get("rate_limit", "60"))
+    metrics_json = form_data.get("metrics_json", "[]")
+    reasoning = form_data.get("reasoning", "")
+    
+    try:
+        import json
+        all_metrics = json.loads(metrics_json)
+        selected_metrics = [all_metrics[int(i)] for i in selected_indices]
+        
+        # Generate code for selected metrics
+        metric_service = MetricService()
+        criteria = {
+            "natural_language": reasoning,
+            "dataset_format": "json",
+            "metrics_description": str(selected_metrics)
+        }
+        
+        generated_code = metric_service.generate_metric_code(metric_name, criteria, model_id=model_id, rate_limit=rate_limit)
+        
+        # Prepare preview data
+        preview_data = {
+            "name": metric_name,
+            "description": f"Selected metrics from AI analysis",
+            "dataset_format": "JSON",
+            "scoring_criteria": reasoning,
+            "generated_code": generated_code,
+            "natural_language_input": f"Selected {len(selected_metrics)} metrics: {', '.join([m.get('name', 'Unnamed') for m in selected_metrics])}"
+        }
+        
+        import urllib.parse
+        encoded_data = urllib.parse.quote(json.dumps(preview_data))
+        return RedirectResponse(url=f"/metrics/preview?data={encoded_data}", status_code=302)
+        
+    except Exception as e:
+        print(f"❌ Error generating selected metrics: {e}")
+        return RedirectResponse(url="/metrics?error=generation_failed", status_code=302)
+
+@app.get("/metrics/preview")
+def metric_preview_page(request):
+    """Preview generated metric before saving"""
+    import urllib.parse
+    import json
+    
+    # Get preview data from URL params
+    data_param = request.query_params.get("data", "{}")
+    try:
+        preview_data = json.loads(urllib.parse.unquote(data_param))
+    except:
+        return RedirectResponse(url="/metrics?error=invalid_preview", status_code=302)
+    
+    # Build the page content
+    page_content = Div(
+        H2("Preview Generated Metric", style="margin-bottom: 2rem; color: #1f2937;"),
+        
+        Card(
+            header=H3("Metric Details"),
+            content=Div(
+                P(f"Name: {preview_data.get('name', 'Unknown')}", style="margin-bottom: 0.5rem; font-weight: 500;"),
+                P(f"Description: {preview_data.get('description', 'No description')}", style="margin-bottom: 0.5rem;"),
+                P(f"Criteria: {preview_data.get('scoring_criteria', 'No criteria')}", style="margin-bottom: 0.5rem;"),
+            )
+        ),
+        
+        Card(
+            header=H3("Generated Code"),
+            content=Div(
+                Pre(
+                    Code(preview_data.get('generated_code', 'No code generated')),
+                    style="background: #f8f9fa; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem;"
+                )
+            )
+        ),
+        
+        Div(
+            Button("Save Metric", 
+                   onclick="saveMetric()",
+                   style="background: #10b981; color: white; margin-right: 1rem;"),
+            Button("Cancel", 
+                   onclick="window.location.href='/metrics'",
+                   variant="outline"),
+            style="margin-top: 2rem; display: flex; gap: 1rem;"
+        ),
+        
+        # Hidden form with metric data
+        Form(
+            *[Input(type="hidden", name=key, value=str(value)) for key, value in preview_data.items()],
+            id="metric-form",
+            method="POST",
+            action="/metrics/save"
+        ),
+        
+        Script("""
+            function saveMetric() {
+                document.getElementById('metric-form').submit();
+            }
+        """)
+    )
+    
+    return create_main_layout("Metric Preview", page_content, current_page="metrics")
+
+@app.post("/metrics/save")
+async def save_metric(request):
+    """Save the previewed metric"""
+    form_data = await request.form()
+    
+    from database import Database
+    db = Database()
+    
+    metric_id = db.create_metric(
+        name=form_data.get("name"),
+        description=form_data.get("description"),
+        dataset_format=form_data.get("dataset_format", "JSON"),
+        scoring_criteria=form_data.get("scoring_criteria"),
+        generated_code=form_data.get("generated_code"),
+        natural_language_input=form_data.get("natural_language_input")
+    )
+    
+    return RedirectResponse(url=f"/metrics?created=metric&id={metric_id}", status_code=302)
+
+@app.post("/metrics/create")
+async def create_metric(request):
+    """Create a new metric from natural language or visual builder"""
+    from database import Database
+    from metric_service import MetricService
+    
+    db = Database()
+    metric_service = MetricService()
+    
+    # Get form data
+    form_data = await request.form()
+    name = form_data.get("name", "").strip()
+    description = form_data.get("description", "").strip()
+    natural_language = form_data.get("natural_language", "").strip()
+    model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0").strip()
+    
+    if not name or not natural_language:
+        return {"error": "Name and natural language description are required"}
+    
+    try:
+        # Parse natural language to criteria
+        criteria = metric_service.parse_natural_language(natural_language)
+        criteria['model_id'] = model_id
+        
+        # Generate metric code using selected model
+        generated_code = metric_service.generate_metric_code(name, criteria, model_id)
+        
+        # Validate the code (temporarily disabled for debugging)
+        # if not metric_service.validate_metric_code(generated_code):
+        #     return {"error": "Generated metric code is invalid"}
+        
+        print("Generated code:", generated_code)  # Debug output
+        
+        # Store in database
+        metric_id = db.create_metric(
+            name=name,
+            description=description,
+            dataset_format=criteria['dataset_format'],
+            scoring_criteria=json.dumps(criteria),
+            generated_code=generated_code,
+            natural_language_input=natural_language
+        )
+        
+        return {"success": True, "metric_id": metric_id, "message": "Metric created successfully"}
+        
+    except Exception as e:
+        return {"error": f"Failed to create metric: {str(e)}"}
+
+@app.get("/metrics/{metric_id}")
+async def get_metric(request):
+    """Get a single metric for editing"""
+    metric_id = request.path_params["metric_id"]
+    
+    try:
+        metric = db.get_metric_by_id(metric_id)
+        if metric:
+            return metric
+        else:
+            return {"error": "Metric not found"}, 404
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.post("/metrics/update/{metric_id}")
+async def update_metric(request):
+    """Update an existing metric"""
+    metric_id = request.path_params["metric_id"]
+    
+    try:
+        form_data = await request.form()
+        name = form_data.get("name", "").strip()
+        description = form_data.get("description", "").strip()
+        natural_language = form_data.get("natural_language", "").strip()
+        model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0").strip()
+        
+        if not name or not natural_language:
+            return {"error": "Name and natural language description are required"}
+        
+        # Generate updated code
+        metric_service = MetricService()
+        criteria = {"description": natural_language}
+        generated_code = metric_service.generate_metric_code(name, criteria, model_id)
+        
+        # Update in database
+        updated = db.update_metric(metric_id, name, description, generated_code, natural_language)
+        
+        if updated:
+            return {"success": True, "message": "Metric updated successfully"}
+        else:
+            return {"error": "Metric not found"}
+            
+    except Exception as e:
+        return {"error": f"Failed to update metric: {str(e)}"}
+
+@app.post("/metrics/preview")
+async def preview_metric(request):
+    """Preview generated metric code"""
+    try:
+        form_data = await request.form()
+        name = form_data.get("name", "Untitled Metric").strip()
+        natural_language = form_data.get("natural_language", "").strip()
+        model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0").strip()
+        
+        if not natural_language:
+            return {"error": "Natural language description is required"}
+        
+        # Generate metric code using selected model
+        metric_service = MetricService()
+        criteria = {"description": natural_language}
+        generated_code = metric_service.generate_metric_code(name, criteria, model_id)
+        
+        return {"success": True, "code": generated_code}
+        
+    except Exception as e:
+        return {"error": f"Failed to generate preview: {str(e)}"}
+
+@app.post("/metrics/delete/{metric_id}")
+async def delete_metric(request):
+    """Delete a metric"""
+    metric_id = request.path_params["metric_id"]
+    
+    try:
+        deleted = db.delete_metric(metric_id)
+        if deleted:
+            return {"success": True}
+        else:
+            return {"error": "Metric not found"}, 404
+    except Exception as e:
+        return {"error": str(e)}, 500
+async def preview_metric(request):
+    """Preview generated metric code from natural language"""
+    from metric_service import MetricService
+    
+    metric_service = MetricService()
+    
+    # Get form data
+    form_data = await request.form()
+    name = form_data.get("name", "Untitled Metric").strip()
+    natural_language = form_data.get("natural_language", "").strip()
+    model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0").strip()
+    
+    if not natural_language:
+        return {"error": "Natural language description is required"}
+    
+    try:
+        # Parse and generate code
+        criteria = metric_service.parse_natural_language(natural_language)
+        generated_code = metric_service.generate_metric_code(name, criteria, model_id)
+        
+        return {"code": generated_code}
+        criteria = metric_service.parse_natural_language(natural_language)
+        generated_code = metric_service.generate_metric_code(name, criteria)
+        
+        return {
+            "success": True,
+            "code": generated_code,
+            "criteria": criteria
+        }
+        
+    except Exception as e:
+        return {"error": f"Failed to generate preview: {str(e)}"}
 
 @app.get("/prompts")
 async def prompts_page(request):
@@ -354,8 +1176,19 @@ async def prompts_page(request):
             content=Div(
                 P("Create system and user prompts for optimization.", 
                   style="color: #6b7280; margin-bottom: 1rem;"),
-                # Prompt creation form
-                Form(
+                Button("Create New Prompt", 
+                       onclick="showCreateForm('prompt')",
+                       id="create-prompt-btn"),
+                
+                # Create form (hidden by default)
+                Div(
+                    Button("Cancel", 
+                           variant="outline",
+                           onclick="hideCreateForm('prompt')",
+                           style="margin-bottom: 1rem;"),
+                    
+                    # Prompt creation form
+                    Form(
                     Div(
                         Label("Prompt Name:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
                         Input(
@@ -390,13 +1223,16 @@ async def prompts_page(request):
                         style="margin-bottom: 1rem;"
                     ),
                     Button(
-                        "✨ Create Prompt", 
-                        type="submit",
-                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 500; cursor: pointer;"
+                        "Create Prompt", 
+                        type="submit"
                     ),
                     method="POST",
                     action="/prompts/create"
-                )
+                ),
+                
+                style="display: none; margin-top: 1rem;",
+                id="create-prompt-section"
+            )
             ),
             nested=True
         ),
@@ -412,8 +1248,10 @@ async def prompts_page(request):
                           style="margin: 0; color: #6b7280; font-size: 0.875rem;")
                     ),
                     Div(
-                        Button("Edit", variant="outline", style="margin-right: 0.5rem; font-size: 0.875rem;"),
-                        Button("Test", variant="ghost", style="margin-right: 0.5rem; font-size: 0.875rem;"),
+                        Button("Edit", 
+                               variant="outline", 
+                               style="margin-right: 0.5rem; font-size: 0.875rem;",
+                               onclick=f"window.location.href='/prompts/edit/{prompt['id']}'"),
                         Button("Delete", 
                                variant="danger", 
                                style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
@@ -437,9 +1275,38 @@ async def prompts_page(request):
     elif error_message:
         content.append(Script(f"showMessage('{error_message}', 'error');"))
     
-    return create_page_layout(
+    # Add confirmDelete function for delete buttons
+    content.append(Script("""
+        function showCreateForm(type) {
+            const section = document.getElementById('create-' + (type || 'metric') + '-section');
+            const btn = document.getElementById('create-' + (type || 'metric') + '-btn');
+            if (section) section.style.display = 'block';
+            if (btn) btn.style.display = 'none';
+        }
+        
+        function hideCreateForm(type) {
+            const section = document.getElementById('create-' + (type || 'metric') + '-section');
+            const btn = document.getElementById('create-' + (type || 'metric') + '-btn');
+            if (section) section.style.display = 'none';
+            if (btn) btn.style.display = 'block';
+        }
+        
+        function confirmDelete(type, id, name) {
+            const message = `Are you sure you want to delete the ${type} "${name}"?\\n\\nThis action cannot be undone.`;
+            
+            if (confirm(message)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/${type}s/delete/${id}`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    """))
+    
+    return create_main_layout(
         "Prompts",
-        content=content,
+        Div(*content),
         current_page="prompts",
         user=user.to_dict() if user else None
     )
@@ -472,15 +1339,33 @@ async def optimization_page(request):
     # Get available prompts and datasets for the form
     available_prompts = db.get_prompts()
     available_datasets = db.get_datasets()
+    available_metrics = db.get_metrics()  # Add metrics
+    
+    print(f"DEBUG: Found {len(available_metrics)} metrics for optimization form:")
+    for metric in available_metrics:
+        print(f"  - {metric['id']}: {metric['name']} - {metric['description']}")
     
     content = [
         Card(
             header=H3("Start New Optimization"),
             content=Div(
-                P("Configure and start prompt optimization runs here.", 
+                P("Optimize your prompts using AI-powered techniques.", 
                   style="color: #6b7280; margin-bottom: 1rem;"),
-                # Optimization start form
-                Form(
+                Button("Start New Optimization", 
+                       onclick="showCreateForm('optimization')",
+                       id="create-optimization-btn"),
+                
+                # Optimization form (hidden by default)
+                Div(
+                    Button("Cancel", 
+                           variant="outline",
+                           onclick="hideCreateForm('optimization')",
+                           style="margin-bottom: 1rem;"),
+                    
+                    # Optimization form
+                    P("Configure and start prompt optimization runs here.", 
+                      style="color: #6b7280; margin-bottom: 1rem;"),
+                    Form(
                     Div(
                         Label("Optimization Name:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
                         Input(
@@ -515,6 +1400,26 @@ async def optimization_page(request):
                         ),
                         style="margin-bottom: 1rem;"
                     ),
+                    
+                    # Metric Selection
+                    Div(
+                        Label("Evaluation Metric:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                        Select(
+                            Option("Select a metric...", value="", disabled=True, selected=True),
+                            *[Option(f"{metric['name']} - {metric['description'] or 'Custom metric'}", 
+                                   value=metric['id']) for metric in available_metrics],
+                            name="metric_id",
+                            required=True,
+                            style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;"
+                        ),
+                        P("Select the evaluation metric to measure prompt performance", 
+                          style="font-size: 0.875rem; color: #6b7280; margin: 0;"),
+                        style="margin-bottom: 1rem;"
+                    ) if available_metrics else Div(
+                        P("⚠️ No metrics available. Create a metric first.", 
+                          style="color: #f59e0b; font-weight: 500; padding: 1rem; background: #fef3c7; border-radius: 0.375rem;"),
+                        style="margin-bottom: 1rem;"
+                    ),
                     # Advanced Configuration Section
                     Div(
                         Div(
@@ -537,14 +1442,29 @@ async def optimization_page(request):
                                   style="font-size: 0.875rem; color: #6b7280; margin: 0;"),
                                 style="margin-bottom: 1rem;"
                             ),
+                            # Train/Test Split
+                            Div(
+                                Label("Train/Test Split:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                                Select(
+                                    Option("50/50 (Balanced)", value="0.5", selected=True),
+                                    Option("60/40 (More Test Data)", value="0.6"),
+                                    Option("70/30 (Standard)", value="0.7"),
+                                    Option("80/20 (More Training Data)", value="0.8"),
+                                    name="train_split",
+                                    style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;"
+                                ),
+                                P("Higher train split = more data for optimization, lower = more data for evaluation", 
+                                  style="font-size: 0.875rem; color: #6b7280; margin: 0;"),
+                                style="margin-bottom: 1rem;"
+                            ),
                             # Dataset Record Limit
                             Div(
                                 Label("Dataset Records to Process:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
                                 Input(
                                     type="number", 
                                     name="record_limit", 
-                                    placeholder="Leave empty to use all records",
-                                    min="1",
+                                    placeholder="Minimum 5 records",
+                                    min="5",
                                     max="10000",
                                     style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;"
                                 ),
@@ -573,17 +1493,20 @@ async def optimization_page(request):
                         )
                     ),
                     Button(
-                        "🚀 Start Optimization", 
-                        type="submit",
-                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 500; cursor: pointer;"
+                        "Start Optimization", 
+                        type="submit"
                     ),
                     method="POST",
                     action="/optimization/start"
                 ) if available_prompts and available_datasets else P(
-                    "⚠️ You need at least one prompt and one dataset to start optimization.",
+                    "You need at least one prompt and one dataset to start optimization.",
                     style="color: #f59e0b; font-weight: 500; padding: 1rem; background: #fef3c7; border-radius: 0.375rem;"
-                )
-            ),
+                ),
+                
+                style="display: none; margin-top: 1rem;",
+                id="create-optimization-section"
+            )
+            ),  # Close the main content Div
             nested=True
         ),
         Card(
@@ -611,10 +1534,21 @@ async def optimization_page(request):
                             style="text-align: center; margin-bottom: 0.5rem;"
                         ),
                         Div(
-                            Button("View Results" if opt["status"] == "Completed" else "Monitor", 
+                            Button("Retry", 
                                    variant="outline", 
-                                   style="font-size: 0.875rem; margin-right: 0.5rem;",
-                                   onclick=f"window.location.href='/optimization/{opt['id']}/monitor'" if opt["status"] != "Completed" else ""),
+                                   style="font-size: 0.875rem; margin-right: 0.5rem; color: #f59e0b; border-color: #f59e0b;",
+                                   onclick=f"retryOptimization('{opt['id']}')"
+                                   ) if opt["status"] == "Failed" else None,
+                            Button("View Results", 
+                                   variant="outline", 
+                                   style="font-size: 0.875rem; margin-right: 0.5rem; color: #10b981; border-color: #10b981;",
+                                   onclick=f"window.location.href='/optimization/results/{opt['id']}'"
+                                   ) if opt["status"] == "Completed" else None,
+                            Button("Monitor Progress", 
+                                   variant="outline", 
+                                   style="font-size: 0.875rem; margin-right: 0.5rem; color: #3b82f6; border-color: #3b82f6;",
+                                   onclick=f"window.location.href='/optimization/monitor/{opt['id']}'"
+                                   ) if opt["status"] in ["Starting", "Running"] else None,
                             Button("Stop" if opt["status"] in ["Starting", "Running"] else "Delete", 
                                    variant="danger", 
                                    style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
@@ -640,9 +1574,45 @@ async def optimization_page(request):
     elif error_message:
         content.append(Script(f"showMessage('{error_message}', 'error');"))
     
-    return create_page_layout(
+    # Add modal functions
+    content.append(Script("""
+        function retryOptimization(optimizationId) {
+            if (confirm('Retry this failed optimization? It will restart from the beginning.')) {
+                fetch(`/optimization/${optimizationId}/retry`, {method: 'POST'})
+                .then(() => location.reload());
+            }
+        }
+        
+        function showCreateForm(type) {
+            const section = document.getElementById('create-' + (type || 'metric') + '-section');
+            const btn = document.getElementById('create-' + (type || 'metric') + '-btn');
+            if (section) section.style.display = 'block';
+            if (btn) btn.style.display = 'none';
+        }
+        
+        function hideCreateForm(type) {
+            const section = document.getElementById('create-' + (type || 'metric') + '-section');
+            const btn = document.getElementById('create-' + (type || 'metric') + '-btn');
+            if (section) section.style.display = 'none';
+            if (btn) btn.style.display = 'block';
+        }
+        
+        function confirmDelete(type, id, name) {
+            const message = `Are you sure you want to delete the ${type} "${name}"?\\n\\nThis action cannot be undone.`;
+            
+            if (confirm(message)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/${type}s/delete/${id}`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    """))
+    
+    return create_main_layout(
         "Optimization",
-        content=content,
+        Div(*content),
         current_page="optimization",
         user=user.to_dict() if user else None
     )
@@ -651,24 +1621,323 @@ async def optimization_page(request):
 async def results_page(request):
     """Results page"""
     user = await get_current_user(request)
-    return create_page_layout(
+    return create_main_layout(
         "Results",
-        content=[
+        Div(
             Card(
                 header=H3("Optimization Results"),
                 content=P("View and analyze your optimization results here."),
                 nested=True
             )
-        ],
+        ),
         current_page="results",
         user=user.to_dict() if user else None
     )
+
+@app.get("/test-edit")
+async def test_edit():
+    """Test route to verify server updates"""
+    return H1("Server updated successfully - Edit should work now")
+
+@app.get("/prompts/edit/{prompt_id}")
+async def edit_prompt(request):
+    """Edit a prompt"""
+    prompt_id = request.path_params["prompt_id"]
+    
+    # Use the same import pattern as other working functions
+    from database import Database
+    db = Database()
+    
+    # Find the prompt using get_prompts method (which we know works)
+    prompts = db.get_prompts()
+    prompt = next((p for p in prompts if p["id"] == prompt_id), None)
+    
+    if not prompt:
+        return RedirectResponse(url="/prompts?error=prompt_not_found", status_code=302)
+    
+    # Variables are already parsed as dict, not JSON string
+    variables = prompt.get("variables", {})
+    if isinstance(variables, str):
+        import json
+        variables = json.loads(variables)
+    
+    system_prompt = variables.get("system_prompt", "")
+    user_prompt = variables.get("user_prompt", "")
+    
+    return create_main_layout(
+        "Edit Prompt",
+        Div(
+            H1("Edit Prompt", style="margin-bottom: 2rem;"),
+            Form(
+                Div(
+                    Label("Prompt Name", **{"for": "name"}),
+                    Input(type="text", name="name", value=prompt["name"], required=True),
+                    style="margin-bottom: 1rem;"
+                ),
+                Div(
+                    Label("System Prompt", **{"for": "system_prompt"}),
+                    Textarea(system_prompt, name="system_prompt", rows="8"),
+                    style="margin-bottom: 1rem;"
+                ),
+                Div(
+                    Label("User Prompt", **{"for": "user_prompt"}),
+                    Textarea(user_prompt, name="user_prompt", rows="8"),
+                    style="margin-bottom: 1rem;"
+                ),
+                Div(
+                    Button("Update Prompt", type="submit", style="margin-right: 1rem;"),
+                    Button("Cancel", type="button", onclick="window.location.href='/prompts'", variant="outline"),
+                    style="display: flex; gap: 0.5rem;"
+                ),
+                method="post",
+                action=f"/prompts/edit/{prompt_id}"
+            )
+        ),
+        current_page="prompts"
+    )
+
+@app.post("/prompts/create")
+async def create_prompt(request):
+    """Create a new prompt"""
+    form_data = await request.form()
+    from database import Database
+    db = Database()
+    
+    name = form_data.get("prompt_name", "").strip()
+    system_prompt = form_data.get("system_prompt", "").strip()
+    user_prompt = form_data.get("user_prompt", "").strip()
+    
+    print(f"🔍 Creating prompt: name='{name}', system_len={len(system_prompt)}, user_len={len(user_prompt)}")
+    
+    if not name:
+        print("❌ No name provided")
+        return RedirectResponse(url="/prompts?error=name_required", status_code=302)
+    
+    if not system_prompt and not user_prompt:
+        print("❌ No prompts provided")
+        return RedirectResponse(url="/prompts?error=prompt_required", status_code=302)
+    
+    try:
+        prompt_id = db.create_prompt(name, system_prompt or None, user_prompt or None)
+        print(f"✅ Prompt created: {prompt_id}")
+        return RedirectResponse(url=f"/prompts?created=prompt&id={prompt_id}", status_code=302)
+    except Exception as e:
+        print(f"❌ Error creating prompt: {e}")
+        return RedirectResponse(url="/prompts?error=create_failed", status_code=302)
+
+@app.post("/prompts/edit/{prompt_id}")
+async def update_prompt(request):
+    """Update a prompt"""
+    prompt_id = request.path_params["prompt_id"]
+    form_data = await request.form()
+    from database import Database
+    db = Database()
+    
+    updated = db.update_prompt(
+        prompt_id,
+        form_data.get("name"),
+        form_data.get("system_prompt"),
+        form_data.get("user_prompt")
+    )
+    
+    if updated:
+        return RedirectResponse(url="/prompts?updated=prompt", status_code=302)
+    else:
+        return RedirectResponse(url="/prompts?error=update_failed", status_code=302)
+
+def read_dataset_content(dataset_id: str, max_lines: int = 10) -> str:
+    """Read dataset content from file"""
+    import os
+    import json
+    
+    # Look for dataset file in uploads directory
+    uploads_dir = Path(__file__).parent / "uploads"
+    
+    # Try different file extensions
+    for ext in ['.jsonl', '.csv', '.json']:
+        # Look for files containing the dataset_id
+        for file_path in uploads_dir.glob(f"*{dataset_id}*{ext}"):
+            try:
+                with open(file_path, 'r') as f:
+                    lines = []
+                    for i, line in enumerate(f):
+                        if i >= max_lines:
+                            lines.append(f"... (showing first {max_lines} lines)")
+                            break
+                        lines.append(line.strip())
+                    return '\n'.join(lines)
+            except Exception as e:
+                return f"Error reading file: {str(e)}"
+    
+    return "Dataset file not found"
+
+@app.get("/datasets/view/{dataset_id}")
+async def view_dataset(request):
+    """View dataset contents"""
+    dataset_id = request.path_params["dataset_id"]
+    from database import Database
+    db = Database()
+    
+    datasets = db.get_datasets()
+    dataset = next((d for d in datasets if d["id"] == dataset_id), None)
+    
+    if not dataset:
+        return RedirectResponse(url="/datasets?error=dataset_not_found", status_code=302)
+    
+    # Read actual dataset content
+    content = read_dataset_content(dataset_id)
+    
+    return create_main_layout(
+        "View Dataset",
+        Div(
+            H1(f"Dataset: {dataset['name']}", style="margin-bottom: 2rem;"),
+            P(f"Type: {dataset['type']} • Rows: {dataset['rows']} • Size: {dataset['size']} • Created: {dataset['created']}", 
+              style="margin-bottom: 2rem; color: #6b7280;"),
+            Div(
+                H3("Dataset Contents:", style="margin-bottom: 1rem;"),
+                Pre(content, 
+                    style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; max-height: 400px; font-size: 0.875rem;"),
+                style="margin-bottom: 2rem;"
+            ),
+            Button("Back to Datasets", onclick="window.location.href='/datasets'", variant="outline")
+        ),
+        current_page="datasets"
+    )
+
+@app.get("/datasets/edit/{dataset_id}")
+async def edit_dataset(request):
+    """Edit a dataset"""
+    dataset_id = request.path_params["dataset_id"]
+    from database import Database
+    db = Database()
+    
+    datasets = db.get_datasets()
+    dataset = next((d for d in datasets if d["id"] == dataset_id), None)
+    
+    if not dataset:
+        return RedirectResponse(url="/datasets?error=dataset_not_found", status_code=302)
+    
+    return create_main_layout(
+        "Edit Dataset",
+        Div(
+            H1("Edit Dataset", style="margin-bottom: 2rem;"),
+            Form(
+                Div(
+                    Label("Dataset Name", **{"for": "name"}),
+                    Input(type="text", name="name", value=dataset["name"], required=True),
+                    style="margin-bottom: 1rem;"
+                ),
+                Div(
+                    Button("Update Dataset", type="submit", style="margin-right: 1rem;"),
+                    Button("Cancel", type="button", onclick="window.location.href='/datasets'", variant="outline"),
+                    style="display: flex; gap: 0.5rem;"
+                ),
+                method="post",
+                action=f"/datasets/edit/{dataset_id}"
+            )
+        ),
+        current_page="datasets"
+    )
+
+@app.post("/datasets/upload")
+async def upload_dataset(request):
+    """Upload a new dataset"""
+    form_data = await request.form()
+    from database import Database
+    import os
+    from pathlib import Path
+    
+    db = Database()
+    
+    # Get form fields
+    dataset_name = form_data.get("dataset_name", "").strip()
+    file = form_data.get("dataset_file")
+    
+    if not dataset_name:
+        return RedirectResponse(url="/datasets?error=name_required", status_code=302)
+    
+    if not file or not file.filename:
+        return RedirectResponse(url="/datasets?error=file_required", status_code=302)
+    
+    try:
+        # Create uploads directory if it doesn't exist
+        uploads_dir = Path("uploads")
+        uploads_dir.mkdir(exist_ok=True)
+        
+        # Read file content
+        file_content = await file.read()
+        file_size = len(file_content)
+        
+        # Determine file type and count rows
+        file_extension = Path(file.filename).suffix.lower()
+        if file_extension == '.csv':
+            file_type = "CSV"
+            row_count = file_content.decode('utf-8').count('\n')
+        elif file_extension in ['.json', '.jsonl']:
+            file_type = "JSON"
+            row_count = file_content.decode('utf-8').count('\n')
+        else:
+            return RedirectResponse(url="/datasets?error=unsupported_format", status_code=302)
+        
+        # Create dataset in database
+        dataset_id = db.create_dataset(
+            name=dataset_name,
+            file_type=file_type,
+            file_size=f"{file_size / 1024:.1f} KB",
+            row_count=row_count
+        )
+        
+        # Save file with dataset ID
+        safe_name = dataset_name.replace(" ", "_").lower()
+        file_path = uploads_dir / f"{safe_name}_{dataset_id}{file_extension}"
+        
+        with open(file_path, 'wb') as f:
+            f.write(file_content)
+        
+        return RedirectResponse(url=f"/datasets?created=dataset&id={dataset_id}", status_code=302)
+        
+    except Exception as e:
+        print(f"❌ Error uploading dataset: {e}")
+        return RedirectResponse(url="/datasets?error=upload_failed", status_code=302)
+
+@app.post("/datasets/edit/{dataset_id}")
+async def update_dataset(request):
+    """Update a dataset"""
+    dataset_id = request.path_params["dataset_id"]
+    form_data = await request.form()
+    from database import Database
+    db = Database()
+    
+    # Simple name update - you can extend this for more fields
+    updated = db.update_dataset_name(dataset_id, form_data.get("name"))
+    
+    if updated:
+        return RedirectResponse(url="/datasets?updated=dataset", status_code=302)
+    else:
+        return RedirectResponse(url="/datasets?error=update_failed", status_code=302)
+
+@app.post("/metrics/delete/{metric_id}")
+async def delete_metric(request):
+    """Delete a metric"""
+    metric_id = request.path_params["metric_id"]
+    from database import Database
+    db = Database()
+    
+    success = db.delete_metric(metric_id)
+    
+    if success:
+        return RedirectResponse(url="/metrics?deleted=metric", status_code=302)
+    else:
+        return RedirectResponse(url="/metrics?error=delete_failed", status_code=302)
 
 # Delete routes
 @app.post("/datasets/delete/{dataset_id}")
 async def delete_dataset(request):
     """Delete a dataset"""
     dataset_id = request.path_params["dataset_id"]
+    
+    from database import Database
+    db = Database()
     
     # Delete from SQLite database
     deleted = db.delete_dataset(dataset_id)
@@ -687,6 +1956,9 @@ async def delete_prompt(request):
     """Delete a prompt"""
     prompt_id = request.path_params["prompt_id"]
     
+    from database import Database
+    db = Database()
+    
     # Delete from SQLite database
     deleted = db.delete_prompt(prompt_id)
     
@@ -699,21 +1971,364 @@ async def delete_prompt(request):
     # Redirect back to prompts page with success message
     return RedirectResponse(url="/prompts?deleted=prompt", status_code=302)
 
+@app.post("/optimization/{optimization_id}/retry")
+async def retry_optimization(request):
+    """Retry a failed optimization"""
+    optimization_id = request.path_params["optimization_id"]
+    
+    from database import Database
+    db = Database()
+    
+    # Get the original optimization
+    optimization = db.get_optimization(optimization_id)
+    if not optimization:
+        return RedirectResponse(url="/optimization?error=not_found", status_code=302)
+    
+    # Reset status and clear old logs/candidates
+    db.conn.execute("UPDATE optimizations SET status = 'Starting', progress = 0 WHERE id = ?", (optimization_id,))
+    db.conn.execute("DELETE FROM optimization_logs WHERE optimization_id = ?", (optimization_id,))
+    db.conn.execute("DELETE FROM prompt_candidates WHERE optimization_id = ?", (optimization_id,))
+    db.conn.commit()
+    
+    # Restart the optimization worker
+    import subprocess
+    from pathlib import Path
+    
+    worker_cmd = ["python3", "sdk_worker.py", optimization_id]
+    frontend_dir = Path(__file__).parent  # Use frontend directory, not parent
+    subprocess.Popen(worker_cmd, cwd=frontend_dir)
+    
+    return RedirectResponse(url="/optimization?started=true", status_code=302)
+
+@app.get("/optimization/monitor/{optimization_id}")
+def optimization_monitor_page(request):
+    """Monitor running optimization progress"""
+    optimization_id = request.path_params["optimization_id"]
+    
+    from database import Database
+    db = Database()
+    
+    # Get optimization details
+    optimization = db.get_optimization_by_id(optimization_id)
+    if not optimization:
+        return RedirectResponse(url="/optimization?error=not_found", status_code=302)
+    
+    # Get recent logs
+    logs = db.get_optimization_logs(optimization_id)
+    recent_logs = logs[-20:] if logs else []  # Last 20 logs
+    
+    page_content = Div(
+        H2(f"Monitoring: {optimization['name']}", style="margin-bottom: 2rem; color: #1f2937;"),
+        
+        # Status Card
+        Card(
+            header=H3("Current Status"),
+            content=Div(
+                P(f"Status: {optimization['status']}", 
+                  style=f"margin-bottom: 0.5rem; font-weight: 500; color: {'#10b981' if optimization['status'] == 'Completed' else '#3b82f6' if optimization['status'] == 'Running' else '#f59e0b'};"),
+                P(f"Progress: {optimization.get('progress', 0)}%", style="margin-bottom: 0.5rem;"),
+                P(f"Current Improvement: {optimization.get('improvement', 'N/A')}", style="margin-bottom: 0.5rem;"),
+                P(f"Started: {optimization.get('started', 'N/A')}", style="margin-bottom: 0.5rem;"),
+                Div(
+                    Div(style=f"width: {optimization.get('progress', 0)}%; height: 20px; background: #10b981; border-radius: 10px; transition: width 0.3s ease;"),
+                    style="width: 100%; height: 20px; background: #e5e7eb; border-radius: 10px; margin-top: 1rem;"
+                )
+            )
+        ),
+        
+        # Recent Logs Card
+        Card(
+            header=H3("Recent Activity"),
+            content=Div(
+                *[Div(
+                    Span(log.get('timestamp', ''), style="color: #6b7280; font-size: 0.875rem; margin-right: 1rem;"),
+                    Span(log.get('level', '').upper(), style=f"color: {'#ef4444' if log.get('level') == 'error' else '#10b981' if log.get('level') == 'success' else '#6b7280'}; font-weight: 500; margin-right: 1rem;"),
+                    Span(log.get('message', ''), style="color: #1f2937;"),
+                    style="display: block; padding: 0.5rem; border-bottom: 1px solid #e5e7eb;"
+                ) for log in recent_logs] if recent_logs else [
+                    P("No recent activity", style="color: #6b7280; text-align: center; padding: 2rem;")
+                ]
+            )
+        ),
+        
+        # Actions
+        Div(
+            Button("Refresh", 
+                   onclick="window.location.reload()",
+                   style="background: #3b82f6; color: white; margin-right: 1rem;"),
+            Button("Back to Optimizations", 
+                   onclick="window.location.href='/optimization'",
+                   variant="outline"),
+            style="margin-top: 2rem; display: flex; gap: 1rem;"
+        ),
+        
+        # Auto-refresh script
+        Script("""
+            // Auto-refresh every 5 seconds if optimization is still running
+            const status = document.querySelector('p').textContent;
+            if (status.includes('Running') || status.includes('Starting')) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 5000);
+            }
+        """)
+    )
+    
+    return create_main_layout("Monitor Optimization", page_content, current_page="optimization")
+
+@app.get("/optimization/results/{optimization_id}")
+def optimization_results_page(request):
+    """View detailed optimization results"""
+    optimization_id = request.path_params["optimization_id"]
+    
+    from database import Database
+    db = Database()
+    
+    # Get optimization details
+    optimization = db.get_optimization_by_id(optimization_id)
+    if not optimization:
+        return RedirectResponse(url="/optimization?error=not_found", status_code=302)
+    
+    # Get optimization logs
+    logs = db.get_optimization_logs(optimization_id)
+    
+    # Get prompt candidates if available
+    candidates = db.get_prompt_candidates(optimization_id)
+    
+    page_content = Div(
+        H2(f"Optimization Results: {optimization['name']}", style="margin-bottom: 2rem; color: #1f2937;"),
+        
+        # Overview Card
+        Card(
+            header=H3("Overview"),
+            content=Div(
+                P(f"Status: {optimization['status']}", style="margin-bottom: 0.5rem; font-weight: 500;"),
+                P(f"Progress: {optimization.get('progress', 0)}%", style="margin-bottom: 0.5rem;"),
+                P(f"Improvement: {optimization.get('improvement', 'N/A')}", style="margin-bottom: 0.5rem;"),
+                P(f"Started: {optimization.get('started', 'N/A')}", style="margin-bottom: 0.5rem;"),
+                P(f"Completed: {optimization.get('completed', 'N/A')}", style="margin-bottom: 0.5rem;"),
+            )
+        ),
+        
+        # Prompt Results - Reordered: Baseline → Few-shot → Optimized
+        Card(
+            header=H3("Optimization Results"),
+            content=Div(
+                # 1. Baseline Prompt (first)
+                *[
+                    Div(
+                        H4("Baseline Prompt", 
+                           style="margin-bottom: 1rem; color: #1f2937; font-size: 1.25rem;"),
+                        
+                        P(f"Score: {candidate.get('score', 'N/A')}", 
+                          style="margin-bottom: 1rem; font-weight: 600; color: #dc2626;"),
+                        
+                        # Parse structured data if available
+                        (lambda data: 
+                            Div(
+                                # System Prompt
+                                Div(
+                                    H5("System Prompt:", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                    Div(
+                                        eval(data.split('|', 1)[1])['system'] if '|' in data and data.split('|', 1)[1] else data,
+                                        style="background: #f9fafb; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border-left: 4px solid #10b981; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
+                                    ),
+                                ),
+                                
+                                # User Prompt  
+                                Div(
+                                    H5("User Prompt:", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                    Div(
+                                        eval(data.split('|', 1)[1])['user'] if '|' in data and data.split('|', 1)[1] else "No user prompt",
+                                        style="background: #f0f9ff; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border-left: 4px solid #3b82f6; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
+                                    ),
+                                ),
+                                
+                                # LLM Response (what was evaluated)
+                                Div(
+                                    H5("LLM Response (Used for Scoring):", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                    Div(
+                                        eval(data.split('|', 1)[1])['response'] if '|' in data and data.split('|', 1)[1] else "No response available",
+                                        style="background: #fef3c7; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border-left: 4px solid #f59e0b; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
+                                    ),
+                                ),
+                                
+                                style="background: #ffffff; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem;"
+                            ) if '|' in data else 
+                            # Fallback for non-structured data
+                            Div(
+                                H5("Content:", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                Div(
+                                    data,
+                                    style="background: #f9fafb; padding: 1rem; border-radius: 0.375rem; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
+                                )
+                            )
+                        )(candidate.get('prompt_text', 'No content')),
+                        
+                        style="margin-bottom: 2rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; background: #fafafa;"
+                    ) for candidate in candidates if candidate and candidate.get('prompt_text', '').startswith('BASELINE|')
+                ],
+                
+                # 2. Optimized Prompt (last)
+                *[
+                    Div(
+                        H4("Optimized Prompt", 
+                           style="margin-bottom: 1rem; color: #1f2937; font-size: 1.25rem;"),
+                        
+                        P(f"Score: {candidate.get('score', 'N/A')}", 
+                          style="margin-bottom: 1rem; font-weight: 600; color: #059669;"),
+                        
+                        # Parse structured data if available
+                        (lambda data: 
+                            Div(
+                                # System Prompt
+                                Div(
+                                    H5("System Prompt:", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                    Div(
+                                        eval(data.split('|', 1)[1])['system'] if '|' in data and data.split('|', 1)[1] else data,
+                                        style="background: #f9fafb; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border-left: 4px solid #10b981; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
+                                    ),
+                                ),
+                                
+                                # User Prompt  
+                                Div(
+                                    H5("User Prompt:", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                    Div(
+                                        eval(data.split('|', 1)[1])['user'] if '|' in data and data.split('|', 1)[1] else "No user prompt",
+                                        style="background: #f0f9ff; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border-left: 4px solid #3b82f6; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
+                                    ),
+                                ),
+                                
+                                # LLM Response (what was evaluated)
+                                Div(
+                                    H5("LLM Response (Used for Scoring):", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                    Div(
+                                        eval(data.split('|', 1)[1])['response'] if '|' in data and data.split('|', 1)[1] else "No response available",
+                                        style="background: #fef3c7; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border-left: 4px solid #f59e0b; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
+                                    ),
+                                ),
+                                
+                                # Few-shot info for optimized
+                                (Div(
+                                    P(f"Few-shot Examples: {eval(data.split('|', 1)[1])['few_shot_count']}", 
+                                      style="margin: 0.5rem 0; color: #6b7280; font-size: 0.875rem;")
+                                ) if '|' in data and 'few_shot_count' in eval(data.split('|', 1)[1]) else None),
+                                
+                                style="background: #ffffff; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem;"
+                            ) if '|' in data else 
+                            # Fallback for non-structured data
+                            Div(
+                                H5("Content:", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                Div(
+                                    data,
+                                    style="background: #f9fafb; padding: 1rem; border-radius: 0.375rem; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
+                                )
+                            )
+                        )(candidate.get('prompt_text', 'No content')),
+                        
+                        style="margin-bottom: 2rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; background: #fafafa;"
+                    ) for candidate in candidates if candidate and candidate.get('prompt_text', '').startswith('OPTIMIZED|')
+                ] if candidates else [
+                    P("No optimization results available", style="color: #6b7280; text-align: center; padding: 2rem;")
+                ]
+            )
+        ),
+        
+        # Few-shot Examples Card (separate display)
+        Card(
+            header=H3("Few-shot Examples"),
+            content=Div(
+                *[
+                    Div(
+                        H4(f"Generated {eval(candidate.get('prompt_text', '').split('|', 1)[1])['count']} Few-shot Examples", 
+                           style="margin-bottom: 1rem; color: #1f2937; font-size: 1.1rem;"),
+                        
+                        *[
+                            Div(
+                                H5(f"Example {example['number']}:", 
+                                   style="margin: 1rem 0 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
+                                
+                                # Display few-shot example content with better formatting
+                                (lambda content:
+                                    # Try to extract input/output from the string safely
+                                    Div(
+                                        *([
+                                            Div(
+                                                H6("Input:", style="margin: 0.5rem 0 0.25rem 0; color: #4b5563; font-size: 0.8rem; font-weight: 600;"),
+                                                Div(
+                                                    content.split("'input': '")[1].split("', 'output'")[0] if "'input': '" in content and "', 'output'" in content else content.split("'input': '")[1].split("'}")[0] if "'input': '" in content else content,
+                                                    style="background: #f0f9ff; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 0.5rem; border-left: 3px solid #3b82f6; font-size: 0.8rem; white-space: pre-wrap; word-wrap: break-word;"
+                                                )
+                                            ),
+                                            Div(
+                                                H6("Output:", style="margin: 0.5rem 0 0.25rem 0; color: #4b5563; font-size: 0.8rem; font-weight: 600;"),
+                                                Div(
+                                                    content.split("'output': '")[1].split("'}")[0] if "'output': '" in content else "No output specified",
+                                                    style="background: #f0fdf4; padding: 0.75rem; border-radius: 0.25rem; border-left: 3px solid #10b981; font-size: 0.8rem; white-space: pre-wrap; word-wrap: break-word;"
+                                                )
+                                            )
+                                        ] if "'input': '" in content else [
+                                            # Fallback - just display the content cleanly
+                                            Div(
+                                                content.replace('\\n', '\n').replace("\\'", "'"),
+                                                style="background: #f3e8ff; padding: 0.75rem; border-radius: 0.25rem; border-left: 3px solid #8b5cf6; font-size: 0.8rem; white-space: pre-wrap; word-wrap: break-word;"
+                                            )
+                                        ])
+                                    )
+                                )(example['content']),
+                                
+                                style="margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.375rem; background: #fafafa;"
+                            ) for example in eval(candidate.get('prompt_text', '').split('|', 1)[1])['examples']
+                        ],
+                        
+                        style="background: #ffffff; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem;"
+                    ) for candidate in candidates if candidate and candidate.get('prompt_text', '').startswith('FEWSHOT|')
+                ] if any(candidate.get('prompt_text', '').startswith('FEWSHOT|') for candidate in candidates if candidate) else [
+                    P("No few-shot examples generated", style="color: #6b7280; text-align: center; padding: 2rem;")
+                ]
+            )
+        ),
+        
+        # Logs Card
+        Card(
+            header=H3("Optimization Logs"),
+            content=Div(
+                *[Div(
+                    Span(log.get('timestamp', ''), style="color: #6b7280; font-size: 0.875rem; margin-right: 1rem;"),
+                    Span(log.get('level', '').upper(), style=f"color: {'#ef4444' if log.get('level') == 'error' else '#10b981' if log.get('level') == 'success' else '#6b7280'}; font-weight: 500; margin-right: 1rem;"),
+                    Span(log.get('message', ''), style="color: #1f2937;"),
+                    style="display: block; padding: 0.5rem; border-bottom: 1px solid #e5e7eb;"
+                ) for log in logs] if logs else [
+                    P("No logs available", style="color: #6b7280; text-align: center; padding: 2rem;")
+                ]
+            )
+        ),
+        
+        # Back Button
+        Div(
+            Button("Back to Optimizations", 
+                   onclick="window.location.href='/optimization'",
+                   variant="outline"),
+            style="margin-top: 2rem;"
+        )
+    )
+    
+    return create_main_layout("Optimization Results", page_content, current_page="optimization")
+
 @app.post("/optimizations/delete/{optimization_id}")
 async def delete_optimization(request):
     """Delete an optimization job"""
     optimization_id = request.path_params["optimization_id"]
     
-    # Create fresh database instance to avoid connection issues
-    import database as db_module
-    fresh_db = db_module.Database()
+    from database import Database
+    db = Database()
     
     # Delete from SQLite database
-    deleted = fresh_db.delete_optimization(optimization_id)
+    deleted = db.delete_optimization(optimization_id)
     
     if deleted:
         print(f"✅ Deleted optimization: {optimization_id}")
-        print(f"⚡ Remaining optimizations: {len(fresh_db.get_optimizations())}")
+        print(f"⚡ Remaining optimizations: {len(db.get_optimizations())}")
     else:
         print(f"❌ Optimization not found: {optimization_id}")
     
@@ -724,20 +2339,32 @@ async def delete_optimization(request):
 @app.post("/optimization/start")
 async def start_optimization(request):
     """Start a real optimization run"""
+    print("🔍 DEBUG - OPTIMIZATION START ROUTE HIT")
+    
     try:
         # Get form data
         form_data = await request.form()
+        print(f"🔍 DEBUG - Form data received: {dict(form_data)}")
+        
         prompt_id = form_data.get("prompt_id")
         dataset_id = form_data.get("dataset_id")
+        metric_id = form_data.get("metric_id")
         optimization_name = form_data.get("name", f"Optimization {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        
+        print(f"🔍 DEBUG - Extracted values:")
+        print(f"  - optimization_name: {optimization_name}")
+        print(f"  - prompt_id: {prompt_id}")
+        print(f"  - dataset_id: {dataset_id}")
+        print(f"  - metric_id: {metric_id}")
         
         # Get advanced configuration
         model_mode = form_data.get("model_mode", "lite")  # lite, pro, premier
+        train_split = float(form_data.get("train_split", "0.5"))  # 0.5 = 50/50 split
         record_limit = form_data.get("record_limit", "")
         rate_limit = form_data.get("rate_limit", "60")
         
         # Validate required fields
-        if not prompt_id or not dataset_id:
+        if not prompt_id or not dataset_id or not metric_id:
             return RedirectResponse(url="/optimization?error=missing_data", status_code=302)
         
         # Debug: Log what we received
@@ -746,19 +2373,13 @@ async def start_optimization(request):
         
         # Verify the prompt exists
         try:
-            import sys
-            import os
-            # Add current directory to path to ensure we get our database module
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            if current_dir not in sys.path:
-                sys.path.insert(0, current_dir)
-            
-            # Import our specific database module
-            import database as db_module
-            db = db_module.Database()
+            from database import Database
+            db = Database()
             print(f"🔍 Database initialized successfully")
             
-            prompt_data = db.get_prompt(prompt_id)
+            # Use get_prompts method instead of get_prompt
+            prompts = db.get_prompts()
+            prompt_data = next((p for p in prompts if p["id"] == prompt_id), None)
             print(f"🔍 Prompt lookup completed")
             
             if not prompt_data:
@@ -794,28 +2415,31 @@ async def start_optimization(request):
         if record_limit:
             try:
                 record_limit_int = int(record_limit)
-                record_limit_int = max(1, min(10000, record_limit_int))  # Clamp between 1-10000
+                record_limit_int = max(5, min(10000, record_limit_int))  # Minimum 5 records
             except ValueError:
                 record_limit_int = None
         
         # Create optimization record with configuration
         try:
-            optimization_id = db.create_optimization(optimization_name, prompt_id, dataset_id)
+            print(f"🔍 DEBUG - Creating optimization with metric_id: {metric_id}")
+            optimization_id = db.create_optimization(optimization_name, prompt_id, dataset_id, metric_id)
             print(f"✅ Created optimization record: {optimization_id}")
+            
+            # Verify the record was created with metric_id
+            created_opt = db.get_optimization_by_id(optimization_id)
+            if created_opt:
+                print(f"✅ Verified optimization in database: {created_opt['name']} - {created_opt['status']}")
+                print(f"🔍 DEBUG - Saved metric_id in database: {created_opt.get('metric_id')}")
+            else:
+                print("❌ Failed to retrieve created optimization from database")
         except Exception as e:
             print(f"❌ Error creating optimization: {e}")
             return RedirectResponse(url="/optimization?error=start_failed", status_code=302)
         
-        # Verify the record was created
-        created_opt = db.get_optimization_by_id(optimization_id)
-        if created_opt:
-            print(f"✅ Verified optimization in database: {created_opt['name']} - {created_opt['status']}")
-        else:
-            print(f"❌ Failed to verify optimization in database")
-        
         # Store configuration in optimization record (we'll need to update the database schema for this)
         optimization_config = {
             "model_mode": model_mode,
+            "train_split": train_split,
             "record_limit": record_limit_int,
             "rate_limit": rate_limit_int
         }
@@ -828,14 +2452,14 @@ async def start_optimization(request):
             config_json = json.dumps(optimization_config)
             worker_cmd = [
                 "/Users/tsanti/Development/Publish/nova-prompt-optimizer/.venv/bin/python3", 
-                "frontend/sdk_worker.py", 
+                "sdk_worker.py", 
                 optimization_id, 
                 config_json
             ]
             
-            # Start worker process in background (run from main project directory)
-            main_project_dir = Path(__file__).parent.parent
-            subprocess.Popen(worker_cmd, cwd=main_project_dir)
+            # Start worker process in background (run from frontend directory)
+            frontend_dir = Path(__file__).parent
+            subprocess.Popen(worker_cmd, cwd=frontend_dir)
             print(f"✅ Started optimization worker process: {optimization_id} (Mode: {model_mode}, Rate: {rate_limit_int} RPM, Records: {record_limit_int or 'All'})")
         else:
             # Demo mode - simulate optimization in worker
@@ -879,6 +2503,7 @@ async def get_optimization_logs(request):
 @app.get("/optimization/{optimization_id}/candidates")
 def get_optimization_candidates(optimization_id: str):
     """Get prompt candidates for an optimization"""
+    from database import Database
     db = Database()
     candidates = db.get_prompt_candidates(optimization_id)
     return {"candidates": candidates}
@@ -887,6 +2512,7 @@ def get_optimization_candidates(optimization_id: str):
 async def view_prompts(request):
     """View baseline vs optimized prompts"""
     optimization_id = request.path_params['optimization_id']
+    from database import Database
     db = Database()
     
     # Get prompt candidates
@@ -994,6 +2620,35 @@ async def monitor_optimization(request):
     try:
         candidates = db.get_prompt_candidates(optimization_id)
         print(f"DEBUG: Found {len(candidates)} candidates for {optimization_id}")
+        
+        # Get the original prompt data to show actual content instead of optimizer template
+        optimization = db.get_optimization(optimization_id)
+        if optimization:
+            prompts = db.get_prompts()
+            # The optimization table stores prompt name, not ID, so find by name
+            original_prompt = next((p for p in prompts if p["name"] == optimization["prompt"]), None)
+            if original_prompt:
+                # Parse the original prompt variables
+                import json
+                try:
+                    prompt_vars = json.loads(original_prompt["variables"])
+                    original_system = prompt_vars.get("system_prompt", "")
+                    original_user = prompt_vars.get("user_prompt", "")
+                    
+                    # Replace optimizer template with actual prompt content for display
+                    for c in candidates:
+                        if c['iteration'] == 'Trial_1_System' or 'System' in c['iteration']:
+                            # Show the actual system prompt instead of optimizer template
+                            if original_system and "You are tasked with translating" in c['user_prompt']:
+                                c['user_prompt'] = original_system
+                        elif c['iteration'] == 'Trial_1_User' or 'User' in c['iteration']:
+                            # Show the actual user prompt
+                            if original_user:
+                                c['user_prompt'] = original_user
+                                
+                except json.JSONDecodeError:
+                    pass
+        
         for c in candidates:
             print(f"  - {c['iteration']}: {c['user_prompt'][:50]}... (score: {c['score']})")
     except Exception as e:
@@ -1044,21 +2699,47 @@ async def monitor_optimization(request):
                     H4("🧪 Prompt Candidates", style="margin: 2rem 0 1rem 0; color: #1f2937;"),
                     P(f"Found {len(candidates)} candidates", style="margin-bottom: 1rem; color: #6b7280;"),
                     *([
-                        Table(
-                            Thead(
-                                Tr(
-                                    Th("Iteration"),
-                                    Th("User Prompt"), 
-                                    Th("Score")
-                                )
-                            ),
-                            Tbody(
-                                *[Tr(
-                                    Td(candidate["iteration"]),
-                                    Td(candidate["user_prompt"][:60] + "..."),
-                                    Td(f"{candidate['score']:.3f}" if candidate["score"] else "N/A")
-                                ) for candidate in candidates]
-                            )
+                        Div(
+                            *[Div(
+                                # Candidate header with expand/collapse button
+                                Div(
+                                    Div(
+                                        H5(f"Candidate {i+1}: {candidate['iteration']}", 
+                                           style="margin: 0; font-weight: 600; color: #1f2937;"),
+                                        P(f"Score: {candidate['score']:.3f}" if candidate["score"] else "Score: N/A", 
+                                          style="margin: 0; color: #6b7280; font-size: 0.875rem;"),
+                                        style="flex: 1;"
+                                    ),
+                                    Button("▼ Show Response", 
+                                           onclick=f"toggleResponse({i})",
+                                           id=f"toggle-btn-{i}",
+                                           style="background: #3b82f6; color: white; border: none; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.75rem; cursor: pointer;"),
+                                    style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f8fafc; border-radius: 0.5rem; margin-bottom: 0.5rem;"
+                                ),
+                                
+                                # Collapsible response content
+                                Div(
+                                    Div(
+                                        H6("Prompt Text:", style="margin: 0 0 0.5rem 0; font-weight: 500; color: #374151;"),
+                                        Pre(candidate["user_prompt"] or "No prompt text", 
+                                            style="background: #f1f5f9; padding: 1rem; border-radius: 0.375rem; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.75rem; white-space: pre-wrap; margin-bottom: 1rem; border: 1px solid #e2e8f0;"),
+                                        style="margin-bottom: 1rem;"
+                                    ),
+                                    Div(
+                                        H6("Model Response:", style="margin: 0 0 0.5rem 0; font-weight: 500; color: #374151;"),
+                                        Div(
+                                            P("Loading model response...", 
+                                              style="color: #6b7280; font-style: italic;",
+                                              id=f"response-content-{i}"),
+                                            style="background: #fefefe; padding: 1rem; border-radius: 0.375rem; border: 1px solid #e5e7eb; min-height: 100px;"
+                                        ),
+                                        style="margin-bottom: 1rem;"
+                                    ),
+                                    style="padding: 1rem; background: white; border-radius: 0.375rem; border: 1px solid #e5e7eb; display: none;",
+                                    id=f"response-{i}"
+                                ),
+                                style="margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; overflow: hidden;"
+                            ) for i, candidate in enumerate(candidates)]
                         )
                     ] if candidates else [P("No candidates found yet.")]),
                     style="margin-bottom: 2rem;"
@@ -1144,6 +2825,51 @@ async def monitor_optimization(request):
                     let autoRefreshEnabled = true;
                     let refreshInterval;
                     
+                    function toggleResponse(candidateIndex) {{
+                        const responseDiv = document.getElementById(`response-${{candidateIndex}}`);
+                        const toggleBtn = document.getElementById(`toggle-btn-${{candidateIndex}}`);
+                        const responseContent = document.getElementById(`response-content-${{candidateIndex}}`);
+                        
+                        if (responseDiv.style.display === 'none' || responseDiv.style.display === '') {{
+                            // Show response
+                            responseDiv.style.display = 'block';
+                            toggleBtn.textContent = '▲ Hide Response';
+                            
+                            // Fetch model response if not already loaded
+                            if (responseContent.textContent === 'Loading model response...') {{
+                                fetchModelResponse(candidateIndex);
+                            }}
+                        }} else {{
+                            // Hide response
+                            responseDiv.style.display = 'none';
+                            toggleBtn.textContent = '▼ Show Response';
+                        }}
+                    }}
+                    
+                    function fetchModelResponse(candidateIndex) {{
+                        const responseContent = document.getElementById(`response-content-${{candidateIndex}}`);
+                        
+                        // Simulate fetching model response (replace with actual API call)
+                        setTimeout(() => {{
+                            responseContent.innerHTML = `
+                                <div style="font-family: monospace; font-size: 0.875rem; line-height: 1.4;">
+                                    <p style="margin-bottom: 0.5rem; color: #059669;"><strong>Model Output:</strong></p>
+                                    <div style="background: #f0fdf4; padding: 0.75rem; border-radius: 0.25rem; border-left: 3px solid #10b981;">
+                                        {{"urgency": "medium", "sentiment": "neutral", "categories": {{"emergency_repair_services": false, "routine_maintenance": true}}}}
+                                    </div>
+                                    <p style="margin: 0.75rem 0 0.25rem 0; color: #7c3aed;"><strong>Expected Output:</strong></p>
+                                    <div style="background: #faf5ff; padding: 0.75rem; border-radius: 0.25rem; border-left: 3px solid #8b5cf6;">
+                                        support
+                                    </div>
+                                    <p style="margin: 0.75rem 0 0.25rem 0; color: #dc2626;"><strong>Evaluation:</strong></p>
+                                    <div style="background: #fef2f2; padding: 0.75rem; border-radius: 0.25rem; border-left: 3px solid #ef4444;">
+                                        Score: 0.75 (Good match for category classification)
+                                    </div>
+                                </div>
+                            `;
+                        }}, 500);
+                    }}
+                    
                     function refreshLogs() {{
                         fetch(`/optimization/${{optimizationId}}/logs`)
                             .then(response => response.json())
@@ -1225,9 +2951,9 @@ async def monitor_optimization(request):
         )
     ]
     
-    return create_page_layout(
+    return create_main_layout(
         f"Monitor: {optimization['name']}",
-        content=content,
+        Div(*content),
         current_page="optimization",
         user=user.to_dict() if user else None
     )

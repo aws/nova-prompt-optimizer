@@ -1,0 +1,16 @@
+# Core FastHTML dependencies
+fasthtml
+starlette
+python-multipart
+
+# Nova Prompt Optimizer SDK
+nova-prompt-optimizer
+
+# AWS SDK
+boto3
+
+# Basic Python libraries (built-in, no installation needed)
+# - json (built-in)
+# - re (built-in) 
+# - math (built-in)
+# - typing (built-in)

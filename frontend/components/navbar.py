@@ -21,8 +21,8 @@ def create_navbar_tabs(current_page=None, user=None):
         {"name": "Dashboard", "route": "/", "id": "dashboard"},
         {"name": "Prompts", "route": "/prompts", "id": "prompts"},
         {"name": "Datasets", "route": "/datasets", "id": "datasets"},
+        {"name": "Metrics", "route": "/metrics", "id": "metrics"},
         {"name": "Optimization", "route": "/optimization", "id": "optimization"},
-        {"name": "Results", "route": "/results", "id": "results"},
     ]
     
     # Create tab triggers (navigation links)
@@ -45,32 +45,24 @@ def create_navbar_tabs(current_page=None, user=None):
             )
         )
     
+    # Theme toggle button (separate from user menu)
+    theme_toggle = Button(
+        "🌙", # Moon icon for dark mode
+        id="theme-toggle",
+        cls="theme-toggle",
+        onclick="toggleTheme()",
+        title="Toggle dark/light mode",
+        **{"aria-label": "Toggle theme"}
+    )
+    
     # User menu (if user is logged in)
     user_menu = None
     if user:
         user_menu = Div(
-            # Theme toggle button
-            Button(
-                "🌙", # Moon icon for dark mode
-                id="theme-toggle",
-                cls="theme-toggle",
-                onclick="toggleTheme()",
-                title="Toggle dark/light mode",
-                **{"aria-label": "Toggle theme"}
-            ),
             cls="user-container"
         )
     else:
         user_menu = Div(
-            # Theme toggle button (for non-logged in users too)
-            Button(
-                "🌙", # Moon icon for dark mode
-                id="theme-toggle",
-                cls="theme-toggle",
-                onclick="toggleTheme()",
-                title="Toggle dark/light mode",
-                **{"aria-label": "Toggle theme"}
-            ),
             A(
                 "Login",
                 href="/auth/login",
@@ -106,6 +98,9 @@ def create_navbar_tabs(current_page=None, user=None):
                 "data-default-value": current_page or "dashboard"
             }
         ),
+        
+        # Theme toggle (separate element)
+        theme_toggle,
         
         # User menu section
         user_menu,

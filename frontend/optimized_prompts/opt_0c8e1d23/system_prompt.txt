@@ -1,0 +1,1 @@
+Analyze the email to classify its content into predefined categories, determine sentiment, and assess urgency. Return a JSON object with "urgency" (high/medium/low), "sentiment" (negative/neutral/positive), and "categories" (boolean values for each category). Ensure the JSON is valid and compact.

@@ -64,14 +64,23 @@ class Database:
                 name TEXT NOT NULL,
                 prompt TEXT,
                 dataset TEXT,
+                metric_id TEXT,
                 status TEXT,
                 progress INTEGER DEFAULT 0,
                 improvement TEXT,
                 started TEXT,
                 completed TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (metric_id) REFERENCES metrics (id)
             )
         """)
+        
+        # Migration: Add metric_id column if it doesn't exist
+        try:
+            conn.execute("ALTER TABLE optimizations ADD COLUMN metric_id TEXT")
+        except sqlite3.OperationalError:
+            # Column already exists
+            pass
         
         # Optimization logs table
         conn.execute("""
@@ -91,11 +100,67 @@ class Database:
             CREATE TABLE IF NOT EXISTS prompt_candidates (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 optimization_id TEXT NOT NULL,
-                iteration TEXT NOT NULL,
-                user_prompt TEXT NOT NULL,
+                candidate_number INTEGER NOT NULL,
+                prompt_text TEXT NOT NULL,
+                model_response TEXT,
                 score REAL,
-                timestamp TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (optimization_id) REFERENCES optimizations (id)
+            )
+        """)
+        
+        # Migration: Update prompt_candidates table structure if needed
+        try:
+            # Check if old columns exist and migrate
+            cursor = conn.execute("PRAGMA table_info(prompt_candidates)")
+            columns = [row[1] for row in cursor.fetchall()]
+            
+            if 'iteration' in columns and 'candidate_number' not in columns:
+                # Migrate old table structure
+                conn.execute("ALTER TABLE prompt_candidates RENAME TO prompt_candidates_old")
+                conn.execute("""
+                    CREATE TABLE prompt_candidates (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        optimization_id TEXT NOT NULL,
+                        candidate_number INTEGER NOT NULL,
+                        prompt_text TEXT NOT NULL,
+                        model_response TEXT,
+                        score REAL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (optimization_id) REFERENCES optimizations (id)
+                    )
+                """)
+                # Copy data with column mapping
+                conn.execute("""
+                    INSERT INTO prompt_candidates (optimization_id, candidate_number, prompt_text, score, created_at)
+                    SELECT optimization_id, 
+                           CAST(SUBSTR(iteration, INSTR(iteration, '_') + 1) AS INTEGER) as candidate_number,
+                           user_prompt as prompt_text, 
+                           score, 
+                           timestamp as created_at
+                    FROM prompt_candidates_old
+                """)
+                conn.execute("DROP TABLE prompt_candidates_old")
+            elif 'model_response' not in columns:
+                # Add model_response column if missing
+                conn.execute("ALTER TABLE prompt_candidates ADD COLUMN model_response TEXT")
+        except sqlite3.OperationalError:
+            # Table doesn't exist yet or migration not needed
+            pass
+        
+        # Metrics table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS metrics (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT,
+                dataset_format TEXT NOT NULL,
+                scoring_criteria TEXT NOT NULL,
+                generated_code TEXT NOT NULL,
+                natural_language_input TEXT,
+                created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_used TIMESTAMP,
+                usage_count INTEGER DEFAULT 0
             )
         """)
         
@@ -294,6 +359,17 @@ class Database:
         conn.close()
         return None
     
+    def update_dataset_name(self, dataset_id: str, name: str) -> bool:
+        """Update a dataset name"""
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                UPDATE datasets 
+                SET name = ?, updated_at = ?
+                WHERE id = ?
+            """, (name, datetime.now().isoformat(), dataset_id))
+            
+            return cursor.rowcount > 0
+
     def delete_dataset(self, dataset_id: str) -> bool:
         """Delete a dataset"""
         conn = self.get_connection()
@@ -338,13 +414,40 @@ class Database:
                 "id": row[0],
                 "name": row[1],
                 "type": row[2],
-                "variables": row[3],  # Keep as string for now
+                "variables": json.loads(row[3]) if row[3] else {},  # Parse JSON properly
                 "created": row[4],
                 "last_used": row[5],
                 "performance": row[6]
             }
         return None
     
+    def update_prompt(self, prompt_id: str, name: str, system_prompt: str, user_prompt: str) -> bool:
+        """Update a prompt"""
+        with self.get_connection() as conn:
+            # Determine prompt type
+            if system_prompt and user_prompt:
+                prompt_type = "System + User"
+            elif system_prompt:
+                prompt_type = "System Only"
+            elif user_prompt:
+                prompt_type = "User Only"
+            else:
+                return False
+            
+            # Store prompts as JSON in variables field
+            variables = json.dumps({
+                "system_prompt": system_prompt,
+                "user_prompt": user_prompt
+            })
+            
+            cursor = conn.execute("""
+                UPDATE prompts 
+                SET name = ?, prompt_type = ?, variables = ?, last_used = ?
+                WHERE id = ?
+            """, (name, prompt_type, variables, datetime.now().isoformat(), prompt_id))
+            
+            return cursor.rowcount > 0
+
     def delete_prompt(self, prompt_id: str) -> bool:
         """Delete a prompt"""
         conn = self.get_connection()
@@ -353,6 +456,124 @@ class Database:
         conn.commit()
         conn.close()
         return deleted
+    
+    # === METRICS OPERATIONS ===
+    
+    def create_metric(self, name: str, description: str, dataset_format: str, 
+                     scoring_criteria: str, generated_code: str, 
+                     natural_language_input: str = None) -> str:
+        """Create a new metric"""
+        import uuid
+        metric_id = f"metric_{uuid.uuid4().hex[:8]}"
+        
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        conn.execute("""
+            INSERT INTO metrics (id, name, description, dataset_format, scoring_criteria, 
+                               generated_code, natural_language_input)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (metric_id, name, description, dataset_format, scoring_criteria, 
+              generated_code, natural_language_input))
+        conn.commit()
+        conn.close()
+        return metric_id
+    
+    def get_metrics(self) -> List[Dict]:
+        """Get all metrics"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        cursor = conn.execute("SELECT * FROM metrics ORDER BY created DESC")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return [{
+            "id": row[0],
+            "name": row[1],
+            "description": row[2],
+            "dataset_format": row[3],
+            "scoring_criteria": row[4],
+            "generated_code": row[5],
+            "natural_language_input": row[6],
+            "created": row[7],
+            "last_used": row[8],
+            "usage_count": row[9]
+        } for row in rows]
+    
+    def get_metric(self, metric_id: str) -> Optional[Dict]:
+        """Get a single metric by ID"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        cursor = conn.execute("SELECT * FROM metrics WHERE id = ?", (metric_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                "id": row[0],
+                "name": row[1],
+                "description": row[2],
+                "dataset_format": row[3],
+                "scoring_criteria": row[4],
+                "generated_code": row[5],
+                "natural_language_input": row[6],
+                "created": row[7],
+                "last_used": row[8],
+                "usage_count": row[9]
+            }
+        return None
+    
+    def update_metric_usage(self, metric_id: str):
+        """Update metric usage statistics"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        conn.execute("""
+            UPDATE metrics 
+            SET usage_count = usage_count + 1, last_used = CURRENT_TIMESTAMP 
+            WHERE id = ?
+        """, (metric_id,))
+        conn.commit()
+        conn.close()
+    
+    def delete_metric(self, metric_id: str) -> bool:
+        """Delete a metric"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        cursor = conn.execute("DELETE FROM metrics WHERE id = ?", (metric_id,))
+        deleted = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        return deleted
+    
+    def get_metric_by_id(self, metric_id: str) -> Dict:
+        """Get a single metric by ID"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        cursor = conn.execute("SELECT * FROM metrics WHERE id = ?", (metric_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                "id": row[0],
+                "name": row[1],
+                "description": row[2],
+                "dataset_format": row[3],
+                "scoring_criteria": row[4],
+                "generated_code": row[5],
+                "natural_language_input": row[6],
+                "created": row[7],
+                "usage_count": row[8],
+                "last_used": row[9]
+            }
+        return None
+    
+    def update_metric(self, metric_id: str, name: str, description: str, generated_code: str, natural_language_input: str) -> bool:
+        """Update an existing metric"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        cursor = conn.execute("""
+            UPDATE metrics 
+            SET name = ?, description = ?, generated_code = ?, natural_language_input = ?
+            WHERE id = ?
+        """, (name, description, generated_code, natural_language_input, metric_id))
+        
+        updated = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        return updated
     
     # Optimization operations
     def get_optimizations(self) -> List[Dict]:
@@ -431,12 +652,57 @@ class Database:
                 "progress": row[5],
                 "improvement": row[6],
                 "started": row[7],
-                "completed": row[8]
+                "completed": row[8],
+                "metric_id": row[10] if len(row) > 10 else None  # metric_id is the 11th column (index 10)
             }
         return None
     
-    def create_optimization(self, name: str, prompt_id: str, dataset_id: str) -> str:
-        """Create a new optimization run"""
+    def save_prompt_candidates(self, optimization_id: str, candidates: list):
+        """Save prompt candidates for an optimization"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        
+        # Clear existing candidates for this optimization
+        conn.execute("DELETE FROM prompt_candidates WHERE optimization_id = ?", (optimization_id,))
+        
+        # Insert new candidates
+        for candidate in candidates:
+            conn.execute("""
+                INSERT INTO prompt_candidates (optimization_id, candidate_number, prompt_text, score)
+                VALUES (?, ?, ?, ?)
+            """, (
+                optimization_id,
+                candidate['candidate_number'],
+                candidate['prompt_text'],
+                candidate['score']
+            ))
+        
+        conn.commit()
+        conn.close()
+
+    def get_prompt_candidates(self, optimization_id: str) -> list:
+        """Get prompt candidates for an optimization"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        cursor = conn.execute("""
+            SELECT candidate_number, prompt_text, model_response, score 
+            FROM prompt_candidates 
+            WHERE optimization_id = ? 
+            ORDER BY candidate_number
+        """, (optimization_id,))
+        
+        candidates = []
+        for row in cursor.fetchall():
+            candidates.append({
+                'candidate_number': row[0],
+                'prompt_text': row[1],
+                'model_response': row[2],
+                'score': row[3]
+            })
+        
+        conn.close()
+        return candidates
+
+    def create_optimization(self, name: str, prompt_id: str, dataset_id: str, metric_id: str = None) -> str:
+        """Create a new optimization run with optional metric"""
         import uuid
         optimization_id = f"opt_{uuid.uuid4().hex[:8]}"
         
@@ -449,10 +715,10 @@ class Database:
         
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.execute("""
-            INSERT INTO optimizations (id, name, prompt, dataset, status, progress, improvement, started, completed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO optimizations (id, name, prompt, dataset, metric_id, status, progress, improvement, started, completed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            optimization_id, name, prompt["name"], dataset["name"],
+            optimization_id, name, prompt_id, dataset["name"], metric_id,  # Store prompt_id, not prompt["name"]
             "Starting", 0, "0%", datetime.now().strftime("%Y-%m-%d %H:%M"), "In Progress"
         ))
         conn.commit()
@@ -508,35 +774,45 @@ class Database:
         
         return None
     
-    def add_prompt_candidate(self, optimization_id: str, iteration: str, user_prompt: str, score: float = None):
+    def add_prompt_candidate(self, optimization_id: str, candidate_number: int, prompt_text: str, model_response: str = None, score: float = None):
         """Add a prompt candidate to track optimization attempts"""
-        cursor = self.conn.cursor()
-        cursor.execute("""
-            INSERT INTO prompt_candidates (optimization_id, iteration, user_prompt, score, timestamp)
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        conn.execute("""
+            INSERT INTO prompt_candidates (optimization_id, candidate_number, prompt_text, model_response, score)
             VALUES (?, ?, ?, ?, ?)
-        """, (optimization_id, iteration, user_prompt, score, datetime.now().isoformat()))
-        self.conn.commit()
+        """, (optimization_id, candidate_number, prompt_text, model_response, score))
+        conn.commit()
+        conn.close()
     
-    def get_prompt_candidates(self, optimization_id: str):
-        """Get all prompt candidates for an optimization"""
-        conn = sqlite3.connect(self.db_path, check_same_thread=False)  # Fresh connection
+    def get_optimization(self, optimization_id: str):
+        """Get a single optimization by ID"""
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
         cursor = conn.execute("""
-            SELECT iteration, user_prompt, score, timestamp
-            FROM prompt_candidates 
-            WHERE optimization_id = ?
-            ORDER BY timestamp ASC
+            SELECT id, name, prompt, dataset, metric_id, status, progress, started, completed
+            FROM optimizations 
+            WHERE id = ?
         """, (optimization_id,))
         
-        candidates = []
-        for row in cursor.fetchall():
-            candidates.append({
-                "iteration": row[0],
-                "user_prompt": row[1],
-                "score": row[2],
-                "timestamp": row[3]
-            })
+        row = cursor.fetchone()
         conn.close()
-        return candidates
+        
+        if row:
+            return {
+                "id": row[0],
+                "name": row[1], 
+                "prompt": row[2],
+                "dataset": row[3],
+                "metric_id": row[4],
+                "status": row[5],
+                "progress": row[6],
+                "started": row[7],
+                "completed": row[8]
+            }
+        return None
+
+
+
+
 
     def add_optimization_log(self, optimization_id: str, log_type: str, message: str, data: dict = None):
         """Add a log entry for an optimization"""
@@ -619,13 +895,16 @@ class Database:
     
     def reset_database(self):
         """Reset database to initial state (for development)"""
-        conn = self.get_connection()
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.execute("DELETE FROM datasets")
         conn.execute("DELETE FROM prompts")
         conn.execute("DELETE FROM optimizations")
+        conn.execute("DELETE FROM prompt_candidates")
         conn.commit()
         conn.close()
-        self.seed_initial_data()
+        
+        # Reinitialize with fresh connection
+        self.init_database()
         print("✅ Database reset to initial state")
 
 # Global database instance

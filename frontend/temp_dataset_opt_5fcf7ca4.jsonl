@@ -1,0 +1,6 @@
+{"input": "Hello, I need help with my order", "output": "support"}
+{"input": "Thank you for your excellent service", "output": "feedback"}
+{"input": "I want to cancel my subscription", "output": "support"}
+{"input": "Great product, very satisfied!", "output": "feedback"}
+{"input": "How do I return an item?", "output": "support"}
+{"input": "Amazing customer service experience!", "output": "feedback"}

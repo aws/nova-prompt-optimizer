@@ -216,7 +216,6 @@ def create_loading_overlay() -> Div:
     return Div(
         Div(
             Div(cls="spinner"),
-            P("Loading...", cls="loading-text"),
             cls="loading-content"
         ),
         cls="loading-overlay hidden",
@@ -335,8 +334,13 @@ def create_page_layout(
 
 
 def create_main_layout(
-    show_sidebar: bool = False,  # Changed default to False to prevent duplication
-    extra_head: Optional[List] = None
+    title: str,
+    content: Any,
+    show_sidebar: bool = False,
+    extra_head: Optional[List] = None,
+    user: Optional[dict] = None,
+    current_page: str = "",
+    breadcrumb: Optional[List] = None
 ) -> Html:
     """Create main page layout"""
     

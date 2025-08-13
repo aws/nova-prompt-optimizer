@@ -145,6 +145,10 @@ temp/
 *.swp
 *.swo
 .kiro/
+claude-analysis/
+.amazonq
+*/.archive*
+
 
 # OS generated files
 .DS_Store
@@ -154,6 +158,7 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+uv.lock
 
 # Backup files
 *.bak
