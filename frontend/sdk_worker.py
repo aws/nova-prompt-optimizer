@@ -340,7 +340,9 @@ def run_optimization_worker(optimization_id: str):
                             return 0.0
                     
                     def batch_apply(self, y_preds, y_trues):
-                        pass  # Not needed for Nova SDK
+                        # Calculate average of individual scores for custom metric
+                        scores = [self.apply(pred, true) for pred, true in zip(y_preds, y_trues)]
+                        return sum(scores) / len(scores) if scores else 0.0
                 
                 metric_adapter = CustomMetricAdapter()
                 db.add_optimization_log(optimization_id, "success", f"✅ Custom metric loaded: {custom_metric['name']}")
@@ -351,7 +353,9 @@ def run_optimization_worker(optimization_id: str):
                     def apply(self, y_pred, y_true):
                         return 1.0  # Default score
                     def batch_apply(self, y_preds, y_trues):
-                        pass  # Not needed for Nova SDK
+                        # Calculate average of individual scores for fallback metric
+                        scores = [self.apply(pred, true) for pred, true in zip(y_preds, y_trues)]
+                        return sum(scores) / len(scores) if scores else 0.0
                 metric_adapter = AnalyzerMetric()
         else:
             print("🔍 DEBUG - No custom metric specified, using default")
@@ -384,7 +388,9 @@ def run_optimization_worker(optimization_id: str):
                         return 0.0
                 
                 def batch_apply(self, y_preds, y_trues):
-                    pass  # Not needed for Nova SDK
+                    # Calculate average of individual scores for generated metric
+                    scores = [self.apply(pred, true) for pred, true in zip(y_preds, y_trues)]
+                    return sum(scores) / len(scores) if scores else 0.0
             
             metric_adapter = AnalyzerMetric()
         
@@ -498,6 +504,7 @@ def run_optimization_worker(optimization_id: str):
         db.add_optimization_log(optimization_id, "info", f"🚀 Running optimization with Nova {model_mode.title()}...")
         
         # Enable JSON fallback to avoid structured output issues
+        print(f"🔍 DEBUG - About to call nova_optimizer.optimize(mode='{model_mode}')")
         optimized_prompt_adapter = nova_optimizer.optimize(mode=model_mode)
         
         db.add_optimization_log(optimization_id, "success", "✅ Optimization completed!")
@@ -636,12 +643,14 @@ def run_optimization_worker(optimization_id: str):
             print(f"🔍 DEBUG - About to create baseline evaluator")
             print(f"🔍 DEBUG - test_dataset type: {type(test_dataset)}")
             
-            # Fix: Flatten the dataset structure for baseline evaluation
+            # Fix: Create a completely new flattened dataset for baseline evaluation
             # The SDK expects {'input': '...', 'answer': '...'} but we have nested structure
             if hasattr(test_dataset, 'standardized_dataset') and test_dataset.standardized_dataset:
                 print(f"🔍 DEBUG - Original test sample structure: {test_dataset.standardized_dataset[0]}")
                 
-                # Create flattened dataset for baseline evaluation
+                # Create flattened JSONL file for baseline evaluation
+                import tempfile
+                
                 flattened_data = []
                 for sample in test_dataset.standardized_dataset:
                     flattened_sample = {
@@ -650,13 +659,20 @@ def run_optimization_worker(optimization_id: str):
                     }
                     flattened_data.append(flattened_sample)
                 
-                # Create new dataset adapter with flattened structure
-                from amzn_nova_prompt_optimizer.core.input_adapters.dataset_adapter import JSONDatasetAdapter
-                baseline_dataset_adapter = JSONDatasetAdapter({"input"}, {"answer"})
-                baseline_dataset_adapter.standardized_dataset = flattened_data
-                
                 print(f"🔍 DEBUG - Flattened test sample: {flattened_data[0]}")
-                print(f"🔍 DEBUG - Using flattened dataset with {len(flattened_data)} samples")
+                
+                # Write flattened data to temporary file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+                    for sample in flattened_data:
+                        f.write(json.dumps(sample) + '\n')
+                    temp_baseline_file = f.name
+                
+                # Create new dataset adapter with flattened file
+                baseline_dataset_adapter = JSONDatasetAdapter({"input"}, {"answer"})
+                baseline_dataset_adapter.adapt(data_source=temp_baseline_file)
+                
+                print(f"🔍 DEBUG - Created baseline dataset from temp file: {temp_baseline_file}")
+                print(f"🔍 DEBUG - Baseline dataset samples: {len(baseline_dataset_adapter.standardized_dataset)}")
             else:
                 baseline_dataset_adapter = test_dataset
             
@@ -667,6 +683,15 @@ def run_optimization_worker(optimization_id: str):
             print(f"🔍 DEBUG - About to call aggregate_score with model_id: {model_id}")
             
             baseline_score = baseline_evaluator.aggregate_score(model_id=model_id)
+            
+            # Clean up temp file if created
+            if 'temp_baseline_file' in locals():
+                import os
+                try:
+                    os.unlink(temp_baseline_file)
+                    print(f"🔍 DEBUG - Cleaned up temp baseline file")
+                except:
+                    pass
             
             print(f"🔍 DEBUG - Baseline score from SDK Evaluator: {baseline_score}")
             db.add_optimization_log(optimization_id, "success", f"✅ Baseline evaluation completed: {baseline_score}")

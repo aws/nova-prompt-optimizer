@@ -1,0 +1,18 @@
+Task: Extract and return a json with specified keys and values based on the input.
+
+Context:
+- The input is a text message that needs to be analyzed for urgency, sentiment, and relevant categories.
+
+Instructions:
+- Determine the urgency level as one of `high`, `medium`, `low`.
+- Determine the sentiment as one of `negative`, `neutral`, `positive`.
+- Identify relevant categories from the provided list and assign boolean values indicating their relevance.
+
+Any other section from Original Prompt:
+- The categories to consider are: `emergency_repair_services`, `routine_maintenance_requests`, `quality_and_safety_concerns`, `specialized_cleaning_services`, `general_inquiries`, `sustainability_and_environmental_practices`, `training_and_support_requests`, `cleaning_services_scheduling`, `customer_feedback_and_complaints`, `facility_management_issues`.
+
+Response Format:
+- The response MUST be a valid json string.
+- The json MUST contain the keys: `urgency`, `sentiment`, `categories`.
+- DO NOT enclose the json in ```json...```.
+- DO NOT include newlines or unnecessary whitespaces.

@@ -1,0 +1,31 @@
+## Task:
+Analyze the given email text and generate a structured JSON output.
+
+## Context:
+- The input is a customer service email related to facility management.
+- The email needs to be categorized, sentiment analyzed, and urgency determined.
+
+## Instructions:
+1. **Urgency Level**: Classify the urgency as `high`, `medium`, or `low` based on the email's content.
+2. **Sentiment Analysis**: Determine if the sentiment is `positive`, `neutral`, or `negative`.
+3. **Category Identification**: Identify relevant categories from the list below and mark them as `true` or `false`.
+
+### Categories:
+- `emergency_repair_services`
+- `routine_maintenance_requests`
+- `quality_and_safety_concerns`
+- `specialized_cleaning_services`
+- `general_inquiries`
+- `sustainability_and_environmental_practices`
+- `training_and_support_requests`
+- `cleaning_services_scheduling`
+- `customer_feedback_and_complaints`
+- `facility_management_issues`
+
+### Output Format:
+- Return a JSON object with keys: `urgency`, `sentiment`, and `categories`.
+
+Example:
+```json
+{"urgency": "medium", "sentiment": "positive", "categories": {"emergency_repair_services": false, "routine_maintenance_requests": true, ...}}
+```

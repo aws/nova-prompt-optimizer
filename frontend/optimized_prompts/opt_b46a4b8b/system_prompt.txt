@@ -1,0 +1,25 @@
+Analyze the input email and return a JSON object with the following structure:
+
+```json
+{
+  "urgency": "high|medium|low",
+  "sentiment": "negative|neutral|positive",
+  "categories": {
+    "routine_maintenance_requests": true|false,
+    "customer_feedback_and_complaints": true|false,
+    "training_and_support_requests": true|false,
+    "quality_and_safety_concerns": true|false,
+    "sustainability_and_environmental_practices": true|false,
+    "cleaning_services_scheduling": true|false,
+    "specialized_cleaning_services": true|false,
+    "emergency_repair_services": true|false,
+    "facility_management_issues": true|false,
+    "general_inquiries": true|false
+  }
+}
+```
+
+Instructions:
+1. **Urgency Level**: Assess the email's urgency based on keywords and context. Assign `high` for immediate issues, `medium` for non-urgent but important matters, and `low` for routine or informational requests.
+2. **Sentiment Analysis**: Determine the sentiment by evaluating the tone and language used. Use `positive` for appreciative or satisfied messages, `neutral` for factual or straightforward content, and `negative` for complaints or dissatisfaction.
+3. **Category Identification**: Match the email content to predefined categories. Set the value to `true` if the category is relevant, otherwise `false`. Ensure compliance with data privacy regulations (e.g., GDPR) by not including personal information in the output.
