@@ -530,9 +530,9 @@ def create_metric_tabs(datasets=None):
               cls="nav-tab-trigger active",
               **{"data-tab": "natural-language", "role": "tab", "aria-selected": "true"}),
             Div(cls="border-l border-gray-300 h-6"),  # Separator
-            A("Infer from Dataset",
+            A("Infer from Assets",
               cls="nav-tab-trigger",
-              **{"data-tab": "infer-dataset", "role": "tab", "aria-selected": "false"}),
+              **{"data-tab": "infer-assets", "role": "tab", "aria-selected": "false"}),
             cls="flex items-center gap-4 border-b mb-6",
             style="display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 1.5rem;"
         ),
@@ -622,8 +622,8 @@ def create_infer_dataset_tab(datasets=None):
         )
     
     return Div(
-        H3("Infer Metrics from Dataset", cls="text-xl font-semibold mb-4"),
-        P("AI will analyze your dataset and suggest appropriate evaluation metrics based on the data structure and content.", 
+        H3("Infer Metrics from Assets", cls="text-xl font-semibold mb-4"),
+        P("AI will analyze your dataset and prompt to suggest appropriate evaluation metrics based on the data structure, content, and task intent.", 
           cls="text-gray-600 mb-6"),
         
         Form(
@@ -796,7 +796,7 @@ def create_infer_dataset_tab(datasets=None):
         ),
         
         cls="tab-panel",
-        id="infer-dataset",
+        id="infer-assets",
         style="display: none;"
     )
 
