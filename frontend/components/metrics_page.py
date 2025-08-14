@@ -319,22 +319,6 @@ def create_metrics_page(metrics, datasets=None):
                     });
                 }
             }
-            
-            // Fix checkbox expansion functionality
-            window.toggleSubOptions = function(category, checkbox) {
-                console.log('Toggling', category, checkbox.checked);
-                const options = document.getElementById(category + '-options');
-                if (options) {
-                    if (checkbox.checked) {
-                        options.style.display = 'block';
-                    } else {
-                        options.style.display = 'none';
-                        // Uncheck all sub-options
-                        const subCheckboxes = options.querySelectorAll('input[type="checkbox"]');
-                        subCheckboxes.forEach(cb => cb.checked = false);
-                    }
-                }
-            }
         """),
         
         cls="metrics-page"
@@ -697,60 +681,11 @@ def create_infer_dataset_tab(datasets=None):
             Div(
                 Label("Focus Areas (Optional)", cls="block text-sm font-medium mb-2"),
                 Div(
-                    Div(
-                        Div(
-                            Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2", onchange="toggleSubOptions('accuracy', this)"), "Accuracy & Correctness"),
-                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Evaluates how correct and precise the AI output is compared to expected answers. Includes exact matches, semantic correctness, and factual accuracy."),
-                            cls="flex items-center"
-                        ),
-                        Div(
-                            Label(Input(type="checkbox", name="accuracy_sub", value="exact_match", cls="mr-2"), "Exact Match"),
-                            Label(Input(type="checkbox", name="accuracy_sub", value="semantic_match", cls="mr-2"), "Semantic Match"),
-                            Label(Input(type="checkbox", name="accuracy_sub", value="factual_accuracy", cls="mr-2"), "Factual Accuracy"),
-                            id="accuracy-options", style="display: none;", cls="ml-6 mt-2 grid grid-cols-1 gap-1"
-                        )
-                    ),
-                    Div(
-                        Div(
-                            Label(Input(type="checkbox", name="focus", value="format", cls="mr-2", onchange="toggleSubOptions('format', this)"), "Format & Structure"),
-                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Validates output format and structure. Checks JSON validity, required fields, data types, and schema compliance for structured outputs."),
-                            cls="flex items-center"
-                        ),
-                        Div(
-                            Label(Input(type="checkbox", name="format_sub", value="json_valid", cls="mr-2"), "Valid JSON"),
-                            Label(Input(type="checkbox", name="format_sub", value="required_fields", cls="mr-2"), "Required Fields"),
-                            Label(Input(type="checkbox", name="format_sub", value="field_types", cls="mr-2"), "Field Types"),
-                            Label(Input(type="checkbox", name="format_sub", value="schema_compliance", cls="mr-2"), "Schema Compliance"),
-                            id="format-options", style="display: none;", cls="ml-6 mt-2 grid grid-cols-2 gap-1"
-                        )
-                    ),
-                    Div(
-                        Div(
-                            Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2", onchange="toggleSubOptions('completeness', this)"), "Completeness"),
-                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Measures how thoroughly the AI addresses the request. Evaluates if all requirements are met, sufficient detail is provided, and topics are fully covered."),
-                            cls="flex items-center"
-                        ),
-                        Div(
-                            Label(Input(type="checkbox", name="completeness_sub", value="all_requirements", cls="mr-2"), "All Requirements Met"),
-                            Label(Input(type="checkbox", name="completeness_sub", value="detail_level", cls="mr-2"), "Sufficient Detail"),
-                            Label(Input(type="checkbox", name="completeness_sub", value="coverage", cls="mr-2"), "Topic Coverage"),
-                            id="completeness-options", style="display: none;", cls="ml-6 mt-2 grid grid-cols-1 gap-1"
-                        )
-                    ),
-                    Div(
-                        Div(
-                            Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2", onchange="toggleSubOptions('relevance', this)"), "Relevance"),
-                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Assesses how well the output relates to the input query. Checks topic relevance, context understanding, and alignment with user intent."),
-                            cls="flex items-center"
-                        ),
-                        Div(
-                            Label(Input(type="checkbox", name="relevance_sub", value="topic_relevance", cls="mr-2"), "Topic Relevance"),
-                            Label(Input(type="checkbox", name="relevance_sub", value="context_awareness", cls="mr-2"), "Context Awareness"),
-                            Label(Input(type="checkbox", name="relevance_sub", value="query_alignment", cls="mr-2"), "Query Alignment"),
-                            id="relevance-options", style="display: none;", cls="ml-6 mt-2 grid grid-cols-1 gap-1"
-                        )
-                    ),
-                    cls="space-y-3"
+                    Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2"), "Accuracy & Correctness"),
+                    Label(Input(type="checkbox", name="focus", value="format", cls="mr-2"), "Format & Structure"),
+                    Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2"), "Completeness"),
+                    Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2"), "Relevance"),
+                    cls="grid grid-cols-2 gap-2"
                 ),
                 cls="mb-6"
             ),
