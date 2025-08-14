@@ -557,7 +557,11 @@ async def infer_metrics_from_dataset(request):
     dataset_id = form_data.get("dataset_id")
     analysis_depth = form_data.get("analysis_depth", "standard")
     focus_areas = form_data.getlist("focus")
-    rate_limit = int(form_data.get("rate_limit", "60"))
+    
+    # Handle rate_limit with proper default for empty strings
+    rate_limit_str = form_data.get("rate_limit", "60")
+    rate_limit = int(rate_limit_str) if rate_limit_str and rate_limit_str.strip() else 60
+    
     model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0")
     
     print(f"📋 Parameters: name={metric_name}, dataset={dataset_id}, depth={analysis_depth}")
@@ -863,7 +867,11 @@ async def generate_selected_metrics(request):
     # Get the original data
     metric_name = form_data.get("metric_name")
     model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0")
-    rate_limit = int(form_data.get("rate_limit", "60"))
+    
+    # Handle rate_limit with proper default for empty strings
+    rate_limit_str = form_data.get("rate_limit", "60")
+    rate_limit = int(rate_limit_str) if rate_limit_str and rate_limit_str.strip() else 60
+    
     metrics_json = form_data.get("metrics_json", "[]")
     reasoning = form_data.get("reasoning", "")
     
