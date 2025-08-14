@@ -605,6 +605,11 @@ async def infer_metrics_from_dataset(request):
         inferred_metrics = await call_ai_for_metric_inference(prompt, rate_limit, model_id)
         print(f"✅ AI inference completed: {type(inferred_metrics)}")
         print(f"📝 Inference result keys: {list(inferred_metrics.keys()) if isinstance(inferred_metrics, dict) else 'Not a dict'}")
+        print(f"🎯 Intent analysis present: {'intent_analysis' in inferred_metrics if isinstance(inferred_metrics, dict) else 'N/A'}")
+        if isinstance(inferred_metrics, dict) and 'intent_analysis' in inferred_metrics:
+            print(f"📋 Intent content: {inferred_metrics['intent_analysis'][:100]}...")
+        else:
+            print("⚠️ No intent_analysis field found in response")
         
         print("📦 Preparing metric selection data...")
         # Instead of generating code immediately, redirect to metric selection page

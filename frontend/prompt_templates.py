@@ -41,9 +41,11 @@ Dataset Content ({analysis_depth} analysis):
 {prompt_analysis_text}
 
 ANALYSIS REQUIREMENTS:
-1. Examine the ACTUAL data structure and field names in the dataset
-2. Understand the prompt's intended task and output format
+1. FIRST: Analyze what the prompt is asking the AI to do and what output format is expected
+2. Examine the ACTUAL data structure and field names in the dataset
 3. Create metrics that measure success for this specific task
+
+CRITICAL: Start your analysis by clearly stating what you understand the prompt's intent to be.
 
 Based on this analysis, suggest 2-3 simple evaluation metrics. For each metric, provide:
 
@@ -61,7 +63,7 @@ Focus on metrics that are:
 
 Format your response as JSON:
 {{
-  "intent_analysis": "Clear description of what the prompt is asking for and expected output format",
+  "intent_analysis": "REQUIRED: Clear description of what you understand the prompt is asking for and the expected output format. This should be your primary analysis of the task.",
   "metrics": [
     {{
       "name": "Metric Name",
