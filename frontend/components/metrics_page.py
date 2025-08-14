@@ -858,7 +858,7 @@ def create_infer_dataset_tab(datasets=None):
                         cls="mb-4 w-full"
                     ),
                 ),
-                cls="mb-6 w-full"
+                cls="mb-6 w-full max-w-none"
             ),
             
             Button(
