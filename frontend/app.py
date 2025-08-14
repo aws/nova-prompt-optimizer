@@ -809,78 +809,85 @@ def metric_selection_page(request):
     intent_analysis = inferred_metrics.get("intent_analysis", "")
     
     page_content = Div(
-        H2("AI Analysis Results", style="margin-bottom: 2rem; color: #1f2937;"),
-        
         # Editable Intent Field
         Card(
-            header=H3("Intent Analysis"),
+            header="Intent Analysis",
             content=Div(
                 P("Review and edit the AI's understanding of your prompt's intent:", 
-                  style="margin-bottom: 1rem; color: #6b7280;"),
+                  cls="text-sm text-gray-600 mb-3"),
                 Form(
                     Textarea(
                         intent_analysis,
                         name="intent_analysis",
                         id="intent_field",
                         rows=4,
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; resize: none;",
+                        cls="w-full p-3 border border-gray-300 rounded-md resize-none mb-3",
                         placeholder="Describe what the prompt is asking for and expected output format..."
                     ),
                     Button("Update Intent & Regenerate Metrics",
                            type="button",
                            onclick="regenerateWithIntent()",
-                           style="margin-top: 0.75rem; background: #3b82f6; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; border: none; cursor: pointer;"),
+                           cls="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800"),
                     id="intent_form"
                 )
-            )
+            ),
+            cls="mb-6"
         ),
         
-        # AI Analysis Results
+        # Dataset Information
         Card(
-            header=H3("Dataset Information"),
+            header="Dataset Information",
             content=Div(
-                P(f"Dataset: {selection_data.get('dataset_id', 'Unknown')}", style="margin-bottom: 0.5rem; font-weight: 500;"),
-                P(f"Analysis Depth: {selection_data.get('analysis_depth', 'standard').title()}", style="margin-bottom: 0.5rem;"),
-                H4("AI Reasoning:", style="margin-bottom: 0.5rem; color: #1f2937;"),
-                P(reasoning, style="background: #f8f9fa; padding: 1rem; border-radius: 0.375rem; font-style: italic;")
-            )
+                P(f"Dataset: {selection_data.get('dataset_id', 'Unknown')}", cls="mb-2 font-medium"),
+                P(f"Analysis Depth: {selection_data.get('analysis_depth', 'standard').title()}", cls="mb-3"),
+                H4("AI Reasoning:", cls="font-medium mb-2 text-gray-900"),
+                P(reasoning, cls="bg-gray-50 p-3 rounded-md italic text-gray-700")
+            ),
+            cls="mb-6"
         ),
         
         # Metric Selection Form
         Form(
             Card(
-                header=H3("Select Metrics to Generate"),
+                header="Available Metrics",
                 content=Div(
                     *[Div(
                         Div(
-                            Input(type="checkbox", name="selected_metrics", value=str(i), id=f"metric-{i}", checked=True),
-                            Label(f" {metric.get('name', f'Metric {i+1}')}", **{"for": f"metric-{i}"}, style="font-weight: 500; margin-left: 0.5rem;"),
-                            style="margin-bottom: 0.5rem;"
+                            Input(type="checkbox", name="selected_metrics", value=str(i), id=f"metric-{i}", checked=True, cls="mr-2"),
+                            Label(f"{metric.get('name', f'Metric {i+1}')}", **{"for": f"metric-{i}"}, cls="font-medium"),
+                            cls="mb-2"
                         ),
                         Div(
-                            P(f"Intent Understanding: {metric.get('intent_understanding', 'No description')}", style="margin-bottom: 0.25rem; color: #6b7280;"),
-                            P(f"Data Fields: {', '.join(metric.get('data_fields', []))}", style="margin-bottom: 0.25rem; color: #6b7280;"),
-                            P(f"Logic: {metric.get('evaluation_logic', 'No logic')}", style="margin-bottom: 0.25rem; color: #6b7280;"),
-                            P(f"Example: {metric.get('example', 'No example')}", style="color: #6b7280;"),
-                            style="margin-left: 1.5rem; padding: 0.5rem; background: #f9fafb; border-radius: 0.25rem;"
+                            P(f"Intent Understanding: {metric.get('intent_understanding', 'No description')}", cls="mb-1 text-sm text-gray-600"),
+                            P(f"Data Fields: {', '.join(metric.get('data_fields', []))}", cls="mb-1 text-sm text-gray-600"),
+                            P(f"Logic: {metric.get('evaluation_logic', 'No logic')}", cls="mb-1 text-sm text-gray-600"),
+                            P(f"Example: {metric.get('example', 'No example')}", cls="text-xs text-gray-500"),
+                            cls="ml-6 p-2 bg-gray-50 rounded"
                         ),
-                        style="margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem;"
+                        cls="mb-4 p-3 border border-gray-200 rounded-md"
                     ) for i, metric in enumerate(metrics)] if metrics else [
-                        P("No metrics were suggested by the AI", style="color: #ef4444; text-align: center; padding: 2rem;")
+                        P("No metrics were suggested by the AI", cls="text-red-500 text-center py-8")
                     ]
-                )
+                ),
+                cls="mb-6"
+            ),
+            
+            # Action Buttons
+            Div(
+                Button("Generate Selected Metrics", 
+                       type="submit", 
+                       cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 mr-3"),
+                Button("Cancel", 
+                       type="button", 
+                       onclick="window.location.href='/metrics'", 
+                       cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50"),
+                cls="flex"
             ),
             
             # Hidden fields to preserve data
             *[Input(type="hidden", name=key, value=str(value)) for key, value in selection_data.items() if key != "inferred_metrics"],
             Input(type="hidden", name="metrics_json", value=json.dumps(metrics)),
             Input(type="hidden", name="reasoning", value=reasoning),
-            
-            Div(
-                Button("Generate Selected Metrics", type="submit", style="background: #10b981; color: white; margin-right: 1rem;"),
-                Button("Cancel", type="button", onclick="window.location.href='/metrics'", variant="outline"),
-                style="margin-top: 2rem; display: flex; gap: 1rem;"
-            ),
             
             method="POST",
             action="/metrics/generate-selected"
@@ -935,7 +942,7 @@ def metric_selection_page(request):
         """)
     )
     
-    return create_main_layout("Select Metrics", page_content, current_page="metrics")
+    return create_main_layout("Metric Selection", page_content, current_page="metrics")
 
 @app.post("/metrics/regenerate-with-intent")
 async def regenerate_with_intent(request):
