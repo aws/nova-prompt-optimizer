@@ -8,6 +8,72 @@ class PromptTemplates:
     @staticmethod
     def dataset_analysis(dataset_content: str, focus_areas: list, analysis_depth: str, prompt_content: str = None) -> str:
         """
+        SIMPLIFIED DATASET ANALYSIS PROMPT
+        
+        Purpose: Analyzes dataset and prompt to understand intent and create appropriate metrics
+        Focus: Dataset structure + Prompt intent = Simple, effective metrics
+        """
+        
+        # Add prompt analysis if provided
+        prompt_analysis_text = ""
+        if prompt_content:
+            prompt_analysis_text = f"""
+
+PROMPT INTENT ANALYSIS:
+The following is the original prompt that will be used with this dataset:
+---
+{prompt_content}
+---
+
+Analyze the prompt to understand:
+1. What task is the AI being asked to perform?
+2. What format should the output be in (JSON, text, classification, etc.)?
+3. What are the key success criteria implied by the prompt?
+4. How should responses be evaluated for quality?"""
+        
+        return f"""You are an expert in AI evaluation metrics. Analyze the dataset and prompt to create simple, effective evaluation metrics.
+
+Dataset Content ({analysis_depth} analysis):
+```
+{dataset_content}
+```
+
+{prompt_analysis_text}
+
+ANALYSIS REQUIREMENTS:
+1. Examine the ACTUAL data structure and field names in the dataset
+2. Understand the prompt's intended task and output format
+3. Create metrics that measure success for this specific task
+
+Based on this analysis, suggest 2-3 simple evaluation metrics. For each metric, provide:
+
+1. **Metric Name**: Clear, descriptive name
+2. **Intent Understanding**: What the prompt is asking for and how this metric measures success
+3. **Data Fields Used**: Exactly which fields from the dataset this metric will access
+4. **Evaluation Logic**: Simple logic for comparing predicted vs expected values
+5. **Example**: How it would evaluate a sample from this dataset
+
+Focus on metrics that are:
+- Simple and focused on the core task
+- Use the exact field names from the dataset
+- Measure what the prompt is actually asking for
+- Avoid overfitting or complex scoring
+
+Format your response as JSON:
+{{
+  "intent_analysis": "Clear description of what the prompt is asking for and expected output format",
+  "metrics": [
+    {{
+      "name": "Metric Name",
+      "intent_understanding": "How this metric measures success for the prompt's task",
+      "data_fields": ["field1", "field2"],
+      "evaluation_logic": "Simple comparison logic using actual field names",
+      "example": "Example using actual data structure"
+    }}
+  ],
+  "reasoning": "Why these simple metrics effectively measure the prompt's intended task"
+}}"""
+        """
         DATASET ANALYSIS PROMPT
         
         Purpose: Analyzes user datasets to automatically infer appropriate evaluation metrics
