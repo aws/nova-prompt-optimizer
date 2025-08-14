@@ -887,6 +887,8 @@ def metric_selection_page(request):
                 content=Div(
                     Button("Generate Selected Metrics", 
                            type="submit", 
+                           id="generate-btn",
+                           onclick="showGeneratingState()",
                            cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800",
                            style="width: 75%; margin-right: 0.5rem;"),
                     Button("Cancel", 
@@ -908,9 +910,17 @@ def metric_selection_page(request):
             action="/metrics/generate-selected"
         ),
         
-        # JavaScript for intent regeneration
+        # JavaScript for intent regeneration and button loading
         Script(f"""
             const selectionData = {json.dumps(selection_data)};
+            
+            function showGeneratingState() {{
+                const button = document.getElementById('generate-btn');
+                button.disabled = true;
+                button.textContent = 'Generating Metrics...';
+                button.style.cursor = 'wait';
+                document.body.style.cursor = 'wait';
+            }}
             
             function regenerateWithIntent() {{
                 const newIntent = document.getElementById('intent_field').value;
@@ -1124,35 +1134,41 @@ def metric_preview_page(request):
     
     # Build the page content
     page_content = Div(
-        H2("Preview Generated Metric", style="margin-bottom: 2rem; color: #1f2937;"),
-        
         Card(
-            header=H3("Metric Details"),
+            header="Metric Details",
             content=Div(
-                P(f"Name: {preview_data.get('name', 'Unknown')}", style="margin-bottom: 0.5rem; font-weight: 500;"),
-                P(f"Description: {preview_data.get('description', 'No description')}", style="margin-bottom: 0.5rem;"),
-                P(f"Criteria: {preview_data.get('scoring_criteria', 'No criteria')}", style="margin-bottom: 0.5rem;"),
-            )
+                P(f"Name: {preview_data.get('name', 'Unknown')}", cls="mb-2 font-medium"),
+                P(f"Description: {preview_data.get('description', 'No description')}", cls="mb-2"),
+                P(f"Criteria: {preview_data.get('scoring_criteria', 'No criteria')}", cls="mb-2"),
+            ),
+            cls="mb-6"
         ),
         
         Card(
-            header=H3("Generated Code"),
+            header="Generated Code",
             content=Div(
                 Pre(
                     Code(preview_data.get('generated_code', 'No code generated')),
-                    style="background: #f8f9fa; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem;"
+                    cls="bg-gray-50 p-4 rounded overflow-x-auto font-mono text-sm"
                 )
-            )
+            ),
+            cls="mb-6"
         ),
         
-        Div(
-            Button("Save Metric", 
-                   onclick="saveMetric()",
-                   style="background: #10b981; color: white; margin-right: 1rem;"),
-            Button("Cancel", 
-                   onclick="window.location.href='/metrics'",
-                   variant="outline"),
-            style="margin-top: 2rem; display: flex; gap: 1rem;"
+        Card(
+            header="Actions",
+            content=Div(
+                Button("Save Metric", 
+                       onclick="saveMetric()",
+                       cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800",
+                       style="width: 75%; margin-right: 0.5rem;"),
+                Button("Cancel", 
+                       onclick="window.location.href='/metrics'",
+                       cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50",
+                       style="width: 23%;"),
+                cls="flex"
+            ),
+            cls="mb-6"
         ),
         
         # Hidden form with metric data
