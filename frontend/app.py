@@ -1538,7 +1538,7 @@ async def optimization_page(request):
                         H4(opt["name"], style="margin: 0 0 0.5rem 0; color: #1f2937;"),
                         P(f"Prompt: {opt['prompt']} • Dataset: {opt['dataset']}", 
                           style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;"),
-                        P(f"Started: {opt['started']} • Status: {opt['status']}", 
+                        P(f"Started: {opt['started']} • Status: '{opt['status']}' (DEBUG: len={len(opt['status'])}, repr={repr(opt['status'])})", 
                           style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;"),
                         Div(
                             Div(
