@@ -125,7 +125,8 @@ def Select(*options, **kwargs):
 
 def Option(text, **kwargs):
     """Create an option element"""
-    return Option(text, **kwargs)
+    from fasthtml.common import Option as HTMLOption
+    return HTMLOption(text, **kwargs)
 
 def Textarea(
     placeholder: str = "",
