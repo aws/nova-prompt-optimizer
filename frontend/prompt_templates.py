@@ -40,9 +40,15 @@ Dataset Content ({analysis_depth} analysis):
 
 {prompt_analysis_text}
 
+IMPORTANT CLARIFICATIONS:
+- The dataset format (JSONL, CSV, etc.) is just how the data is stored - ignore this format
+- Focus ONLY on the actual input/output content within each example
+- The dataset format does NOT determine what output format the prompt expects
+- Base your metrics on what the prompt asks for, not how the dataset is formatted
+
 ANALYSIS REQUIREMENTS:
 1. FIRST: Analyze what the prompt is asking the AI to do and what output format is expected
-2. Examine the ACTUAL data structure and field names in the dataset
+2. Examine the ACTUAL data content and field names (ignore storage format)
 3. Create metrics that measure success for this specific task
 
 CRITICAL: Start your analysis by clearly stating what you understand the prompt's intent to be.
@@ -60,6 +66,7 @@ Focus on metrics that are:
 - Use the exact field names from the dataset
 - Measure what the prompt is actually asking for
 - Avoid overfitting or complex scoring
+- Independent of dataset storage format (JSONL, CSV, etc.)
 
 Format your response as JSON:
 {{
@@ -73,7 +80,7 @@ Format your response as JSON:
       "example": "Example using actual data structure"
     }}
   ],
-  "reasoning": "Why these simple metrics effectively measure the prompt's intended task"
+  "reasoning": "Why these simple metrics effectively measure the prompt's intended task (focus on task requirements, not dataset format)"
 }}"""
         """
         DATASET ANALYSIS PROMPT
