@@ -681,10 +681,10 @@ def create_infer_dataset_tab(datasets=None):
             Div(
                 Label("Focus Areas (Optional)", cls="block text-sm font-medium mb-2"),
                 Div(
-                    Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2"), "Accuracy & Correctness"),
-                    Label(Input(type="checkbox", name="focus", value="format", cls="mr-2"), "Format & Structure"),
-                    Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2"), "Completeness"),
-                    Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2"), "Relevance"),
+                    Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2"), "Accuracy & Correctness", cls="flex items-center"),
+                    Label(Input(type="checkbox", name="focus", value="format", cls="mr-2"), "Format & Structure", cls="flex items-center"),
+                    Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2"), "Completeness", cls="flex items-center"),
+                    Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2"), "Relevance", cls="flex items-center"),
                     cls="grid grid-cols-2 gap-2"
                 ),
                 cls="mb-6"
