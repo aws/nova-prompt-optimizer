@@ -1951,6 +1951,24 @@ async def delete_dataset(request):
     # Redirect back to datasets page with success message
     return RedirectResponse(url="/datasets?deleted=dataset", status_code=302)
 
+@app.post("/optimizations/delete/{optimization_id}")
+async def delete_optimization(request):
+    """Delete an optimization and clean up all related files"""
+    optimization_id = request.path_params["optimization_id"]
+    
+    from database import Database
+    db = Database()
+    
+    # Delete optimization and clean up files
+    deleted = db.delete_optimization(optimization_id)
+    
+    if deleted:
+        print(f"✅ Deleted optimization: {optimization_id}")
+        return RedirectResponse(url="/?deleted=optimization", status_code=302)
+    else:
+        print(f"❌ Optimization not found: {optimization_id}")
+        return RedirectResponse(url="/?error=optimization_not_found", status_code=302)
+
 @app.post("/prompts/delete/{prompt_id}")
 async def delete_prompt(request):
     """Delete a prompt"""
@@ -2304,8 +2322,12 @@ def optimization_results_page(request):
             )
         ),
         
-        # Back Button
+        # Action Buttons
         Div(
+            Button("Delete Optimization", 
+                   onclick=f"if(confirm('Are you sure you want to delete this optimization? This will remove all related files and cannot be undone.')) {{ fetch('/optimizations/delete/{optimization_id}', {{method: 'POST'}}).then(() => window.location.href='/optimization'); }}",
+                   variant="outline",
+                   style="background: #fee2e2; color: #dc2626; border-color: #fca5a5; margin-right: 1rem;"),
             Button("Back to Optimizations", 
                    onclick="window.location.href='/optimization'",
                    variant="outline"),

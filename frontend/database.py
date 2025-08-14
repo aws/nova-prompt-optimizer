@@ -700,6 +700,50 @@ class Database:
         
         conn.close()
         return candidates
+    
+    def delete_optimization(self, optimization_id: str) -> bool:
+        """Delete an optimization and clean up all related files"""
+        import os
+        import shutil
+        from pathlib import Path
+        
+        try:
+            # Delete from database
+            conn = self.get_connection()
+            
+            # Delete optimization logs
+            conn.execute("DELETE FROM optimization_logs WHERE optimization_id = ?", (optimization_id,))
+            
+            # Delete prompt candidates
+            conn.execute("DELETE FROM prompt_candidates WHERE optimization_id = ?", (optimization_id,))
+            
+            # Delete optimization record
+            cursor = conn.execute("DELETE FROM optimizations WHERE id = ?", (optimization_id,))
+            
+            conn.commit()
+            conn.close()
+            
+            if cursor.rowcount == 0:
+                return False  # Optimization not found
+            
+            # Clean up temp dataset file
+            temp_dataset_file = f"temp_dataset_{optimization_id}.jsonl"
+            if os.path.exists(temp_dataset_file):
+                os.remove(temp_dataset_file)
+                print(f"🗑️ Cleaned up temp dataset: {temp_dataset_file}")
+            
+            # Clean up optimized prompts directory
+            prompts_dir = Path(f"optimized_prompts/{optimization_id}")
+            if prompts_dir.exists():
+                shutil.rmtree(prompts_dir)
+                print(f"🗑️ Cleaned up prompts directory: {prompts_dir}")
+            
+            print(f"✅ Successfully deleted optimization: {optimization_id}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error deleting optimization {optimization_id}: {e}")
+            return False
 
     def create_optimization(self, name: str, prompt_id: str, dataset_id: str, metric_id: str = None) -> str:
         """Create a new optimization run with optional metric"""
