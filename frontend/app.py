@@ -260,14 +260,14 @@ async def metrics_page(request):
                   style="color: #6b7280; margin-bottom: 1rem;"),
                 Button("Create New Metric", 
                        onclick="showCreateForm()",
-                       id="create-metric-btn"),
+                       id="create-metric-btn",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
                 
                 # Tabbed create form (hidden by default)
                 Div(
                     Button("Cancel", 
-                           variant="outline",
                            onclick="hideCreateForm()",
-                           style="margin-bottom: 1rem;"),
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mb-4"),
                     
                     # Import the tabbed interface
                     create_metric_tabs(datasets),
@@ -293,15 +293,11 @@ async def metrics_page(request):
                     ),
                     Div(
                         Button("Edit", 
-                               variant="outline", 
-                               size="sm", 
-                               style="margin-right: 0.5rem; font-size: 0.875rem;",
-                               onclick=f"window.location.href='/metrics/edit/{metric['id']}'"),
+                               onclick=f"window.location.href='/metrics/edit/{metric['id']}'",
+                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"),
                         Button("Delete", 
-                               variant="danger", 
-                               size="sm",
-                               style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
-                               onclick=f"confirmDelete('metric', '{metric['id']}', '{metric['name']}')")
+                               onclick=f"confirmDelete('metric', '{metric['id']}', '{metric['name']}')",
+                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs")
                     ),
                     style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; margin-bottom: 0.75rem;"
                 ) for metric in metrics] if metrics else [
@@ -833,11 +829,10 @@ def metric_selection_page(request):
                         rows=4,
                         cls="w-full p-3 border border-gray-300 rounded-md resize-none mb-3"
                     ),
-                    Button("Update Intent & Regenerate Metrics",
+                Button("Update Intent & Regenerate Metrics",
                            type="button",
                            onclick="regenerateWithIntent()",
-                           variant="default",
-                           cls="mt-3"),
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mt-3"),
                     id="intent_form"
                 )
             ),
@@ -1159,14 +1154,10 @@ def metric_preview_page(request):
             content=Div(
                 Button("Save Metric", 
                        onclick="saveMetric()",
-                       variant="default",
-                       size="lg",
-                       cls="flex-1 mr-2"),
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 flex-1 mr-2"),
                 Button("Cancel", 
                        onclick="window.location.href='/metrics'",
-                       variant="outline",
-                       size="lg",
-                       cls="w-1/4"),
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-1/4"),
                 cls="flex"
             ),
             cls="mb-6"
