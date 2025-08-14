@@ -33,9 +33,9 @@ source .venv/bin/activate
 echo "⬆️ Upgrading pip..."
 pip install --upgrade pip > /dev/null 2>&1
 
-# Install dependencies
+# Install dependencies with explicit output
 echo "📦 Installing dependencies..."
-pip install fasthtml starlette python-multipart boto3 > /dev/null 2>&1
+pip install fasthtml starlette python-multipart boto3
 
 # Try to install Nova SDK
 echo "🔍 Attempting to install Nova SDK..."
@@ -44,6 +44,10 @@ if pip install nova-prompt-optimizer > /dev/null 2>&1; then
 else
     echo "⚠️ Nova SDK installation failed - demo mode will be used"
 fi
+
+# Create required directories
+echo "📁 Creating required directories..."
+mkdir -p data uploads optimized_prompts
 
 # Run setup script
 echo "🛠️ Running setup and validation..."

@@ -24,6 +24,13 @@ def create_directories():
     for dir_name in dirs:
         Path(dir_name).mkdir(exist_ok=True)
         print(f"✅ Directory created: {dir_name}/")
+    
+    # Verify directories were created
+    for dir_name in dirs:
+        if not Path(dir_name).exists():
+            print(f"❌ Failed to create directory: {dir_name}")
+            return False
+    return True
 
 def install_dependencies():
     """Install required Python packages"""
@@ -187,7 +194,9 @@ def main():
     check_python_version()
     
     # Step 2: Create directories
-    create_directories()
+    if not create_directories():
+        print("❌ Setup failed during directory creation")
+        sys.exit(1)
     
     # Step 3: Install dependencies
     if not install_dependencies():
