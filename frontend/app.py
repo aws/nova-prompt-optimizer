@@ -362,8 +362,8 @@ def create_metric_card(metric):
                 style="flex: 1;"
             ),
             Div(
-                Button("Edit", variant="outline", size="sm"),
-                Button("Delete", variant="destructive", size="sm",
+                Button("Edit", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs"),
+                Button("Delete", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs",
                        onclick=f"confirmDelete('metric', '{metric['id']}', '{metric['name']}')")
             ),
             style="display: flex; justify-content: space-between; align-items: flex-start;"
@@ -411,14 +411,14 @@ async def datasets_page(request):
                   style="color: #6b7280; margin-bottom: 1rem;"),
                 Button("Upload New Dataset", 
                        onclick="showCreateForm('dataset')",
-                       id="create-dataset-btn"),
+                       id="create-dataset-btn",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
                 
                 # Upload form (hidden by default)
                 Div(
                     Button("Cancel", 
-                           variant="outline",
                            onclick="hideCreateForm('dataset')",
-                           style="margin-bottom: 1rem;"),
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mb-4"),
                     
                     # Dataset upload form
                     Form(
@@ -756,8 +756,8 @@ def edit_metric_page(request):
             ),
             
             Div(
-                Button("Update Metric", type="submit", style="background: #10b981; color: white; margin-right: 1rem;"),
-                Button("Cancel", type="button", onclick="window.location.href='/metrics'", variant="outline"),
+                Button("Update Metric", type="submit", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mr-4"),
+                Button("Cancel", type="button", onclick="window.location.href='/metrics'", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
                 style="margin-top: 2rem; display: flex; gap: 1rem;"
             ),
             

@@ -336,9 +336,9 @@ def create_metrics_header():
         ),
         
         Button("+ Create New Metric", 
-               cls="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90",
                onclick="showCreateForm()",
-               id="create-metric-btn"),
+               id="create-metric-btn",
+               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
         
         cls="flex items-center justify-between mb-6"
     )
@@ -351,8 +351,8 @@ def create_metric_creation_section(datasets=None):
     return Div(
         Div(
             Button("Cancel", 
-                   cls="text-gray-600 hover:text-gray-800 mb-4",
-                   onclick="hideCreateForm()"),
+                   onclick="hideCreateForm()",
+                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mb-4"),
             
             # Tab system
             create_metric_tabs(datasets),
@@ -397,13 +397,12 @@ def create_metric_list_item(metric):
             
             Div(
                 Button("Edit", 
-                       variant="outline",
-                       size="sm",
-                       onclick=f"editMetric('{metric['id']}')"
+                       onclick=f"editMetric('{metric['id']}')",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs"
                 ),
                 Button("Delete", 
-                       cls="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700",
-                       onclick=f"deleteMetric('{metric['id']}', '{metric['name']}')"
+                       onclick=f"deleteMetric('{metric['id']}', '{metric['name']}')",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs"
                 ),
                 cls="flex gap-2"
             ),
