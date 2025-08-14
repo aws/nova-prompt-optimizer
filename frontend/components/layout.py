@@ -92,12 +92,18 @@ def create_sidebar(current_page: str = "", user: Optional[Dict] = None) -> Aside
     sidebar_content = [
         H3("Quick Actions", cls="sidebar-title"),
         Div(
-            Button("New Prompt", cls="btn btn-primary btn-sm", 
-                   hx_get="/prompts/new", hx_target="#main-content"),
-            Button("Upload Dataset", cls="btn btn-secondary btn-sm",
-                   hx_get="/datasets/upload", hx_target="#main-content"),
-            Button("Start Optimization", cls="btn btn-success btn-sm",
-                   hx_get="/optimization/new", hx_target="#main-content"),
+            Button("New Prompt", 
+                   hx_get="/prompts/new", 
+                   hx_target="#main-content",
+                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 text-xs"),
+            Button("Upload Dataset", 
+                   hx_get="/datasets/upload", 
+                   hx_target="#main-content",
+                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs"),
+            Button("Start Optimization", 
+                   hx_get="/optimization/new", 
+                   hx_target="#main-content",
+                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1 text-xs"),
             cls="quick-actions"
         )
     ]

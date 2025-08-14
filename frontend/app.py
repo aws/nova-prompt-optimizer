@@ -473,9 +473,8 @@ async def datasets_page(request):
                     ),
                     Div(
                         Button("View", 
-                               variant="outline", 
-                               style="margin-right: 0.5rem; font-size: 0.875rem;",
-                               onclick=f"window.location.href='/datasets/view/{dataset['id']}'"),
+                               onclick=f"window.location.href='/datasets/view/{dataset['id']}'",
+                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"),
                         Button("Edit", 
                                variant="ghost", 
                                style="margin-right: 0.5rem; font-size: 0.875rem;",
@@ -1400,9 +1399,8 @@ async def prompts_page(request):
                 # Create form (hidden by default)
                 Div(
                     Button("Cancel", 
-                           variant="outline",
                            onclick="hideCreateForm('prompt')",
-                           style="margin-bottom: 1rem;"),
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mb-4"),
                     
                     # Prompt creation form
                     Form(
@@ -1466,9 +1464,8 @@ async def prompts_page(request):
                     ),
                     Div(
                         Button("Edit", 
-                               variant="outline", 
-                               style="margin-right: 0.5rem; font-size: 0.875rem;",
-                               onclick=f"window.location.href='/prompts/edit/{prompt['id']}'"),
+                               onclick=f"window.location.href='/prompts/edit/{prompt['id']}'",
+                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"),
                         Button("Delete", 
                                variant="danger", 
                                style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
@@ -1579,9 +1576,8 @@ async def optimization_page(request):
                 # Optimization form (hidden by default)
                 Div(
                     Button("Cancel", 
-                           variant="outline",
                            onclick="hideCreateForm('optimization')",
-                           style="margin-bottom: 1rem;"),
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mb-4"),
                     
                     # Optimization form
                     P("Configure and start prompt optimization runs here.", 
@@ -1756,22 +1752,19 @@ async def optimization_page(request):
                         ),
                         Div(
                             Button("Retry", 
-                                   variant="outline", 
-                                   style="font-size: 0.875rem; margin-right: 0.5rem; color: #f59e0b; border-color: #f59e0b;",
-                                   onclick=f"retryOptimization('{opt['id']}')"
+                                   onclick=f"retryOptimization('{opt['id']}')",
+                                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"
                                    ) if opt["status"] == "Failed" else None,
                             Button("View Results", 
-                                   variant="outline", 
-                                   style="font-size: 0.875rem; margin-right: 0.5rem; color: #10b981; border-color: #10b981;",
-                                   onclick=f"window.location.href='/optimization/results/{opt['id']}'"
+                                   onclick=f"window.location.href='/optimization/results/{opt['id']}'",
+                                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"
                                    ) if opt.get("status") in ["Completed", "Failed", "Complete", "completed", "complete"] else Button("Monitor Progress", 
-                                   variant="outline", 
-                                   style="font-size: 0.875rem; margin-right: 0.5rem; color: #3b82f6; border-color: #3b82f6;",
-                                   onclick=f"window.location.href='/optimization/monitor/{opt['id']}'"
+                                   onclick=f"window.location.href='/optimization/monitor/{opt['id']}'",
+                                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"
                                    ),
                             Button("Stop" if opt["status"] in ["Starting", "Running"] else "Delete", 
-                                   variant="danger", 
-                                   style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
+                                   onclick=f"deleteOptimization('{opt['id']}')",
+                                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs"
                                    onclick=f"confirmDelete('optimization', '{opt['id']}', '{opt['name']}')",
                                    **{"data-optimization-id": opt["id"]}),
                             style="display: flex; gap: 0.25rem;"
@@ -1906,7 +1899,7 @@ async def edit_prompt(request):
                 ),
                 Div(
                     Button("Update Prompt", type="submit", style="margin-right: 1rem;"),
-                    Button("Cancel", type="button", onclick="window.location.href='/prompts'", variant="outline"),
+                    Button("Cancel", type="button", onclick="window.location.href='/prompts'", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
                     style="display: flex; gap: 0.5rem;"
                 ),
                 method="post",
@@ -2019,7 +2012,7 @@ async def view_dataset(request):
                     style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; max-height: 400px; font-size: 0.875rem;"),
                 style="margin-bottom: 2rem;"
             ),
-            Button("Back to Datasets", onclick="window.location.href='/datasets'", variant="outline")
+            Button("Back to Datasets", onclick="window.location.href='/datasets'", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2")
         ),
         current_page="datasets"
     )
@@ -2049,7 +2042,7 @@ async def edit_dataset(request):
                 ),
                 Div(
                     Button("Update Dataset", type="submit", style="margin-right: 1rem;"),
-                    Button("Cancel", type="button", onclick="window.location.href='/datasets'", variant="outline"),
+                    Button("Cancel", type="button", onclick="window.location.href='/datasets'", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
                     style="display: flex; gap: 0.5rem;"
                 ),
                 method="post",
