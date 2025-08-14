@@ -701,11 +701,11 @@ def create_infer_dataset_tab(datasets=None):
                 cls="mb-6"
             ),
             
-            Div(
+            Card(
                 Label("Focus Areas (Optional)", cls="block text-sm font-medium mb-4 mt-8"),
                 
                 # Section 1: Accuracy & Correctness
-                Div(
+                Card(
                     H4("Accuracy & Correctness", cls="font-semibold text-gray-800 mb-1"),
                     P("Evaluates how precise and factually correct the AI output is compared to expected results.", cls="text-sm text-gray-600 mb-3"),
                     Div(
@@ -736,11 +736,12 @@ def create_infer_dataset_tab(datasets=None):
                         ),
                         cls="grid grid-cols-2 gap-2"
                     ),
-                    cls="border border-gray-200 rounded-lg p-4 mb-6"
+                    nested=True,
+                    cls="mb-4"
                 ),
                 
                 # Section 2: Format & Structure
-                Div(
+                Card(
                     H4("Format & Structure", cls="font-semibold text-gray-800 mb-1"),
                     P("Validates output formatting, data types, and structural requirements.", cls="text-sm text-gray-600 mb-3"),
                     Div(
@@ -771,11 +772,12 @@ def create_infer_dataset_tab(datasets=None):
                         ),
                         cls="grid grid-cols-2 gap-2"
                     ),
-                    cls="border border-gray-200 rounded-lg p-4 mb-6"
+                    nested=True,
+                    cls="mb-4"
                 ),
                 
                 # Section 3: Completeness
-                Div(
+                Card(
                     H4("Completeness", cls="font-semibold text-gray-800 mb-1"),
                     P("Measures how thoroughly the AI addresses all aspects of the request.", cls="text-sm text-gray-600 mb-3"),
                     Div(
@@ -806,11 +808,12 @@ def create_infer_dataset_tab(datasets=None):
                         ),
                         cls="grid grid-cols-2 gap-2"
                     ),
-                    cls="border border-gray-200 rounded-lg p-4 mb-6"
+                    nested=True,
+                    cls="mb-4"
                 ),
                 
                 # Section 4: Relevance
-                Div(
+                Card(
                     H4("Relevance", cls="font-semibold text-gray-800 mb-1"),
                     P("Assesses how well the output relates to and answers the input query.", cls="text-sm text-gray-600 mb-3"),
                     Div(
@@ -841,7 +844,8 @@ def create_infer_dataset_tab(datasets=None):
                         ),
                         cls="grid grid-cols-2 gap-2"
                     ),
-                    cls="border border-gray-200 rounded-lg p-4 mb-6"
+                    nested=True,
+                    cls="mb-4"
                 ),
                 cls="mb-6"
             ),
