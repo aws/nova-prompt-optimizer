@@ -17,8 +17,8 @@ from starlette.responses import RedirectResponse, JSONResponse
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 
-# Import Shad4FastHTML
-from shad4fast import ShadHead
+# Import Shad4FastHTML components
+from shad4fast import ShadHead, Button, Input, Textarea, Alert
 
 # Import existing components
 from components.layout import create_main_layout
@@ -28,7 +28,7 @@ from components.metrics_page import create_metrics_page, create_metric_tabs
 from database import db
 from metric_service import MetricService
 from components.navbar import create_navbar, create_navbar_styles, create_navbar_script
-from components.ui import Button, Card, CardContainer, Textarea, Input, FormField, Badge, Alert, create_ui_styles
+from components.ui import Card, CardContainer, FormField, Badge
 
 # Nova Prompt Optimizer SDK imports
 try:
@@ -61,10 +61,9 @@ class MockUser:
 async def get_current_user(request):
     return MockUser()
 
-# Create FastHTML app with Shad4FastHTML
+# Create FastHTML app
 app = FastHTML(
     hdrs=[
-        ShadHead(),  # Shad4FastHTML CSS and setup
         Script(src="https://unpkg.com/htmx.org@1.9.10"),
         Script("""
             // Delete confirmation dialog

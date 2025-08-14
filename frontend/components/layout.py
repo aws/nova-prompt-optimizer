@@ -4,6 +4,7 @@ Layout components for Nova Prompt Optimizer Frontend
 
 from typing import Optional, List, Dict, Any
 from fasthtml.common import *
+from shad4fast import ShadHead
 from .navbar import create_navbar, create_navbar_styles, create_navbar_tabs_script
 from .ui import create_ui_styles, CardContainer
 from config import get_settings
@@ -277,7 +278,6 @@ def create_page_layout(
             Title(f"{title} - Nova Prompt Optimizer"),
             Meta(charset="utf-8"),
             Meta(name="viewport", content="width=device-width, initial-scale=1"),
-            Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"),
             create_navbar_styles(),
             create_ui_styles(),
             create_navbar_tabs_script(),
@@ -360,8 +360,39 @@ def create_main_layout(
         Link(rel="icon", type="image/png", href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="),
         Meta(name="description", content="Nova Prompt Optimizer - Advanced AI Prompt Engineering Platform"),
         
-        # CSS - Using CDN only for now
-        Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"),
+        # CSS - Shad4FastHTML setup
+        Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"),
+        Style("""
+            :root {
+                --background: 0 0% 100%;
+                --foreground: 222.2 84% 4.9%;
+                --primary: 222.2 47.4% 11.2%;
+                --primary-foreground: 210 40% 98%;
+                --secondary: 210 40% 96%;
+                --secondary-foreground: 222.2 84% 4.9%;
+                --muted: 210 40% 96%;
+                --muted-foreground: 215.4 16.3% 46.9%;
+                --accent: 210 40% 96%;
+                --accent-foreground: 222.2 84% 4.9%;
+                --destructive: 0 84.2% 60.2%;
+                --destructive-foreground: 210 40% 98%;
+                --border: 214.3 31.8% 91.4%;
+                --input: 214.3 31.8% 91.4%;
+                --ring: 222.2 84% 4.9%;
+            }
+            .bg-primary { background-color: hsl(var(--primary)); }
+            .text-primary-foreground { color: hsl(var(--primary-foreground)); }
+            .hover\\:bg-primary\\/90:hover { background-color: hsl(var(--primary) / 0.9); }
+            .bg-secondary { background-color: hsl(var(--secondary)); }
+            .text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
+            .bg-destructive { background-color: hsl(var(--destructive)); }
+            .text-destructive-foreground { color: hsl(var(--destructive-foreground)); }
+            .border-input { border-color: hsl(var(--input)); }
+            .bg-background { background-color: hsl(var(--background)); }
+            .hover\\:bg-accent:hover { background-color: hsl(var(--accent)); }
+            .hover\\:text-accent-foreground:hover { color: hsl(var(--accent-foreground)); }
+        """),
+        ShadHead(),  # Shad4FastHTML components and scripts
         
         # Navbar styles
         create_navbar_styles(),
