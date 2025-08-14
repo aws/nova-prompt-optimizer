@@ -1555,8 +1555,7 @@ async def optimization_page(request):
                                    variant="outline", 
                                    style="font-size: 0.875rem; margin-right: 0.5rem; color: #10b981; border-color: #10b981;",
                                    onclick=f"window.location.href='/optimization/results/{opt['id']}'"
-                                   ),
-                            Button("Monitor Progress", 
+                                   ) if opt["status"] in ["Completed", "Failed", "Complete"] else Button("Monitor Progress", 
                                    variant="outline", 
                                    style="font-size: 0.875rem; margin-right: 0.5rem; color: #3b82f6; border-color: #3b82f6;",
                                    onclick=f"window.location.href='/optimization/monitor/{opt['id']}'"
