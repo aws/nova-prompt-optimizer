@@ -888,11 +888,11 @@ def metric_selection_page(request):
                 content=Div(
                     Button("Generate Selected Metrics", 
                            type="submit", 
-                           cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 mr-3"),
+                           cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 w-3/4 mr-2"),
                     Button("Cancel", 
                            type="button", 
                            onclick="window.location.href='/metrics'", 
-                           cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50"),
+                           cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50 w-1/4"),
                     cls="flex"
                 ),
                 cls="mb-6"
