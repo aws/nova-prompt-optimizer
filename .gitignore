@@ -8,16 +8,6 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-
-# Frontend generated data and runtime files
-frontend/nova_optimizer.db*
-frontend/data/
-frontend/uploads/
-frontend/optimized_prompts/
-frontend/.sesskey
-
-# Temporary data files
-frontend/data/temp_dataset_*.jsonl
 downloads/
 eggs/
 .eggs/
@@ -48,10 +38,11 @@ lerna-debug.log*
 .eslintcache
 
 # Frontend build outputs
-ui/frontend/dist/
-ui/frontend/build/
-ui/frontend/.next/
-ui/frontend/out/
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
+frontend/optimized_prompts/*
 
 # Database files
 *.db
@@ -149,6 +140,7 @@ public
 tmp/
 temp/
 
+
 # IDE files
 .idea/
 .vscode/
@@ -158,6 +150,7 @@ temp/
 claude-analysis/
 .amazonq
 */.archive*
+
 
 # OS generated files
 .DS_Store
