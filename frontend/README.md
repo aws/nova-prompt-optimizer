@@ -14,6 +14,22 @@ A modern web interface for the Nova Prompt Optimizer SDK, built with FastHTML an
 
 ## **Quick Start**
 
+### **Automated Installation (Recommended)**
+```bash
+# Clone and navigate to frontend
+cd nova-prompt-optimizer/frontend
+
+# Run automated installation
+./install.sh
+
+# Start the application
+./start.sh
+
+# Open browser
+open http://localhost:8000
+```
+
+### **Manual Installation**
 ```bash
 # Clone and navigate to frontend
 cd nova-prompt-optimizer/frontend
@@ -22,11 +38,12 @@ cd nova-prompt-optimizer/frontend
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install dependencies
-pip install fasthtml starlette python-multipart boto3
+# Install dependencies and setup
+pip install fasthtml starlette python-multipart boto3 nova-prompt-optimizer
+python3 setup.py
 
-# Optional: Install Nova SDK for real optimizations
-pip install nova-prompt-optimizer
+# Validate installation
+python3 health_check.py
 
 # Run the application
 python3 app.py
@@ -54,67 +71,6 @@ open http://localhost:8000
 -**Safari** (14+)
 -**Edge** (90+)
 
-## **Installation Methods**
-
-### **Method 1: Standard Installation (Recommended)**
-
-#### **Step 1: Environment Setup**
-```bash
-# Navigate to frontend directory
-cd /path/to/nova-prompt-optimizer/frontend
-
-# Create isolated Python environment
-python3 -m venv .venv
-
-# Activate environment
-source .venv/bin/activate  # macOS/Linux
-# OR
-.venv\Scripts\activate     # Windows
-```
-
-#### **Step 2: Install Core Dependencies**
-```bash
-# Install required packages
-pip install fasthtml starlette python-multipart boto3
-
-# Verify installation
-python3 -c "import fasthtml; print('FastHTML installed successfully')"
-```
-
-#### **Step 3: Install Nova SDK (Optional but Recommended)**
-```bash
-# For real prompt optimization (requires AWS credentials)
-pip install nova-prompt-optimizer
-
-# Verify SDK installation
-python3 -c "from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer; print('Nova SDK installed')"
-```
-
-### **Method 2: Development Installation**
-
-#### **For Contributors and Advanced Users**
-```bash
-# Install with development tools
-pip install fasthtml starlette python-multipart boto3
-pip install nova-prompt-optimizer
-
-# Install optional development tools
-pip install pytest black flake8 isort
-
-# Verify development setup
-python3 -c "import fasthtml, pytest, black; print('Development environment ready')"
-```
-
-### **Method 3: Minimal Installation**
-
-#### **For Demo/Testing Only**
-```bash
-# Minimal dependencies (no Nova SDK)
-pip install fasthtml starlette python-multipart boto3
-
-# Note: Optimizations will run in demo mode
-echo "Demo mode: Install nova-prompt-optimizer for real optimizations"
-```
 
 ## ⚙**Configuration**
 
@@ -318,57 +274,9 @@ pip install fasthtml starlette python-multipart nova-prompt-optimizer
 python3 app.py
 ```
 
-## 🔬 **Development Setup**
 
-### **For Contributors**
 
-#### **Setup Development Environment**
-```bash
-# Clone repository
-git clone <repository-url>
-cd nova-prompt-optimizer/frontend
-
-# Create development environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install all dependencies
-pip install fasthtml starlette python-multipart nova-prompt-optimizer
-pip install pytest black flake8 isort mypy
-
-# Install pre-commit hooks (optional)
-pip install pre-commit
-pre-commit install
-```
-
-#### **Development Commands**
-```bash
-# Format code
-black app.py database.py components/
-
-# Lint code
-flake8 app.py database.py components/
-
-# Sort imports
-isort app.py database.py components/
-
-# Type checking
-mypy app.py database.py
-
-# Run tests (when available)
-pytest tests/
-```
-
-#### **Development Database**
-```bash
-# Reset database for testing
-curl -X POST http://localhost:8000/admin/reset-database
-
-# Or programmatically
-python3 -c "from database import db; db.reset_database()"
-```
-
-## **Project Structure**
+## **Frontend Project Structure**
 
 ```
 frontend/

@@ -283,6 +283,101 @@ class Database:
                 opt["started"], opt["completed"]
             ))
         
+        # Insert sample metrics
+        metrics = [
+            {
+                "id": "accuracy_metric_1",
+                "name": "Accuracy Score",
+                "description": "Measures exact match accuracy between predicted and expected outputs",
+                "dataset_format": "JSON",
+                "scoring_criteria": "Exact string match with partial credit for similarity",
+                "generated_code": '''
+class AccuracyMetric(MetricAdapter):
+    def apply(self, y_pred, y_true):
+        try:
+            import json
+            import re
+            
+            # Parse JSON from prediction if needed
+            if isinstance(y_pred, str):
+                json_match = re.search(r'\\{.*\\}', y_pred)
+                if json_match:
+                    try:
+                        pred_data = json.loads(json_match.group())
+                        y_pred = pred_data.get('answer', y_pred)
+                    except:
+                        pass
+            
+            # Simple string comparison
+            pred_str = str(y_pred).strip().lower()
+            true_str = str(y_true).strip().lower()
+            
+            # Exact match
+            if pred_str == true_str:
+                return 1.0
+            
+            # Partial match
+            if pred_str in true_str or true_str in pred_str:
+                return 0.7
+            
+            # No match
+            return 0.0
+            
+        except Exception as e:
+            print(f"Metric evaluation error: {e}")
+            return 0.0
+''',
+                "natural_language_input": "Measure how accurately the model predicts the correct answer"
+            },
+            {
+                "id": "relevance_metric_1", 
+                "name": "Relevance Score",
+                "description": "Evaluates how relevant the response is to the input query",
+                "dataset_format": "JSON",
+                "scoring_criteria": "Semantic relevance and topic alignment",
+                "generated_code": '''
+class RelevanceMetric(MetricAdapter):
+    def apply(self, y_pred, y_true):
+        try:
+            import json
+            import re
+            
+            # Extract text from JSON if needed
+            pred_text = str(y_pred).lower()
+            true_text = str(y_true).lower()
+            
+            # Simple keyword overlap scoring
+            pred_words = set(re.findall(r'\\w+', pred_text))
+            true_words = set(re.findall(r'\\w+', true_text))
+            
+            if not true_words:
+                return 0.0
+                
+            overlap = len(pred_words.intersection(true_words))
+            total = len(true_words)
+            
+            return min(overlap / total, 1.0)
+            
+        except Exception as e:
+            print(f"Relevance metric error: {e}")
+            return 0.0
+''',
+                "natural_language_input": "Score how relevant the response is to the question"
+            }
+        ]
+        
+        for metric in metrics:
+            conn.execute("""
+                INSERT INTO metrics (id, name, description, dataset_format, scoring_criteria, 
+                                   generated_code, natural_language_input, created)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                metric["id"], metric["name"], metric["description"], 
+                metric["dataset_format"], metric["scoring_criteria"],
+                metric["generated_code"], metric["natural_language_input"],
+                "2024-01-15"
+            ))
+
         conn.commit()
         # Don't close - keep connection alive for the app
         print("✅ Initial sample data inserted")

@@ -3024,6 +3024,38 @@ async def reset_database(request):
     return RedirectResponse(url="/?reset=true", status_code=302)
 
 if __name__ == "__main__":
-    print("📁 Starting clean Nova Prompt Optimizer...")
+    print("🚀 Starting Nova Prompt Optimizer...")
+    
+    # Run basic health checks
+    try:
+        from database import Database
+        db_test = Database()
+        metrics = db_test.get_metrics()
+        datasets = db_test.get_datasets()
+        
+        if not metrics:
+            print("❌ No metrics found in database - optimization will fail")
+            print("💡 Run: python3 setup.py to fix this issue")
+            sys.exit(1)
+            
+        if not datasets:
+            print("❌ No datasets found in database")
+            print("💡 Run: python3 setup.py to fix this issue")
+            sys.exit(1)
+            
+        print(f"✅ Database validated: {len(datasets)} datasets, {len(metrics)} metrics")
+        
+    except Exception as e:
+        print(f"❌ Database validation failed: {e}")
+        print("💡 Run: python3 setup.py to initialize the database")
+        sys.exit(1)
+    
+    # Check required directories
+    from pathlib import Path
+    required_dirs = ['data', 'uploads', 'optimized_prompts']
+    for dir_name in required_dirs:
+        Path(dir_name).mkdir(exist_ok=True)
+    
+    print("📁 Starting Nova Prompt Optimizer server...")
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
