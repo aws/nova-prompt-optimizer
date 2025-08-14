@@ -309,7 +309,24 @@ def run_optimization_worker(optimization_id: str):
                                 print(f"🔍 DEBUG - Found metric class: {metric_class.__name__}")
                                 # Instantiate and use the metric
                                 metric_instance = metric_class()
-                                result = metric_instance.apply(y_pred, y_true)
+                                
+                                # Parse JSON strings if needed
+                                parsed_y_pred = y_pred
+                                parsed_y_true = y_true
+                                
+                                if isinstance(y_pred, str):
+                                    try:
+                                        parsed_y_pred = json.loads(y_pred)
+                                    except:
+                                        pass
+                                        
+                                if isinstance(y_true, str):
+                                    try:
+                                        parsed_y_true = json.loads(y_true)
+                                    except:
+                                        pass
+                                
+                                result = metric_instance.apply(parsed_y_pred, parsed_y_true)
                                 
                                 # Ensure result is a valid float between 0-1
                                 if result is None:
