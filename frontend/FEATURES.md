@@ -1,267 +1,251 @@
-# Nova Prompt Optimizer - Features & Dependencies
+# Nova Prompt Optimizer - Features & Capabilities
 
-## 🎯 Core Features
+## 🎯 **Current Implementation Status**
 
-### ✅ Currently Implemented
-- **Clean UI Design**: Black and white Shad4FastHTML-inspired interface
-- **Tab Navigation**: Professional navigation with keyboard support
-- **User Authentication**: Session-based authentication system
-- **Basic Dashboard**: Welcome interface with system status
-- **Form Components**: Buttons, inputs, textareas, cards, alerts, badges
-- **Responsive Design**: Mobile-friendly layout
+### ✅ **Fully Implemented Features**
 
-### 🚧 Planned Advanced Features
+## 📊 **Dataset Management**
+- **Multi-format Upload**: CSV, JSON, JSONL file support
+- **File Storage**: Organized in `uploads/` directory
+- **Database Integration**: SQLite storage with metadata
+- **Content Preview**: View dataset samples and structure
+- **Validation**: File format and structure validation
+- **Management**: Create, view, edit, and delete datasets
 
-## 📊 Dataset Management
-**Upload and manage CSV/JSON datasets with automatic processing**
+## 📝 **Prompt Engineering**
+- **Visual Editor**: Clean web interface for prompt creation
+- **Variable Support**: JSON-based variable definitions
+- **Template System**: System and user prompt separation
+- **Preview**: Real-time prompt preview with variables
+- **Management**: Create, edit, view, and organize prompts
+- **Integration**: Direct integration with optimization workflows
 
-### Dependencies
-```bash
-openpyxl>=3.1.0          # Excel file support
-xlrd>=2.0.0              # Legacy Excel support
-chardet>=5.2.0           # Character encoding detection
-python-magic>=0.4.27     # File type detection
-validators>=0.22.0       # Data validation utilities
-```
+## 📏 **Custom Metrics**
+- **AI-Generated Metrics**: Automatic metric inference from datasets
+- **Natural Language**: Describe metrics in plain English
+- **Code Generation**: Automatic Python metric code generation
+- **Custom Implementation**: Support for complex evaluation logic
+- **Preview & Test**: Test metrics before saving
+- **Library**: Built-in metric templates and examples
 
-### Features
-- Multi-format file upload (CSV, JSON, JSONL, Excel)
-- Automatic encoding detection
-- Data validation and cleaning
-- Column mapping and transformation
-- Dataset versioning and history
-- Preview and sampling capabilities
+## 🔄 **Optimization Engine**
+- **Nova SDK Integration**: Full integration with Amazon Nova Prompt Optimizer
+- **Multiple Models**: Support for Nova Lite, Pro, and Premier models
+- **Advanced Configuration**: Customizable optimization parameters
+- **Progress Tracking**: Real-time optimization progress monitoring
+- **Result Storage**: Comprehensive result storage and retrieval
+- **Baseline Evaluation**: Automatic baseline performance measurement
 
----
+## 🤖 **AI-Powered Features**
+- **Metric Inference**: AI analyzes datasets to suggest relevant metrics
+- **Prompt Optimization**: Automated prompt improvement using Nova SDK
+- **Few-Shot Learning**: Automatic selection of optimal examples
+- **Performance Analysis**: AI-driven performance comparison and insights
 
-## 📝 Prompt Engineering
-**Create and edit prompts with Jinja2 templating and variable detection**
+## ⚡ **Real-time Progress**
+- **Live Updates**: Real-time optimization progress tracking
+- **Status Monitoring**: Detailed status updates and logging
+- **Error Handling**: Comprehensive error reporting and recovery
+- **Background Processing**: Non-blocking optimization execution
 
-### Dependencies
-```bash
-jinja2-time>=0.2.0       # Time extensions for Jinja2
-markupsafe>=2.1.0        # Safe string handling
-regex>=2023.10.0         # Advanced regex for variable detection
-```
+## 📈 **Results Analysis**
+- **Comprehensive Results**: Detailed optimization results display
+- **Baseline Comparison**: Side-by-side baseline vs optimized comparison
+- **Prompt Candidates**: Multiple optimized prompt variations
+- **Few-Shot Examples**: Display of selected few-shot examples
+- **Performance Metrics**: Detailed performance scoring and analysis
+- **Export Capabilities**: Save optimized prompts for use
 
-### Features
-- Visual prompt editor with syntax highlighting
-- Variable detection and validation
-- Template inheritance and includes
-- Real-time preview with sample data
-- Version control for prompts
-- Collaborative editing capabilities
+## 🎨 **User Interface**
+- **Modern Design**: Clean, professional FastHTML-based interface
+- **Responsive Layout**: Mobile-friendly responsive design
+- **Navigation**: Intuitive tab-based navigation system
+- **Dashboard**: Comprehensive overview of system status
+- **Form Components**: Professional form elements and validation
+- **Feedback**: Clear success/error messaging and user feedback
 
----
-
-## 📏 Custom Metrics
-**Define domain-specific evaluation metrics with Python code**
-
-### Dependencies
-```bash
-scipy>=1.11.0            # Scientific computing
-scikit-learn>=1.3.0      # Machine learning metrics
-nltk>=3.8.0              # Natural language processing
-rouge-score>=0.1.2       # ROUGE metrics for text evaluation
-bert-score>=0.3.13       # BERT-based semantic similarity
-sentence-transformers>=2.2.0  # Sentence embeddings
-```
-
-### Features
-- Built-in metrics library (BLEU, ROUGE, BERTScore)
-- Custom Python metric definitions
-- Semantic similarity evaluation
-- Domain-specific scoring functions
-- Metric composition and weighting
-- Performance benchmarking
+## 🗄️ **Data Management**
+- **SQLite Database**: Lightweight, embedded database solution
+- **Automatic Initialization**: Database and schema auto-creation
+- **Sample Data**: Pre-loaded sample datasets and prompts
+- **File Organization**: Structured file storage system
+- **Cleanup**: Automatic cleanup of temporary and optimization files
+- **Data Integrity**: Comprehensive data validation and error handling
 
 ---
 
-## 🔄 Optimization Workflows
-**Run automated prompt optimization with multiple algorithms**
+## 🛠️ **Technical Architecture**
 
-### Dependencies
+### **Core Dependencies**
 ```bash
-optuna>=3.4.0            # Hyperparameter optimization
-hyperopt>=0.2.7          # Bayesian optimization
-deap>=1.4.0              # Evolutionary algorithms
-joblib>=1.3.0            # Parallel processing
-tqdm>=4.66.0             # Progress bars
+fasthtml                 # Web framework
+starlette               # ASGI framework
+python-multipart        # File upload support
+boto3                   # AWS SDK
+nova-prompt-optimizer   # Nova SDK
 ```
 
-### Features
-- Multiple optimization algorithms (Bayesian, Evolutionary, Grid Search)
-- Parallel execution and distributed computing
-- Early stopping and convergence detection
-- Hyperparameter tuning for optimization
-- Experiment tracking and reproducibility
-- Resource management and scheduling
+### **File Structure**
+```
+frontend/
+├── app.py                    # Main application
+├── sdk_worker.py            # Optimization worker
+├── database.py              # Database layer
+├── metric_service.py        # Metric generation
+├── prompt_templates.py      # AI prompt templates
+├── simple_rate_limiter.py   # Rate limiting
+├── components/              # UI components
+├── data/                   # Temporary data
+├── uploads/                # User datasets
+└── optimized_prompts/      # Results storage
+```
+
+### **Key Components**
+- **FastHTML Framework**: Modern Python web framework
+- **SQLite Database**: Embedded database with automatic initialization
+- **Nova SDK Integration**: Official Amazon Nova Prompt Optimizer SDK
+- **Background Workers**: Separate process for optimization execution
+- **Rate Limiting**: Built-in rate limiting for API calls
+- **File Management**: Organized file storage and cleanup
 
 ---
 
-## 🤖 AI Rubric Generation
-**Generate evaluation rubrics from datasets using AI**
+## 🚀 **Getting Started**
 
-### Dependencies
+### **Quick Start**
 ```bash
-openai>=1.3.0            # OpenAI API (for comparison/fallback)
-anthropic>=0.7.0         # Anthropic API (for comparison/fallback)
-tiktoken>=0.5.0          # Token counting utilities
+# Navigate to frontend directory
+cd nova-prompt-optimizer/frontend
+
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install fasthtml starlette python-multipart boto3 nova-prompt-optimizer
+
+# Run application
+python3 app.py
+
+# Open browser
+open http://localhost:8000
 ```
 
-### Features
-- Automatic rubric generation from sample data
-- Multi-criteria evaluation frameworks
-- Consistency checking across evaluations
-- Human-AI collaborative rubric design
-- Template library for common use cases
-- Export to standard formats
+### **First Steps**
+1. **Upload Dataset**: Add your training data via the Datasets page
+2. **Create Prompt**: Design your initial prompt with variables
+3. **Generate Metrics**: Use AI to infer evaluation metrics from your data
+4. **Run Optimization**: Start optimization with your prompt, dataset, and metrics
+5. **Review Results**: Analyze optimized prompts and performance improvements
 
 ---
 
-## 👥 Human Annotation
-**Quality assurance through human annotation workflows**
+## 🎯 **Use Cases**
 
-### Dependencies
-```bash
-redis>=5.0.0             # Session storage and task queuing
-celery>=5.3.0            # Background task processing
-flower>=2.0.0            # Celery monitoring
-kombu>=5.3.0             # Message broker abstraction
-```
+### **Customer Support**
+- Optimize email response templates
+- Improve classification accuracy
+- Generate consistent tone and style
 
-### Features
-- Multi-annotator workflow management
-- Inter-annotator agreement calculation
-- Conflict resolution mechanisms
-- Quality control and validation
-- Annotation guidelines and training
-- Progress tracking and reporting
+### **Content Generation**
+- Enhance creative writing prompts
+- Optimize marketing copy generation
+- Improve content quality and relevance
 
----
+### **Data Analysis**
+- Optimize data extraction prompts
+- Improve structured output generation
+- Enhance classification and categorization
 
-## ⚡ Real-time Progress
-**Live updates during optimization with WebSocket integration**
-
-### Dependencies
-```bash
-socketio>=5.9.0          # Socket.IO support
-python-socketio>=5.9.0   # Python Socket.IO client/server
-eventlet>=0.33.0         # Async networking library
-```
-
-### Features
-- Live progress bars and status updates
-- Real-time metric visualization
-- Collaborative viewing of optimization runs
-- Notification system for completion
-- Resource usage monitoring
-- Error reporting and alerts
+### **Educational Content**
+- Optimize tutoring and explanation prompts
+- Improve question generation
+- Enhance learning material creation
 
 ---
 
-## 📈 Results Analysis
-**Comprehensive visualization and comparison of optimization results**
+## 🔧 **Configuration Options**
 
-### Dependencies
-```bash
-plotly>=5.17.0           # Interactive visualizations
-matplotlib>=3.8.0        # Static plotting
-seaborn>=0.13.0          # Statistical visualizations
-bokeh>=3.3.0             # Interactive web plots
-dash>=2.14.0             # Web-based dashboards
-kaleido>=0.2.1           # Static image export for Plotly
-```
+### **Model Selection**
+- **Nova Lite**: Fast, cost-effective optimization
+- **Nova Pro**: Balanced performance and cost
+- **Nova Premier**: Maximum optimization quality
 
-### Features
-- Interactive dashboards and charts
-- Statistical analysis and significance testing
-- A/B testing framework for prompt comparison
-- Export capabilities (PDF, PNG, SVG)
-- Automated report generation
-- Performance trend analysis
+### **Optimization Parameters**
+- **Training Split**: Configurable train/test data split
+- **Model Mode**: Lite, Pro, or Premier optimization modes
+- **Record Limits**: Optional data size limitations
+- **Rate Limiting**: Configurable API rate limits
+
+### **Advanced Settings**
+- **Few-Shot Examples**: Automatic optimal example selection
+- **Custom Metrics**: Support for domain-specific evaluation
+- **Background Processing**: Non-blocking optimization execution
+- **Result Storage**: Comprehensive result archiving
 
 ---
 
-## 🔧 Installation Options
+## 📋 **Current Limitations**
 
-### Quick Start (Minimal)
-```bash
-pip install -r requirements-minimal.txt
-```
-**Use for**: Development, testing, basic functionality
-**Size**: ~50 packages, ~500MB
+### **Known Constraints**
+- **Single User**: No multi-user authentication system
+- **Local Storage**: SQLite database (not distributed)
+- **File Size**: Large dataset handling may require optimization
+- **Concurrent Optimizations**: One optimization at a time per instance
 
-### Full Installation
-```bash
-pip install -r requirements.txt
-```
-**Use for**: Production, all features enabled
-**Size**: ~100+ packages, ~2GB
-
-### Feature-Specific Installation
-```bash
-# Install base requirements first
-pip install -r requirements-minimal.txt
-
-# Then add specific features as needed
-pip install -r requirements-advanced.txt
-```
-
-### Docker Installation
-```bash
-docker-compose up -d
-```
-**Use for**: Containerized deployment, easy setup
-**Includes**: All dependencies, database, Redis
+### **AWS Requirements**
+- **Bedrock Access**: Requires AWS account with Bedrock access
+- **Nova Model Access**: Requires approval for Nova model usage
+- **Credentials**: AWS credentials must be configured
 
 ---
 
-## 🎯 Roadmap
+## 🔮 **Future Enhancements**
 
-### Phase 1: Core Infrastructure ✅
-- [x] Web framework and UI components
-- [x] Authentication system
-- [x] Database integration
-- [x] AWS Bedrock integration
+### **Potential Improvements**
+- **Multi-user Support**: User authentication and workspace isolation
+- **Distributed Processing**: Support for multiple concurrent optimizations
+- **Advanced Analytics**: Enhanced result visualization and analysis
+- **API Integration**: RESTful API for programmatic access
+- **Cloud Deployment**: Docker and cloud deployment options
+- **Collaboration**: Team-based prompt development and sharing
 
-### Phase 2: Dataset Management 🚧
-- [ ] File upload and processing
-- [ ] Data validation and cleaning
-- [ ] Column mapping interface
-- [ ] Dataset versioning
-
-### Phase 3: Prompt Engineering 📋
-- [ ] Visual prompt editor
-- [ ] Variable detection
-- [ ] Template system
-- [ ] Preview functionality
-
-### Phase 4: Optimization Engine 🔄
-- [ ] Algorithm implementation
-- [ ] Parallel processing
-- [ ] Progress tracking
-- [ ] Result storage
-
-### Phase 5: Advanced Features 🚀
-- [ ] Custom metrics
-- [ ] AI rubric generation
-- [ ] Human annotation
-- [ ] Advanced analytics
-
-### Phase 6: Production Features 🏭
-- [ ] Monitoring and logging
-- [ ] Performance optimization
-- [ ] Security hardening
-- [ ] API documentation
+### **Integration Opportunities**
+- **CI/CD Integration**: Automated prompt testing and deployment
+- **Monitoring**: Production prompt performance monitoring
+- **Version Control**: Git-based prompt version management
+- **Enterprise Features**: SSO, audit logging, compliance features
 
 ---
 
-## 💡 Getting Started
+## 💡 **Best Practices**
 
-1. **Start Simple**: Use `requirements-minimal.txt` for development
-2. **Add Features**: Install additional dependencies as needed
-3. **Scale Up**: Move to full installation for production
-4. **Monitor**: Use built-in health checks and monitoring
+### **Dataset Preparation**
+- Use representative training data
+- Ensure balanced examples across use cases
+- Include edge cases and challenging examples
+- Validate data quality before optimization
 
-For detailed installation instructions, see [INSTALL.md](INSTALL.md).
+### **Prompt Design**
+- Start with clear, specific instructions
+- Use consistent variable naming
+- Include context and examples where helpful
+- Test with sample data before optimization
+
+### **Optimization Strategy**
+- Begin with smaller datasets for faster iteration
+- Use appropriate model tier for your use case
+- Monitor optimization progress and logs
+- Compare multiple optimization runs
+
+### **Result Evaluation**
+- Review both baseline and optimized performance
+- Analyze few-shot examples for insights
+- Test optimized prompts with new data
+- Document successful optimization patterns
+
+---
+
+**Status**: ✅ **Production Ready** - Full-featured prompt optimization platform
+**Last Updated**: August 2025
+**Version**: 1.0.0
