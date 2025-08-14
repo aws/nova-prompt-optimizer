@@ -2,7 +2,7 @@
 
 A modern web interface for the Nova Prompt Optimizer SDK, built with FastHTML and SQLite for simplicity and performance.
 
-##**Table of Contents**
+## **Table of Contents**
 - [Quick Start](#-quick-start)
 - [Prerequisites](#-prerequisites)
 - [Installation Methods](#-installation-methods)
@@ -12,7 +12,7 @@ A modern web interface for the Nova Prompt Optimizer SDK, built with FastHTML an
 - [Troubleshooting](#-troubleshooting)
 - [Development Setup](#-development-setup)
 
-##**Quick Start**
+## **Quick Start**
 
 ```bash
 # Clone and navigate to frontend
@@ -35,7 +35,7 @@ python3 app.py
 open http://localhost:8000
 ```
 
-##**Prerequisites**
+## **Prerequisites**
 
 ### **System Requirements**
 - **Python 3.8+** (Python 3.11+ recommended)
@@ -54,7 +54,7 @@ open http://localhost:8000
 -**Safari** (14+)
 -**Edge** (90+)
 
-##**Installation Methods**
+## **Installation Methods**
 
 ### **Method 1: Standard Installation (Recommended)**
 
@@ -197,7 +197,7 @@ pip install gunicorn
 gunicorn app:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
-##**Verification**
+## **Verification**
 
 ### **Step 1: Check Application Status**
 ```bash
@@ -245,7 +245,7 @@ except ImportError:
 "
 ```
 
-##**Troubleshooting**
+## **Troubleshooting**
 
 ### **Common Issues**
 
@@ -368,7 +368,7 @@ curl -X POST http://localhost:8000/admin/reset-database
 python3 -c "from database import db; db.reset_database()"
 ```
 
-##**Project Structure**
+## **Project Structure**
 
 ```
 frontend/
@@ -395,12 +395,12 @@ frontend/
 └── FEATURES.md             # Feature documentation
 ```
 
-##**Related Documentation**
+## **Related Documentation**
 
 - **[Features](FEATURES.md)** - Feature documentation and roadmap
 - **[Nova SDK Documentation](https://github.com/aws-samples/nova-prompt-optimizer)** - Official SDK docs
 
-##**Getting Help**
+## **Getting Help**
 
 ### **Check These First**
 1. **Logs**: Check console output for error messages
