@@ -17,6 +17,9 @@ from starlette.responses import RedirectResponse, JSONResponse
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 
+# Import Shad4FastHTML
+from shad4fast import ShadHead
+
 # Import existing components
 from components.layout import create_main_layout
 from components.metrics_page import create_metrics_page, create_metric_tabs
@@ -58,10 +61,10 @@ class MockUser:
 async def get_current_user(request):
     return MockUser()
 
-# Create FastHTML app
+# Create FastHTML app with Shad4FastHTML
 app = FastHTML(
     hdrs=[
-        Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"),
+        ShadHead(),  # Shad4FastHTML CSS and setup
         Script(src="https://unpkg.com/htmx.org@1.9.10"),
         Script("""
             // Delete confirmation dialog
@@ -1393,7 +1396,8 @@ async def prompts_page(request):
                   style="color: #6b7280; margin-bottom: 1rem;"),
                 Button("Create New Prompt", 
                        onclick="showCreateForm('prompt')",
-                       id="create-prompt-btn"),
+                       id="create-prompt-btn",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
                 
                 # Create form (hidden by default)
                 Div(
@@ -1569,7 +1573,8 @@ async def optimization_page(request):
                   style="color: #6b7280; margin-bottom: 1rem;"),
                 Button("Start New Optimization", 
                        onclick="showCreateForm('optimization')",
-                       id="create-optimization-btn"),
+                       id="create-optimization-btn",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
                 
                 # Optimization form (hidden by default)
                 Div(
