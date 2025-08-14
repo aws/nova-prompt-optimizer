@@ -1538,7 +1538,7 @@ async def optimization_page(request):
                         H4(opt["name"], style="margin: 0 0 0.5rem 0; color: #1f2937;"),
                         P(f"Prompt: {opt['prompt']} • Dataset: {opt['dataset']}", 
                           style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;"),
-                        P(f"Started: {opt['started']} • Status: '{opt['status']}' (DEBUG: len={len(opt['status'])}, repr={repr(opt['status'])})", 
+                        P(f"Started: {opt['started']} • Status: '{opt['status']}' (DEBUG: {repr(opt['status'])})", 
                           style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;"),
                         Div(
                             Div(
@@ -1564,7 +1564,7 @@ async def optimization_page(request):
                                    variant="outline", 
                                    style="font-size: 0.875rem; margin-right: 0.5rem; color: #10b981; border-color: #10b981;",
                                    onclick=f"window.location.href='/optimization/results/{opt['id']}'"
-                                   ) if opt["status"] in ["Completed", "Failed", "Complete", "completed", "complete"] else Button("Monitor Progress", 
+                                   ) if opt.get("status") in ["Completed", "Failed", "Complete", "completed", "complete"] else Button("Monitor Progress", 
                                    variant="outline", 
                                    style="font-size: 0.875rem; margin-right: 0.5rem; color: #3b82f6; border-color: #3b82f6;",
                                    onclick=f"window.location.href='/optimization/monitor/{opt['id']}'"
