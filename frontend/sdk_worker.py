@@ -277,6 +277,58 @@ def run_optimization_worker(optimization_id: str):
                 
                 # Create dynamic metric class with custom code
                 class CustomMetricAdapter(MetricAdapter):
+                    def parse_metric_input(self, data):
+                        """
+                        Flexible parser for metric inputs that can handle various formats
+                        from AI-generated metrics
+                        """
+                        if data is None:
+                            return None
+                            
+                        # Already parsed object
+                        if isinstance(data, (dict, list, int, float, bool)):
+                            return data
+                            
+                        # String that needs parsing
+                        if isinstance(data, str):
+                            data = data.strip()
+                            
+                            # Try JSON parsing first
+                            try:
+                                return json.loads(data)
+                            except:
+                                pass
+                                
+                            # Try eval for Python literals (safe subset)
+                            try:
+                                import ast
+                                return ast.literal_eval(data)
+                            except:
+                                pass
+                                
+                            # Try parsing as number
+                            try:
+                                if '.' in data:
+                                    return float(data)
+                                else:
+                                    return int(data)
+                            except:
+                                pass
+                                
+                            # Try parsing boolean
+                            if data.lower() in ('true', 'false'):
+                                return data.lower() == 'true'
+                                
+                            # Try parsing None
+                            if data.lower() in ('none', 'null'):
+                                return None
+                                
+                            # Return as string if all else fails
+                            return data
+                            
+                        # Return as-is for other types
+                        return data
+
                     def apply(self, y_pred, y_true):
                         try:
                             print(f"🔍 DEBUG - Custom metric input: y_pred={str(y_pred)[:100]}, y_true={str(y_true)[:100]}")
@@ -310,21 +362,9 @@ def run_optimization_worker(optimization_id: str):
                                 # Instantiate and use the metric
                                 metric_instance = metric_class()
                                 
-                                # Parse JSON strings if needed
-                                parsed_y_pred = y_pred
-                                parsed_y_true = y_true
-                                
-                                if isinstance(y_pred, str):
-                                    try:
-                                        parsed_y_pred = json.loads(y_pred)
-                                    except:
-                                        pass
-                                        
-                                if isinstance(y_true, str):
-                                    try:
-                                        parsed_y_true = json.loads(y_true)
-                                    except:
-                                        pass
+                                # Use flexible parsing for inputs
+                                parsed_y_pred = self.parse_metric_input(y_pred)
+                                parsed_y_true = self.parse_metric_input(y_true)
                                 
                                 result = metric_instance.apply(parsed_y_pred, parsed_y_true)
                                 
