@@ -470,11 +470,13 @@ def create_metric_card(metric):
         
         Footer(
             Div(
-                Button("Edit", cls="button-secondary text-sm", 
+                Button("Edit", 
                        onclick=f"editMetric('{metric['id']}')",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs",
                        **{"data-action": "edit-metric", "data-metric-id": metric['id']}),
-                Button("Delete", cls="button-secondary text-sm ml-2 text-red-600",
+                Button("Delete", 
                        onclick=f"deleteMetric('{metric['id']}', '{metric['name']}')",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs ml-2",
                        **{"data-action": "delete-metric", "data-metric-id": metric['id']}),
                 cls="flex gap-2"
             ),
@@ -504,9 +506,11 @@ def create_metric_modal(datasets=None):
             
             # Modal footer
             Div(
-                Button("Cancel", cls="button-secondary",
+                Button("Cancel", 
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
                        **{"data-action": "close-modal"}),
-                Button("Create Metric", cls="button-primary ml-3",
+                Button("Create Metric", 
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 ml-3",
                        **{"data-action": "save-metric"}),
                 cls="flex justify-end gap-3 mt-6 pt-6 border-t"
             ),
@@ -792,8 +796,8 @@ def create_natural_language_tab():
         Div(
             Button("Preview Generated Code", 
                    type="button",
-                   variant="outline",
-                   onclick="previewMetricCode()"),
+                   onclick="previewMetricCode()",
+                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full"),
             cls="mb-4"
         ),
         
@@ -809,11 +813,12 @@ def create_natural_language_tab():
             Div(
                 Button("Accept & Create Metric", 
                        type="button",
-                       variant="primary",
-                       onclick="createMetric()"),
+                       onclick="createMetric()",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mr-2"),
                 Button("Edit Description", 
                        type="button",
-                       variant="secondary",
+                       onclick="editDescription()",
+                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
                        onclick="editDescription()"),
                 style="display: none;",
                 id="code-actions"
