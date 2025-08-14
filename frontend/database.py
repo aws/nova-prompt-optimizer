@@ -694,11 +694,12 @@ class RelevanceMetric(MetricAdapter):
                 "name": row[1],
                 "prompt": row[2],
                 "dataset": row[3],
-                "status": row[4],
-                "progress": row[5],
-                "improvement": row[6],
-                "started": row[7],
-                "completed": row[8]
+                "metric_id": row[4],
+                "status": row[5],
+                "progress": row[6],
+                "improvement": row[7],
+                "started": row[8],
+                "completed": row[9]
             })
         
         conn.close()
