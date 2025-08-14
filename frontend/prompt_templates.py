@@ -163,9 +163,9 @@ CRITICAL: Analyze the ACTUAL data structure in the dataset above. Look at:
 - What the expected output format appears to be
 - How the input and expected output relate to each other
 
-{f"VALIDATE AGAINST ORIGINAL INTENT: Ensure the metrics align with the original prompt's task and expected behavior. The metrics must measure success for the specific task the prompt is designed to perform." if prompt_content else ""}
+{f"VALIDATE AGAINST ORIGINAL INTENT: Ensure the evaluation criteria aligns with the original prompt's task and expected behavior. The metrics must measure success for the specific tasks the prompt is designed to perform." if prompt_content else ""}
 
-Based on this SPECIFIC dataset structure{" and original prompt intent" if prompt_content else ""}, suggest 3-5 evaluation metrics that work with the ACTUAL data fields present. For each metric, provide:
+Based on this SPECIFIC dataset structure{" and original prompt intent" if prompt_content else ""}, suggest up to 10 evaluation metrics that work with the entire output. For each metric, provide:
 
 1. **Metric Name**: Clear, descriptive name
 2. **Description**: What it measures and why it's important for THIS specific data
