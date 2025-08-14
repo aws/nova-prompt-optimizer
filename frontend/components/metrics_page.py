@@ -702,7 +702,7 @@ def create_infer_dataset_tab(datasets=None):
             ),
             
             Div(
-                Label("Focus Areas (Optional)", cls="block text-sm font-medium mb-4"),
+                Label("Focus Areas (Optional)", cls="block text-sm font-medium mb-4 mt-8"),
                 
                 # Section 1: Accuracy & Correctness
                 Div(
