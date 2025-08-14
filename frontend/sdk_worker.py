@@ -347,6 +347,10 @@ def run_optimization_worker(optimization_id: str):
                             
                             # Clean the code before execution
                             cleaned_code = clean_generated_code(custom_metric['generated_code'])
+                            
+                            print(f"🔍 DEBUG - Executing metric code:")
+                            print(f"```python\n{cleaned_code}\n```")
+                            
                             exec(cleaned_code, global_vars, local_vars)
                             
                             # Find the metric class in the executed code
@@ -365,6 +369,9 @@ def run_optimization_worker(optimization_id: str):
                                 # Use flexible parsing for inputs
                                 parsed_y_pred = self.parse_metric_input(y_pred)
                                 parsed_y_true = self.parse_metric_input(y_true)
+                                
+                                print(f"🔍 DEBUG - Parsed inputs: y_pred={type(parsed_y_pred)} {str(parsed_y_pred)[:100]}")
+                                print(f"🔍 DEBUG - Parsed inputs: y_true={type(parsed_y_true)} {str(parsed_y_true)[:100]}")
                                 
                                 result = metric_instance.apply(parsed_y_pred, parsed_y_true)
                                 
