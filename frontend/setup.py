@@ -39,6 +39,7 @@ def install_dependencies():
         'starlette', 
         'python-multipart',
         'boto3',
+        'pydantic_settings',
         'nova-prompt-optimizer'
     ]
     
