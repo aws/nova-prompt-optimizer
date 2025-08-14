@@ -1536,8 +1536,8 @@ async def optimization_page(request):
                     ),
                     Div(
                         Div(
-                            P(opt["improvement"], 
-                              style="margin: 0; font-weight: 600; color: #10b981;" if opt["improvement"].startswith("+") else "margin: 0; font-weight: 600; color: #6b7280;"),
+                            P(str(opt["improvement"]), 
+                              style="margin: 0; font-weight: 600; color: #10b981;" if str(opt["improvement"]).startswith("+") else "margin: 0; font-weight: 600; color: #6b7280;"),
                             P("improvement", style="margin: 0; font-size: 0.75rem; color: #6b7280;"),
                             style="text-align: center; margin-bottom: 0.5rem;"
                         ),
