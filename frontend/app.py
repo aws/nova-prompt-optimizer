@@ -984,7 +984,7 @@ async def save_metric(request):
 
 @app.post("/metrics/create")
 async def create_metric(request):
-    """Create a new metric from natural language or visual builder"""
+    """Create a new metric from natural language description"""
     from database import Database
     from metric_service import MetricService
     

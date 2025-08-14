@@ -318,52 +318,6 @@ def create_metrics_page(metrics, datasets=None):
                     });
                 }
             }
-            
-            function updateConfigExample(evaluationType) {
-                const textarea = document.getElementById('visual-config-textarea');
-                const examples = {
-                    'json_schema': `Enter JSON schema configuration:
-
-{
-  "required_fields": ["category", "confidence", "reasoning"],
-  "field_types": {
-    "confidence": "number",
-    "category": "string"
-  },
-  "valid_categories": ["positive", "negative", "neutral"]
-}`,
-                    'text_classification': `Enter text classification configuration:
-
-{
-  "categories": ["positive", "negative", "neutral"],
-  "case_sensitive": false,
-  "exact_match": true,
-  "weight_accuracy": 1.0
-}`,
-                    'numeric_range': `Enter numeric range configuration:
-
-{
-  "field_name": "confidence_score",
-  "min_value": 0.0,
-  "max_value": 1.0,
-  "penalty_outside_range": 0.5
-}`,
-                    'keyword_matching': `Enter keyword matching configuration:
-
-{
-  "required_keywords": ["urgent", "priority"],
-  "optional_keywords": ["asap", "immediate"],
-  "case_sensitive": false,
-  "partial_match": true
-}`
-                };
-                
-                if (evaluationType && examples[evaluationType]) {
-                    textarea.placeholder = examples[evaluationType];
-                } else {
-                    textarea.placeholder = "Select an evaluation type to see example configuration...";
-                }
-            }
         """),
         
         cls="metrics-page"
@@ -575,10 +529,6 @@ def create_metric_tabs(datasets=None):
               cls="nav-tab-trigger active",
               **{"data-tab": "natural-language", "role": "tab", "aria-selected": "true"}),
             Div(cls="border-l border-gray-300 h-6"),  # Separator
-            A("Visual Builder",
-              cls="nav-tab-trigger",
-              **{"data-tab": "visual-builder", "role": "tab", "aria-selected": "false"}),
-            Div(cls="border-l border-gray-300 h-6"),  # Separator
             A("Infer from Dataset",
               cls="nav-tab-trigger",
               **{"data-tab": "infer-dataset", "role": "tab", "aria-selected": "false"}),
@@ -590,9 +540,6 @@ def create_metric_tabs(datasets=None):
         Div(
             # Natural Language tab
             create_natural_language_tab(),
-            
-            # Visual Builder tab  
-            create_visual_builder_tab(),
             
             # Infer from Dataset tab
             create_infer_dataset_tab(datasets),
@@ -856,49 +803,6 @@ def create_natural_language_tab():
         cls="natural-language-tab tab-panel active",
         id="natural-language",
         style="display: block;"
-    )
-
-def create_visual_builder_tab():
-    """Create the visual builder tab"""
-    
-    return Div(
-        Div(
-            Label("Metric Name", cls="block text-sm font-medium mb-2"),
-            Input(type="text", placeholder="e.g., JSON Validation Metric",
-                  cls="form-input w-full", **{"data-field": "visual-metric-name"}),
-            cls="mb-4"
-        ),
-        
-        Div(
-            Label("Evaluation Type", cls="block text-sm font-medium mb-2"),
-            Select(
-                Option("Select evaluation type...", value="", disabled=True, selected=True),
-                Option("JSON Schema Validation", value="json_schema"),
-                Option("Text Classification", value="text_classification"),
-                Option("Numeric Range Check", value="numeric_range"),
-                Option("Keyword Matching", value="keyword_matching"),
-                cls="form-input w-full",
-                onchange="updateConfigExample(this.value)",
-                **{"data-field": "evaluation-type"}
-            ),
-            cls="mb-4"
-        ),
-        
-        Div(
-            Label("Configuration", cls="block text-sm font-medium mb-2"),
-            Textarea(
-                placeholder="Select an evaluation type to see example configuration...",
-                rows="6",
-                cls="form-input w-full",
-                id="visual-config-textarea",
-                **{"data-field": "visual-config"}
-            ),
-            cls="mb-4"
-        ),
-        
-        cls="visual-builder-tab tab-panel",
-        id="visual-builder",
-        style="display: none;"
     )
 
 def create_code_preview_section():
