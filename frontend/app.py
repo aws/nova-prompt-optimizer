@@ -827,12 +827,12 @@ def metric_selection_page(request):
                   cls="text-sm text-gray-600 mb-3"),
                 Form(
                     Textarea(
+                        intent_analysis,
                         name="intent_analysis",
                         id="intent_field",
                         rows=4,
                         cls="w-full p-3 border border-gray-300 rounded-md resize-none mb-3",
-                        placeholder="Describe what the prompt is asking for and expected output format...",
-                        value=intent_analysis
+                        placeholder="Describe what the prompt is asking for and expected output format..."
                     ),
                     Button("Update Intent & Regenerate Metrics",
                            type="button",
@@ -888,11 +888,13 @@ def metric_selection_page(request):
                 content=Div(
                     Button("Generate Selected Metrics", 
                            type="submit", 
-                           cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 w-3/4 mr-2"),
+                           cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800",
+                           style="width: 75%; margin-right: 0.5rem;"),
                     Button("Cancel", 
                            type="button", 
                            onclick="window.location.href='/metrics'", 
-                           cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50 w-1/4"),
+                           cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50",
+                           style="width: 23%;"),
                     cls="flex"
                 ),
                 cls="mb-6"
