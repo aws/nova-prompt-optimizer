@@ -121,7 +121,8 @@ def CardContainer(*cards, **kwargs):
 
 def Select(*options, **kwargs):
     """Create a select dropdown"""
-    return Select(*options, **kwargs)
+    from fasthtml.common import Select as HTMLSelect
+    return HTMLSelect(*options, **kwargs)
 
 def Option(text, **kwargs):
     """Create an option element"""
