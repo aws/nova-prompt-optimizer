@@ -602,11 +602,23 @@ def create_infer_dataset_tab(datasets=None):
     if datasets is None:
         datasets = []
     
+    # Get prompts for the prompt selection dropdown
+    from database import Database
+    db = Database()
+    prompts = db.get_prompts()
+    
     # Create dataset options
     dataset_options = [Option("Choose a dataset...", value="", selected=True, disabled=True)]
     for dataset in datasets:
         dataset_options.append(
             Option(f"{dataset['name']} ({dataset['rows']} rows)", value=dataset['id'])
+        )
+    
+    # Create prompt options
+    prompt_options = [Option("No prompt selected", value="", selected=True)]
+    for prompt in prompts:
+        prompt_options.append(
+            Option(f"{prompt['name']}", value=prompt['id'])
         )
     
     return Div(
@@ -633,6 +645,17 @@ def create_infer_dataset_tab(datasets=None):
                     *dataset_options,
                     name="dataset_id",
                     required=True,
+                    cls="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                ),
+                cls="mb-6"
+            ),
+            
+            Div(
+                Label("Select Prompt (Optional)", cls="block text-sm font-medium mb-2"),
+                P("Analyzing the original prompt helps understand the intended task and evaluation criteria.", cls="text-sm text-gray-600 mb-2"),
+                Select(
+                    *prompt_options,
+                    name="prompt_id",
                     cls="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 ),
                 cls="mb-6"

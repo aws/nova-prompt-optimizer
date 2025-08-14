@@ -6,7 +6,7 @@ class PromptTemplates:
     """Centralized storage for all AI prompt templates used in the frontend"""
     
     @staticmethod
-    def dataset_analysis(dataset_content: str, focus_areas: list, analysis_depth: str) -> str:
+    def dataset_analysis(dataset_content: str, focus_areas: list, analysis_depth: str, prompt_content: str = None) -> str:
         """
         DATASET ANALYSIS PROMPT
         
@@ -58,6 +58,19 @@ class PromptTemplates:
         else:
             focus_text = ""
         
+        # Add prompt analysis if provided
+        prompt_analysis_text = ""
+        if prompt_content:
+            prompt_analysis_text = f"""
+
+ORIGINAL PROMPT ANALYSIS:
+The following is the original prompt that will be used with this dataset:
+---
+{prompt_content}
+---
+
+Consider the prompt's intent, task requirements, and expected output format when suggesting metrics. The metrics should evaluate how well responses fulfill the prompt's specific requirements."""
+        
         return f"""You are an expert in AI evaluation metrics. Analyze the following dataset and suggest appropriate evaluation metrics.
 
 Dataset Content ({analysis_depth} analysis):
@@ -65,7 +78,7 @@ Dataset Content ({analysis_depth} analysis):
 {dataset_content}
 ```
 
-{focus_text}
+{focus_text}{prompt_analysis_text}
 
 Based on this dataset, suggest 3-5 specific evaluation metrics that would be most appropriate. For each metric, provide:
 
@@ -231,9 +244,9 @@ The evaluate_single method should:
 Return only the Python class code, no explanations or markdown formatting."""
 
 # Convenience functions for easy access
-def get_dataset_analysis_prompt(dataset_content: str, focus_areas: list = None, analysis_depth: str = "standard") -> str:
+def get_dataset_analysis_prompt(dataset_content: str, focus_areas: list = None, analysis_depth: str = "standard", prompt_content: str = None) -> str:
     """Get the dataset analysis prompt"""
-    return PromptTemplates.dataset_analysis(dataset_content, focus_areas or [], analysis_depth)
+    return PromptTemplates.dataset_analysis(dataset_content, focus_areas or [], analysis_depth, prompt_content)
 
 def get_metric_code_prompt(name: str, criteria: dict) -> str:
     """Get the metric code generation prompt"""
