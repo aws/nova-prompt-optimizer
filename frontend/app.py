@@ -589,7 +589,7 @@ async def infer_metrics_from_dataset(request):
         # Get prompt content if selected
         prompt_content = None
         if prompt_id:
-            prompt_data = db.get_prompt_by_id(prompt_id)
+            prompt_data = db.get_prompt(prompt_id)
             if prompt_data:
                 prompt_content = f"System Prompt: {prompt_data.get('system_prompt', '')}\nUser Prompt: {prompt_data.get('user_prompt', '')}"
                 print(f"✅ Prompt content loaded: {len(prompt_content)} characters")
