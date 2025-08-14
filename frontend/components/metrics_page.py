@@ -524,7 +524,16 @@ def create_metric_tabs(datasets=None):
     if datasets is None:
         datasets = []
     
+    # Add CSS for full width card content
+    style_tag = Style("""
+        .card-content {
+            width: 100% !important;
+            max-width: none !important;
+        }
+    """)
+    
     return Div(
+        style_tag,
         # Tab triggers
         Div(
             A("Natural Language", 
