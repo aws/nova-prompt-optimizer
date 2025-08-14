@@ -1344,6 +1344,10 @@ async def optimization_page(request):
     # Get optimizations from SQLite database
     sample_optimizations = db.get_optimizations()
     
+    # Debug: Print optimization statuses
+    for opt in sample_optimizations:
+        print(f"🔍 DEBUG - Optimization {opt['id']}: status='{opt['status']}'")
+    
     # Get available prompts and datasets for the form
     available_prompts = db.get_prompts()
     available_datasets = db.get_datasets()
@@ -1551,12 +1555,12 @@ async def optimization_page(request):
                                    variant="outline", 
                                    style="font-size: 0.875rem; margin-right: 0.5rem; color: #10b981; border-color: #10b981;",
                                    onclick=f"window.location.href='/optimization/results/{opt['id']}'"
-                                   ) if opt["status"] in ["Completed", "Failed"] else None,
+                                   ),
                             Button("Monitor Progress", 
                                    variant="outline", 
                                    style="font-size: 0.875rem; margin-right: 0.5rem; color: #3b82f6; border-color: #3b82f6;",
                                    onclick=f"window.location.href='/optimization/monitor/{opt['id']}'"
-                                   ) if opt["status"] in ["Starting", "Running", "In Progress"] else None,
+                                   ),
                             Button("Stop" if opt["status"] in ["Starting", "Running"] else "Delete", 
                                    variant="danger", 
                                    style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
