@@ -3,6 +3,7 @@ Metrics page component for Nova Prompt Optimizer
 """
 
 from fasthtml.common import *
+from components.ui import *
 
 def create_metrics_styles():
     """Create CSS styles for metrics page"""
@@ -319,7 +320,9 @@ def create_metrics_page(metrics, datasets=None):
                 }
             }
             
-            function toggleSubOptions(category, checkbox) {
+            // Fix checkbox expansion functionality
+            window.toggleSubOptions = function(category, checkbox) {
+                console.log('Toggling', category, checkbox.checked);
                 const options = document.getElementById(category + '-options');
                 if (options) {
                     if (checkbox.checked) {
@@ -697,7 +700,16 @@ def create_infer_dataset_tab(datasets=None):
                     Div(
                         Div(
                             Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2", onchange="toggleSubOptions('accuracy', this)"), "Accuracy & Correctness"),
-                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Evaluates how correct and precise the AI output is compared to expected answers. Includes exact matches, semantic correctness, and factual accuracy."),
+                            TooltipProvider(
+                                Tooltip(
+                                    TooltipTrigger(
+                                        Button("ℹ️", variant="ghost", size="sm", cls="ml-2 p-1 h-6 w-6")
+                                    ),
+                                    TooltipContent(
+                                        P("Evaluates how correct and precise the AI output is compared to expected answers. Includes exact matches, semantic correctness, and factual accuracy.")
+                                    )
+                                )
+                            ),
                             cls="flex items-center"
                         ),
                         Div(
@@ -710,7 +722,16 @@ def create_infer_dataset_tab(datasets=None):
                     Div(
                         Div(
                             Label(Input(type="checkbox", name="focus", value="format", cls="mr-2", onchange="toggleSubOptions('format', this)"), "Format & Structure"),
-                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Validates output format and structure. Checks JSON validity, required fields, data types, and schema compliance for structured outputs."),
+                            TooltipProvider(
+                                Tooltip(
+                                    TooltipTrigger(
+                                        Button("ℹ️", variant="ghost", size="sm", cls="ml-2 p-1 h-6 w-6")
+                                    ),
+                                    TooltipContent(
+                                        P("Validates output format and structure. Checks JSON validity, required fields, data types, and schema compliance for structured outputs.")
+                                    )
+                                )
+                            ),
                             cls="flex items-center"
                         ),
                         Div(
@@ -724,7 +745,16 @@ def create_infer_dataset_tab(datasets=None):
                     Div(
                         Div(
                             Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2", onchange="toggleSubOptions('completeness', this)"), "Completeness"),
-                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Measures how thoroughly the AI addresses the request. Evaluates if all requirements are met, sufficient detail is provided, and topics are fully covered."),
+                            TooltipProvider(
+                                Tooltip(
+                                    TooltipTrigger(
+                                        Button("ℹ️", variant="ghost", size="sm", cls="ml-2 p-1 h-6 w-6")
+                                    ),
+                                    TooltipContent(
+                                        P("Measures how thoroughly the AI addresses the request. Evaluates if all requirements are met, sufficient detail is provided, and topics are fully covered.")
+                                    )
+                                )
+                            ),
                             cls="flex items-center"
                         ),
                         Div(
@@ -737,7 +767,16 @@ def create_infer_dataset_tab(datasets=None):
                     Div(
                         Div(
                             Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2", onchange="toggleSubOptions('relevance', this)"), "Relevance"),
-                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Assesses how well the output relates to the input query. Checks topic relevance, context understanding, and alignment with user intent."),
+                            TooltipProvider(
+                                Tooltip(
+                                    TooltipTrigger(
+                                        Button("ℹ️", variant="ghost", size="sm", cls="ml-2 p-1 h-6 w-6")
+                                    ),
+                                    TooltipContent(
+                                        P("Assesses how well the output relates to the input query. Checks topic relevance, context understanding, and alignment with user intent.")
+                                    )
+                                )
+                            ),
                             cls="flex items-center"
                         ),
                         Div(
