@@ -35,7 +35,7 @@ def create_directories():
 def install_dependencies():
     """Install required Python packages"""
     requirements = [
-        'fasthtml',
+        'python-fasthtml',
         'starlette', 
         'python-multipart',
         'boto3',

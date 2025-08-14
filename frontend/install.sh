@@ -35,7 +35,7 @@ pip install --upgrade pip > /dev/null 2>&1
 
 # Install dependencies with explicit output
 echo "📦 Installing dependencies..."
-pip install fasthtml starlette python-multipart boto3
+pip install python-fasthtml starlette python-multipart boto3
 
 # Try to install Nova SDK
 echo "🔍 Attempting to install Nova SDK..."

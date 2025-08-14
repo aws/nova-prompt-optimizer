@@ -39,7 +39,7 @@ python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies and setup
-pip install fasthtml starlette python-multipart boto3 nova-prompt-optimizer
+pip install python-fasthtml starlette python-multipart boto3 nova-prompt-optimizer
 python3 setup.py
 
 # Validate installation
