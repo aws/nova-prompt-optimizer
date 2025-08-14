@@ -1,56 +1,72 @@
-# Shad4HTML Component Usage Rules
+# Hybrid Styling Rules: PICO CSS + Shad4FastHTML
 
 ## Overview
-This document establishes rules for consistent usage of shad4html (shadcn) components throughout the Nova Prompt Optimizer frontend.
+This document establishes rules for using PICO CSS for layouts and Shad4FastHTML components for interactive elements in the Nova Prompt Optimizer frontend.
+
+## Styling Architecture
+
+### PICO CSS - Use For:
+- **Page layouts** and grid systems
+- **Typography** (headings, paragraphs, text styling)
+- **Container** and section layouts
+- **Spacing** and margins between sections
+- **Base styling** for HTML elements
+- **Responsive** breakpoints and layout
+
+### Shad4FastHTML - Use For:
+- **Interactive components** (buttons, inputs, forms)
+- **UI widgets** (cards, badges, alerts)
+- **Navigation** elements
+- **Modal** and dialog components
+- **Data display** components
 
 ## Component Rules
 
 ### 1. Button Components
-**ALWAYS use shad4html Button component with proper variants:**
+**ALWAYS use Shad4FastHTML Button component:**
 
 ```python
 from components.ui import Button
 
-# Primary action buttons
+# Primary actions
 Button("Submit", variant="default", size="lg")
 
-# Secondary action buttons  
+# Secondary actions  
 Button("Cancel", variant="outline", size="lg")
 
 # Destructive actions
 Button("Delete", variant="destructive", size="sm")
-
-# Ghost buttons for subtle actions
-Button("Edit", variant="ghost", size="sm")
 ```
 
-**Available variants:**
-- `default` - Primary black button
-- `outline` - White button with border
-- `destructive` - Red button for delete/remove actions
-- `ghost` - Transparent button
-- `secondary` - Gray button
+**Shad4FastHTML Button Classes (Applied Automatically):**
+```css
+/* Primary */
+.bg-primary .text-primary-foreground .hover:bg-primary/90
 
-**Available sizes:**
-- `sm` - Small button
-- `default` - Default size
-- `lg` - Large button
+/* Outline */
+.border .border-input .bg-background .hover:bg-accent
 
-### 2. Checkbox Components
-**ALWAYS use proper checkbox styling:**
+/* Destructive */
+.bg-destructive .text-destructive-foreground .hover:bg-destructive/90
+```
+
+### 2. Layout Components
+**Use PICO CSS for page structure:**
 
 ```python
-Input(
-    type="checkbox", 
-    name="field_name", 
-    value="value",
-    id="checkbox-id",
-    cls="h-4 w-4 rounded border-gray-300 text-black focus:ring-black focus:ring-2"
-)
+# Page containers
+Div(cls="container")  # PICO container
+
+# Grid layouts
+Div(cls="grid")  # PICO grid system
+
+# Typography
+H1("Page Title")  # PICO typography
+P("Description text")  # PICO paragraph styling
 ```
 
 ### 3. Card Components
-**ALWAYS use Card component with header/content structure:**
+**Use Shad4FastHTML Card for content blocks:**
 
 ```python
 from components.ui import Card
@@ -58,140 +74,126 @@ from components.ui import Card
 Card(
     header="Card Title",
     content=Div(
-        # Card content here
+        P("Card content with PICO typography"),
+        cls="container"  # PICO spacing inside card
     ),
-    cls="mb-6"
+    cls="mb-6"  # Shad4FastHTML spacing
 )
 ```
 
-### 4. Input Components
-**Use consistent input styling:**
+### 4. Form Components
+**Mix both systems appropriately:**
 
 ```python
-Input(
-    type="text",
-    name="field_name",
-    cls="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-black"
-)
-```
-
-### 5. Textarea Components
-**Use consistent textarea styling:**
-
-```python
-Textarea(
-    content,
-    name="field_name",
-    rows=4,
-    cls="w-full p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-black focus:border-black"
-)
-```
-
-## Layout Rules
-
-### Button Layouts
-**For action button pairs (75%/25% split):**
-
-```python
-Div(
-    Button("Primary Action", variant="default", size="lg", cls="flex-1 mr-2"),
-    Button("Cancel", variant="outline", size="lg", cls="w-1/4"),
-    cls="flex"
-)
-```
-
-**For equal button pairs:**
-
-```python
-Div(
-    Button("Action 1", variant="default", size="lg", cls="flex-1 mr-2"),
-    Button("Action 2", variant="outline", size="lg", cls="flex-1"),
-    cls="flex"
-)
-```
-
-### Card Containers
-**Always wrap action buttons in Card containers:**
-
-```python
-Card(
-    header="Actions",
-    content=Div(
-        # Buttons here
-        cls="flex"
+# Form container - PICO
+Form(
+    # Form fields - Shad4FastHTML
+    Input(
+        type="text",
+        cls="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-black"
     ),
-    cls="mb-6"
+    
+    # Button group - Shad4FastHTML
+    Div(
+        Button("Submit", variant="default"),
+        Button("Cancel", variant="outline"),
+        cls="flex gap-2"  # Shad4FastHTML layout utilities
+    ),
+    
+    cls="container"  # PICO form container
 )
 ```
 
-## Color Scheme Rules
+## CSS Class Hierarchy
 
-### Primary Colors
-- **Black**: `#000000` - Primary actions, text
-- **White**: `#ffffff` - Backgrounds, secondary actions
-- **Gray-50**: `#f9fafb` - Light backgrounds
-- **Gray-300**: `#d1d5db` - Borders
-- **Gray-600**: `#4b5563` - Secondary text
+### PICO CSS Classes (Layout & Typography):
+- `.container` - Page containers
+- `.grid` - Grid layouts
+- Typography classes for H1-H6, P, etc.
+- Spacing utilities from PICO
 
-### Focus States
-- **Focus ring**: `focus:ring-2 focus:ring-black focus:border-black`
-- **Hover states**: Use shad4html built-in hover states
+### Shad4FastHTML Classes (Components):
+- `.bg-primary`, `.text-primary-foreground` - Button styling
+- `.border`, `.border-input` - Input styling
+- `.rounded-md`, `.shadow-sm` - Component styling
+- `.flex`, `.gap-2`, `.mb-6` - Layout utilities
 
-## Implementation Checklist
+## Implementation Rules
 
-### Before Adding New Components:
-- [ ] Check if shad4html component exists
-- [ ] Use proper variant and size
-- [ ] Apply consistent styling classes
-- [ ] Test focus and hover states
-- [ ] Ensure accessibility compliance
+### DO Use PICO For:
+✅ Page containers and sections  
+✅ Grid layouts and responsive design  
+✅ Typography (headings, paragraphs)  
+✅ Base HTML element styling  
+✅ Overall page structure  
 
-### Code Review Checklist:
-- [ ] All buttons use Button component with variants
-- [ ] All checkboxes use proper styling
-- [ ] All cards use Card component structure
-- [ ] Consistent spacing with mb-6, mr-2, etc.
-- [ ] Proper flex layouts for button groups
-- [ ] Focus states implemented correctly
+### DO Use Shad4FastHTML For:
+✅ All buttons and interactive elements  
+✅ Form inputs and controls  
+✅ Cards and content blocks  
+✅ Navigation components  
+✅ Modals and overlays  
 
-## Migration Guide
+### DON'T Mix:
+❌ Don't use PICO button classes with Shad4FastHTML buttons  
+❌ Don't use Shad4FastHTML layout classes where PICO handles it  
+❌ Don't override Shad4FastHTML component styling with custom CSS  
 
-### From Custom Buttons to Shad4HTML:
+## Example Page Structure
+
 ```python
-# OLD - Custom styling
-Button("Submit", cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800")
-
-# NEW - Shad4HTML
-Button("Submit", variant="default", size="lg")
+# PICO layout structure
+Div(
+    # PICO container
+    Div(
+        # PICO typography
+        H1("Page Title"),
+        P("Page description"),
+        
+        # PICO grid
+        Div(
+            # Shad4FastHTML card
+            Card(
+                header="Section 1",
+                content=Div(
+                    P("Content with PICO typography"),
+                    # Shad4FastHTML button
+                    Button("Action", variant="default")
+                )
+            ),
+            cls="grid"  # PICO grid
+        ),
+        cls="container"  # PICO container
+    )
+)
 ```
 
-### From Custom Checkboxes to Shad4HTML:
-```python
-# OLD - Basic checkbox
-Input(type="checkbox", cls="mr-2")
+## Benefits of Hybrid Approach
 
-# NEW - Shad4HTML styled
-Input(type="checkbox", cls="h-4 w-4 rounded border-gray-300 text-black focus:ring-black focus:ring-2")
-```
+1. **PICO CSS Benefits:**
+   - Clean, semantic HTML structure
+   - Excellent typography and spacing
+   - Responsive layout system
+   - Minimal CSS footprint
 
-## Benefits
+2. **Shad4FastHTML Benefits:**
+   - Professional component styling
+   - Built-in accessibility features
+   - Consistent interactive elements
+   - Modern design system
 
-1. **Consistency**: All components follow the same design system
-2. **Accessibility**: Built-in ARIA attributes and keyboard navigation
-3. **Maintainability**: Centralized styling and behavior
-4. **Performance**: Optimized CSS and JavaScript
-5. **Developer Experience**: Predictable API and documentation
+3. **Combined Benefits:**
+   - Best of both worlds
+   - Clean separation of concerns
+   - Maintainable codebase
+   - Professional appearance
 
-## Enforcement
+## Migration Strategy
 
-- All new components MUST use shad4html variants
-- Existing components should be migrated during updates
-- Code reviews should enforce these rules
-- Automated linting can check for compliance
+1. **Keep PICO** for all existing layout and typography
+2. **Replace custom buttons** with Shad4FastHTML Button components
+3. **Replace custom cards** with Shad4FastHTML Card components
+4. **Keep PICO containers** and grid systems
+5. **Use Shad4FastHTML** for all new interactive components
 
-## Resources
-
-- [Shad4FastHTML Documentation](https://www.shad4fasthtml.com/)
-- [Button Component](https://www.shad4fasthtml.com/components/button)
-- [Checkbox Component](https://www.shad4fasthtml.com/components/checkbox)
-- [Card Component](https://www.shad4fasthtml.com/components/card)
+This hybrid approach gives us the clean, semantic structure of PICO CSS with the professional, accessible components of Shad4FastHTML!
