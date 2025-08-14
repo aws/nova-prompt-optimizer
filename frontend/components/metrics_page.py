@@ -319,27 +319,17 @@ def create_metrics_page(metrics, datasets=None):
                 }
             }
             
-            function toggleOutputFormatOptions(checkbox) {
-                const options = document.getElementById('output-format-options');
-                if (checkbox.checked) {
-                    options.style.display = 'block';
-                } else {
-                    options.style.display = 'none';
-                    // Uncheck all radio buttons
-                    const radios = options.querySelectorAll('input[type="radio"]');
-                    radios.forEach(radio => radio.checked = false);
-                }
-            }
-            
-            function toggleFormatOptions(checkbox) {
-                const options = document.getElementById('format-structure-options');
-                if (checkbox.checked) {
-                    options.style.display = 'block';
-                } else {
-                    options.style.display = 'none';
-                    // Uncheck all checkboxes
-                    const checkboxes = options.querySelectorAll('input[type="checkbox"]');
-                    checkboxes.forEach(cb => cb.checked = false);
+            function toggleSubOptions(category, checkbox) {
+                const options = document.getElementById(category + '-options');
+                if (options) {
+                    if (checkbox.checked) {
+                        options.style.display = 'block';
+                    } else {
+                        options.style.display = 'none';
+                        // Uncheck all sub-options
+                        const subCheckboxes = options.querySelectorAll('input[type="checkbox"]');
+                        subCheckboxes.forEach(cb => cb.checked = false);
+                    }
                 }
             }
         """),
@@ -704,45 +694,44 @@ def create_infer_dataset_tab(datasets=None):
             Div(
                 Label("Focus Areas (Optional)", cls="block text-sm font-medium mb-2"),
                 Div(
-                    Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2"), "Accuracy & Correctness"),
-                    Label(Input(type="checkbox", name="focus", value="format", cls="mr-2", onchange="toggleFormatOptions(this)"), "Format & Structure"),
-                    Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2"), "Completeness"),
-                    Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2"), "Relevance"),
-                    Label(Input(type="checkbox", name="focus", value="output_format", cls="mr-2", onchange="toggleOutputFormatOptions(this)"), "Output Format Validation"),
-                    Label(Input(type="checkbox", name="focus", value="semantic", cls="mr-2"), "Semantic Similarity"),
-                    cls="grid grid-cols-2 gap-2"
-                ),
-                
-                # Expandable Output Format Options
-                Div(
-                    Label("Expected Output Format:", cls="block text-sm font-medium mb-2 mt-4"),
                     Div(
-                        Label(Input(type="radio", name="output_format_type", value="json", cls="mr-2"), "JSON"),
-                        Label(Input(type="radio", name="output_format_type", value="xml", cls="mr-2"), "XML"),
-                        Label(Input(type="radio", name="output_format_type", value="yaml", cls="mr-2"), "YAML"),
-                        Label(Input(type="radio", name="output_format_type", value="csv", cls="mr-2"), "CSV"),
-                        Label(Input(type="radio", name="output_format_type", value="markdown", cls="mr-2"), "Markdown"),
-                        Label(Input(type="radio", name="output_format_type", value="plain_text", cls="mr-2"), "Plain Text"),
-                        cls="grid grid-cols-3 gap-2"
+                        Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2", onchange="toggleSubOptions('accuracy', this)"), "Accuracy & Correctness"),
+                        Div(
+                            Label(Input(type="checkbox", name="accuracy_sub", value="exact_match", cls="mr-2"), "Exact Match"),
+                            Label(Input(type="checkbox", name="accuracy_sub", value="semantic_match", cls="mr-2"), "Semantic Match"),
+                            Label(Input(type="checkbox", name="accuracy_sub", value="factual_accuracy", cls="mr-2"), "Factual Accuracy"),
+                            id="accuracy-options", style="display: none;", cls="ml-6 mt-2 grid grid-cols-1 gap-1"
+                        )
                     ),
-                    id="output-format-options",
-                    style="display: none;",
-                    cls="mt-2 p-3 bg-gray-50 rounded border"
-                ),
-                
-                # Expandable Format Structure Options  
-                Div(
-                    Label("Structure Requirements:", cls="block text-sm font-medium mb-2 mt-4"),
                     Div(
-                        Label(Input(type="checkbox", name="format_requirements", value="required_fields", cls="mr-2"), "Required Fields"),
-                        Label(Input(type="checkbox", name="format_requirements", value="field_types", cls="mr-2"), "Field Type Validation"),
-                        Label(Input(type="checkbox", name="format_requirements", value="length_limits", cls="mr-2"), "Length Constraints"),
-                        Label(Input(type="checkbox", name="format_requirements", value="enum_values", cls="mr-2"), "Allowed Values"),
-                        cls="grid grid-cols-2 gap-2"
+                        Label(Input(type="checkbox", name="focus", value="format", cls="mr-2", onchange="toggleSubOptions('format', this)"), "Format & Structure"),
+                        Div(
+                            Label(Input(type="checkbox", name="format_sub", value="json_valid", cls="mr-2"), "Valid JSON"),
+                            Label(Input(type="checkbox", name="format_sub", value="required_fields", cls="mr-2"), "Required Fields"),
+                            Label(Input(type="checkbox", name="format_sub", value="field_types", cls="mr-2"), "Field Types"),
+                            Label(Input(type="checkbox", name="format_sub", value="schema_compliance", cls="mr-2"), "Schema Compliance"),
+                            id="format-options", style="display: none;", cls="ml-6 mt-2 grid grid-cols-2 gap-1"
+                        )
                     ),
-                    id="format-structure-options", 
-                    style="display: none;",
-                    cls="mt-2 p-3 bg-gray-50 rounded border"
+                    Div(
+                        Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2", onchange="toggleSubOptions('completeness', this)"), "Completeness"),
+                        Div(
+                            Label(Input(type="checkbox", name="completeness_sub", value="all_requirements", cls="mr-2"), "All Requirements Met"),
+                            Label(Input(type="checkbox", name="completeness_sub", value="detail_level", cls="mr-2"), "Sufficient Detail"),
+                            Label(Input(type="checkbox", name="completeness_sub", value="coverage", cls="mr-2"), "Topic Coverage"),
+                            id="completeness-options", style="display: none;", cls="ml-6 mt-2 grid grid-cols-1 gap-1"
+                        )
+                    ),
+                    Div(
+                        Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2", onchange="toggleSubOptions('relevance', this)"), "Relevance"),
+                        Div(
+                            Label(Input(type="checkbox", name="relevance_sub", value="topic_relevance", cls="mr-2"), "Topic Relevance"),
+                            Label(Input(type="checkbox", name="relevance_sub", value="context_awareness", cls="mr-2"), "Context Awareness"),
+                            Label(Input(type="checkbox", name="relevance_sub", value="query_alignment", cls="mr-2"), "Query Alignment"),
+                            id="relevance-options", style="display: none;", cls="ml-6 mt-2 grid grid-cols-1 gap-1"
+                        )
+                    ),
+                    cls="space-y-3"
                 ),
                 cls="mb-6"
             ),
