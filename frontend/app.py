@@ -806,17 +806,41 @@ def metric_selection_page(request):
     inferred_metrics = selection_data.get("inferred_metrics", {})
     metrics = inferred_metrics.get("metrics", [])
     reasoning = inferred_metrics.get("reasoning", "No reasoning provided")
+    intent_analysis = inferred_metrics.get("intent_analysis", "")
     
     page_content = Div(
-        H2("Select Metrics to Generate", style="margin-bottom: 2rem; color: #1f2937;"),
+        H2("AI Analysis Results", style="margin-bottom: 2rem; color: #1f2937;"),
+        
+        # Editable Intent Field
+        Card(
+            header=H3("Intent Analysis"),
+            content=Div(
+                P("Review and edit the AI's understanding of your prompt's intent:", 
+                  style="margin-bottom: 1rem; color: #6b7280;"),
+                Form(
+                    Textarea(
+                        intent_analysis,
+                        name="intent_analysis",
+                        id="intent_field",
+                        rows=4,
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; resize: none;",
+                        placeholder="Describe what the prompt is asking for and expected output format..."
+                    ),
+                    Button("Update Intent & Regenerate Metrics",
+                           type="button",
+                           onclick="regenerateWithIntent()",
+                           style="margin-top: 0.75rem; background: #3b82f6; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; border: none; cursor: pointer;"),
+                    id="intent_form"
+                )
+            )
+        ),
         
         # AI Analysis Results
         Card(
-            header=H3("AI Analysis Results"),
+            header=H3("Dataset Information"),
             content=Div(
                 P(f"Dataset: {selection_data.get('dataset_id', 'Unknown')}", style="margin-bottom: 0.5rem; font-weight: 500;"),
                 P(f"Analysis Depth: {selection_data.get('analysis_depth', 'standard').title()}", style="margin-bottom: 0.5rem;"),
-                P(f"Focus Areas: {', '.join(selection_data.get('focus_areas', [])) or 'General analysis'}", style="margin-bottom: 1rem;"),
                 H4("AI Reasoning:", style="margin-bottom: 0.5rem; color: #1f2937;"),
                 P(reasoning, style="background: #f8f9fa; padding: 1rem; border-radius: 0.375rem; font-style: italic;")
             )
@@ -834,8 +858,9 @@ def metric_selection_page(request):
                             style="margin-bottom: 0.5rem;"
                         ),
                         Div(
-                            P(f"Description: {metric.get('description', 'No description')}", style="margin-bottom: 0.25rem; color: #6b7280;"),
-                            P(f"Criteria: {metric.get('criteria', 'No criteria')}", style="margin-bottom: 0.25rem; color: #6b7280;"),
+                            P(f"Intent Understanding: {metric.get('intent_understanding', 'No description')}", style="margin-bottom: 0.25rem; color: #6b7280;"),
+                            P(f"Data Fields: {', '.join(metric.get('data_fields', []))}", style="margin-bottom: 0.25rem; color: #6b7280;"),
+                            P(f"Logic: {metric.get('evaluation_logic', 'No logic')}", style="margin-bottom: 0.25rem; color: #6b7280;"),
                             P(f"Example: {metric.get('example', 'No example')}", style="color: #6b7280;"),
                             style="margin-left: 1.5rem; padding: 0.5rem; background: #f9fafb; border-radius: 0.25rem;"
                         ),
@@ -859,10 +884,155 @@ def metric_selection_page(request):
             
             method="POST",
             action="/metrics/generate-selected"
-        )
+        ),
+        
+        # JavaScript for intent regeneration
+        Script(f"""
+            const selectionData = {json.dumps(selection_data)};
+            
+            function regenerateWithIntent() {{
+                const newIntent = document.getElementById('intent_field').value;
+                const formData = new FormData();
+                
+                // Include all original data
+                formData.append('metric_name', selectionData.metric_name || '');
+                formData.append('dataset_id', selectionData.dataset_id || '');
+                formData.append('analysis_depth', selectionData.analysis_depth || 'standard');
+                formData.append('model_id', selectionData.model_id || 'us.amazon.nova-premier-v1:0');
+                formData.append('rate_limit', selectionData.rate_limit || '25');
+                formData.append('updated_intent', newIntent);
+                
+                // Show loading
+                document.body.style.cursor = 'wait';
+                const button = event.target;
+                button.disabled = true;
+                button.textContent = 'Regenerating...';
+                
+                fetch('/metrics/regenerate-with-intent', {{
+                    method: 'POST',
+                    body: formData
+                }})
+                .then(response => response.json())
+                .then(data => {{
+                    if (data.success) {{
+                        // Reload page with new data
+                        const newData = encodeURIComponent(JSON.stringify(data.selection_data));
+                        window.location.href = `/metrics/select?data=${{newData}}`;
+                    }} else {{
+                        alert('Error: ' + data.error);
+                        document.body.style.cursor = 'default';
+                        button.disabled = false;
+                        button.textContent = 'Update Intent & Regenerate Metrics';
+                    }}
+                }})
+                .catch(error => {{
+                    alert('Error: ' + error);
+                    document.body.style.cursor = 'default';
+                    button.disabled = false;
+                    button.textContent = 'Update Intent & Regenerate Metrics';
+                }});
+            }}
+        """)
     )
     
     return create_main_layout("Select Metrics", page_content, current_page="metrics")
+
+@app.post("/metrics/regenerate-with-intent")
+async def regenerate_with_intent(request):
+    """Regenerate metrics with updated intent"""
+    try:
+        form_data = await request.form()
+        
+        # Get form data
+        metric_name = form_data.get("metric_name", "")
+        dataset_id = form_data.get("dataset_id", "")
+        analysis_depth = form_data.get("analysis_depth", "standard")
+        model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0")
+        rate_limit = int(form_data.get("rate_limit", "25"))
+        updated_intent = form_data.get("updated_intent", "")
+        
+        print(f"🔄 Regenerating metrics with updated intent...")
+        print(f"📝 Updated intent: {updated_intent[:100]}...")
+        
+        # Read dataset content
+        sample_counts = {"quick": 5, "standard": 20, "deep": 50}
+        max_samples = sample_counts.get(analysis_depth, 20)
+        dataset_content = read_dataset_content(dataset_id, max_samples)
+        
+        # Get prompt content if available (try to get from original request)
+        prompt_content = None
+        # TODO: Store and retrieve prompt content if needed
+        
+        # Create enhanced prompt with updated intent
+        enhanced_prompt = f"""You are an expert in AI evaluation metrics. Analyze the dataset and create simple evaluation metrics based on the updated intent.
+
+Dataset Content ({analysis_depth} analysis):
+```
+{dataset_content}
+```
+
+UPDATED INTENT FROM USER:
+{updated_intent}
+
+ANALYSIS REQUIREMENTS:
+1. Use the UPDATED INTENT above as the primary guide for metric creation
+2. Examine the ACTUAL data structure and field names in the dataset
+3. Create metrics that measure success for the updated intent
+
+Based on the updated intent and dataset analysis, suggest 2-3 simple evaluation metrics. For each metric, provide:
+
+1. **Metric Name**: Clear, descriptive name
+2. **Intent Understanding**: How this metric measures success for the updated intent
+3. **Data Fields Used**: Exactly which fields from the dataset this metric will access
+4. **Evaluation Logic**: Simple logic for comparing predicted vs expected values
+5. **Example**: How it would evaluate a sample from this dataset
+
+Focus on metrics that are:
+- Aligned with the updated intent
+- Use the exact field names from the dataset
+- Simple and focused on the core task
+- Avoid overfitting or complex scoring
+
+Format your response as JSON:
+{{
+  "intent_analysis": "Confirmation of the updated intent and how it guides metric creation",
+  "metrics": [
+    {{
+      "name": "Metric Name",
+      "intent_understanding": "How this metric measures success for the updated intent",
+      "data_fields": ["field1", "field2"],
+      "evaluation_logic": "Simple comparison logic using actual field names",
+      "example": "Example using actual data structure"
+    }}
+  ],
+  "reasoning": "Why these metrics effectively measure the updated intent"
+}}"""
+        
+        # Call AI for metric inference with updated intent
+        inferred_metrics = await call_ai_for_metric_inference(enhanced_prompt, rate_limit, model_id)
+        
+        # Prepare new selection data
+        selection_data = {
+            "metric_name": metric_name,
+            "dataset_id": dataset_id,
+            "analysis_depth": analysis_depth,
+            "model_id": model_id,
+            "rate_limit": rate_limit,
+            "inferred_metrics": inferred_metrics
+        }
+        
+        return {
+            "success": True,
+            "selection_data": selection_data,
+            "message": "Metrics regenerated with updated intent"
+        }
+        
+    except Exception as e:
+        print(f"❌ Error regenerating with intent: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 @app.post("/metrics/generate-selected")
 async def generate_selected_metrics(request):
