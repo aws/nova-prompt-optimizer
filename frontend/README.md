@@ -23,7 +23,7 @@ python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
-pip install fasthtml starlette python-multipart
+pip install fasthtml starlette python-multipart boto3
 
 # Optional: Install Nova SDK for real optimizations
 pip install nova-prompt-optimizer
@@ -75,7 +75,7 @@ source .venv/bin/activate  # macOS/Linux
 #### **Step 2: Install Core Dependencies**
 ```bash
 # Install required packages
-pip install fasthtml starlette python-multipart
+pip install fasthtml starlette python-multipart boto3
 
 # Verify installation
 python3 -c "import fasthtml; print('✅ FastHTML installed successfully')"
@@ -95,7 +95,7 @@ python3 -c "from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOpt
 #### **For Contributors and Advanced Users**
 ```bash
 # Install with development tools
-pip install fasthtml starlette python-multipart
+pip install fasthtml starlette python-multipart boto3
 pip install nova-prompt-optimizer
 
 # Install optional development tools
@@ -110,7 +110,7 @@ python3 -c "import fasthtml, pytest, black; print('✅ Development environment r
 #### **For Demo/Testing Only**
 ```bash
 # Minimal dependencies (no Nova SDK)
-pip install fasthtml starlette python-multipart
+pip install fasthtml starlette python-multipart boto3
 
 # Note: Optimizations will run in demo mode
 echo "⚠️ Demo mode: Install nova-prompt-optimizer for real optimizations"
@@ -373,27 +373,31 @@ python3 -c "from database import db; db.reset_database()"
 ```
 frontend/
 ├── app.py                    # Main application
+├── sdk_worker.py            # Optimization worker process
 ├── database.py              # SQLite database layer
 ├── config.py                # Configuration settings
+├── metric_service.py        # Metric generation service
+├── prompt_templates.py      # AI prompt templates
+├── simple_rate_limiter.py   # Rate limiting utility
+├── requirements.txt         # Python dependencies
 ├── nova_optimizer.db        # SQLite database file
 ├── components/              # UI components
 │   ├── layout.py           # Page layouts
 │   ├── navbar.py           # Navigation bar
-│   └── ui.py               # UI elements
+│   ├── ui.py               # UI elements
+│   └── metrics_page.py     # Metrics interface
+├── data/                   # Temporary optimization data
+├── uploads/                # User uploaded datasets
+├── optimized_prompts/      # Optimization results
 ├── .venv/                  # Virtual environment
 ├── __pycache__/            # Python cache
-├── .archive/               # Archived unused files
 ├── README.md               # This file
-├── PROJECT_DESIGN.md       # Design documentation
-├── FEATURES.md             # Feature documentation
-└── UNUSED_FILES_REPORT.md  # Cleanup report
+└── FEATURES.md             # Feature documentation
 ```
 
 ## 🔗 **Related Documentation**
 
-- **[Project Design](PROJECT_DESIGN.md)** - Architecture and design decisions
 - **[Features](FEATURES.md)** - Feature documentation and roadmap
-- **[Unused Files Report](UNUSED_FILES_REPORT.md)** - Cleanup analysis
 - **[Nova SDK Documentation](https://github.com/aws-samples/nova-prompt-optimizer)** - Official SDK docs
 
 ## 🆘 **Getting Help**
