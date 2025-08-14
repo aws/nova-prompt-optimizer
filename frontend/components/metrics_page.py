@@ -397,7 +397,8 @@ def create_metric_list_item(metric):
             
             Div(
                 Button("Edit", 
-                       cls="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 mr-2",
+                       variant="outline",
+                       size="sm",
                        onclick=f"editMetric('{metric['id']}')"
                 ),
                 Button("Delete", 
@@ -854,7 +855,8 @@ def create_infer_dataset_tab(datasets=None):
                 "Analyze Dataset & Generate Metrics",
                 type="submit",
                 id="generate-btn",
-                cls="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                variant="primary",
+                cls="w-full"
             ),
             
             # Simplified JavaScript - just log, don't interfere
@@ -932,7 +934,7 @@ def create_natural_language_tab():
         Div(
             Button("Preview Generated Code", 
                    type="button",
-                   cls="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700",
+                   variant="outline",
                    onclick="previewMetricCode()"),
             cls="mb-4"
         ),
@@ -949,11 +951,11 @@ def create_natural_language_tab():
             Div(
                 Button("Accept & Create Metric", 
                        type="button",
-                       cls="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mr-2",
+                       variant="primary",
                        onclick="createMetric()"),
                 Button("Edit Description", 
                        type="button",
-                       cls="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700",
+                       variant="secondary",
                        onclick="editDescription()"),
                 style="display: none;",
                 id="code-actions"
