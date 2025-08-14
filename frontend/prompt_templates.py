@@ -69,7 +69,18 @@ The following is the original prompt that will be used with this dataset:
 {prompt_content}
 ---
 
-Consider the prompt's intent, task requirements, and expected output format when suggesting metrics. The metrics should evaluate how well responses fulfill the prompt's specific requirements."""
+CRITICAL PROMPT INTENT ANALYSIS:
+1. Analyze the prompt's specific task and expected behavior
+2. Identify what the prompt is asking the AI to do (classify, generate, transform, etc.)
+3. Determine the expected output format based on the prompt instructions
+4. Understand the success criteria implied by the prompt
+5. Validate that the dataset examples align with the prompt's intended use case
+
+The metrics MUST evaluate how well responses fulfill the prompt's specific requirements and intended behavior. Consider:
+- Does the prompt ask for classification? → Metrics should measure classification accuracy
+- Does the prompt ask for JSON output? → Metrics should validate JSON structure
+- Does the prompt specify certain fields? → Metrics should check those exact fields
+- Does the prompt have quality criteria? → Metrics should measure those criteria"""
         
         return f"""You are an expert in AI evaluation metrics. Analyze the following dataset and suggest appropriate evaluation metrics.
 
@@ -86,7 +97,9 @@ CRITICAL: Analyze the ACTUAL data structure in the dataset above. Look at:
 - What the expected output format appears to be
 - How the input and expected output relate to each other
 
-Based on this SPECIFIC dataset structure, suggest 3-5 evaluation metrics that work with the ACTUAL data fields present. For each metric, provide:
+{f"VALIDATE AGAINST ORIGINAL INTENT: Ensure the metrics align with the original prompt's task and expected behavior. The metrics must measure success for the specific task the prompt is designed to perform." if prompt_content else ""}
+
+Based on this SPECIFIC dataset structure{" and original prompt intent" if prompt_content else ""}, suggest 3-5 evaluation metrics that work with the ACTUAL data fields present. For each metric, provide:
 
 1. **Metric Name**: Clear, descriptive name
 2. **Description**: What it measures and why it's important for THIS specific data
@@ -112,7 +125,8 @@ Format your response as JSON:
     }}
   ],
   "data_structure_analysis": "Analysis of the actual data structure and field types",
-  "reasoning": "Why these metrics are appropriate for this specific dataset structure"
+  "prompt_intent_validation": "How these metrics align with the original prompt's intended task and success criteria",
+  "reasoning": "Why these metrics are appropriate for this specific dataset structure and prompt intent"
 }}"""
 
     @staticmethod
