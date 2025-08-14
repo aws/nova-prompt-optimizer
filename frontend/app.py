@@ -817,12 +817,12 @@ def metric_selection_page(request):
                   cls="text-sm text-gray-600 mb-3"),
                 Form(
                     Textarea(
-                        intent_analysis,
                         name="intent_analysis",
                         id="intent_field",
                         rows=4,
                         cls="w-full p-3 border border-gray-300 rounded-md resize-none mb-3",
-                        placeholder="Describe what the prompt is asking for and expected output format..."
+                        placeholder="Describe what the prompt is asking for and expected output format...",
+                        value=intent_analysis
                     ),
                     Button("Update Intent & Regenerate Metrics",
                            type="button",
