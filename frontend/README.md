@@ -2,7 +2,7 @@
 
 A modern web interface for the Nova Prompt Optimizer SDK, built with FastHTML and SQLite for simplicity and performance.
 
-## 📋 **Table of Contents**
+##**Table of Contents**
 - [Quick Start](#-quick-start)
 - [Prerequisites](#-prerequisites)
 - [Installation Methods](#-installation-methods)
@@ -12,7 +12,7 @@ A modern web interface for the Nova Prompt Optimizer SDK, built with FastHTML an
 - [Troubleshooting](#-troubleshooting)
 - [Development Setup](#-development-setup)
 
-## 🚀 **Quick Start**
+##**Quick Start**
 
 ```bash
 # Clone and navigate to frontend
@@ -35,7 +35,7 @@ python3 app.py
 open http://localhost:8000
 ```
 
-## 📋 **Prerequisites**
+##**Prerequisites**
 
 ### **System Requirements**
 - **Python 3.8+** (Python 3.11+ recommended)
@@ -44,17 +44,17 @@ open http://localhost:8000
 - **1GB+ disk space** (for dependencies and data)
 
 ### **Operating System Support**
-- ✅ **macOS** (10.14+)
-- ✅ **Linux** (Ubuntu 18.04+, CentOS 7+)
-- ✅ **Windows** (10+, WSL recommended)
+-**macOS** (10.14+)
+-**Linux** (Ubuntu 18.04+, CentOS 7+)
+-**Windows** (10+, WSL recommended)
 
 ### **Browser Support**
-- ✅ **Chrome** (90+)
-- ✅ **Firefox** (88+)
-- ✅ **Safari** (14+)
-- ✅ **Edge** (90+)
+-**Chrome** (90+)
+-**Firefox** (88+)
+-**Safari** (14+)
+-**Edge** (90+)
 
-## 🛠️ **Installation Methods**
+##**Installation Methods**
 
 ### **Method 1: Standard Installation (Recommended)**
 
@@ -78,7 +78,7 @@ source .venv/bin/activate  # macOS/Linux
 pip install fasthtml starlette python-multipart boto3
 
 # Verify installation
-python3 -c "import fasthtml; print('✅ FastHTML installed successfully')"
+python3 -c "import fasthtml; print('FastHTML installed successfully')"
 ```
 
 #### **Step 3: Install Nova SDK (Optional but Recommended)**
@@ -87,7 +87,7 @@ python3 -c "import fasthtml; print('✅ FastHTML installed successfully')"
 pip install nova-prompt-optimizer
 
 # Verify SDK installation
-python3 -c "from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer; print('✅ Nova SDK installed')"
+python3 -c "from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer; print('Nova SDK installed')"
 ```
 
 ### **Method 2: Development Installation**
@@ -102,7 +102,7 @@ pip install nova-prompt-optimizer
 pip install pytest black flake8 isort
 
 # Verify development setup
-python3 -c "import fasthtml, pytest, black; print('✅ Development environment ready')"
+python3 -c "import fasthtml, pytest, black; print('Development environment ready')"
 ```
 
 ### **Method 3: Minimal Installation**
@@ -113,10 +113,10 @@ python3 -c "import fasthtml, pytest, black; print('✅ Development environment r
 pip install fasthtml starlette python-multipart boto3
 
 # Note: Optimizations will run in demo mode
-echo "⚠️ Demo mode: Install nova-prompt-optimizer for real optimizations"
+echo "Demo mode: Install nova-prompt-optimizer for real optimizations"
 ```
 
-## ⚙️ **Configuration**
+## ⚙**Configuration**
 
 ### **Default Configuration**
 The application works out-of-the-box with these defaults:
@@ -167,9 +167,9 @@ source .venv/bin/activate
 python3 app.py
 
 # Expected output:
-# ✅ Nova Prompt Optimizer SDK loaded successfully
-# ✅ Database initialized: nova_optimizer.db
-# ✅ Initial sample data inserted
+#Nova Prompt Optimizer SDK loaded successfully
+#Database initialized: nova_optimizer.db
+#Initial sample data inserted
 # INFO: Started server process
 # INFO: Uvicorn running on http://127.0.0.1:8000
 ```
@@ -197,7 +197,7 @@ pip install gunicorn
 gunicorn app:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
-## ✅ **Verification**
+##**Verification**
 
 ### **Step 1: Check Application Status**
 ```bash
@@ -215,9 +215,9 @@ ls -la nova_optimizer.db
 # Check database contents
 python3 -c "
 from database import db
-print(f'📊 Datasets: {len(db.get_datasets())}')
-print(f'📝 Prompts: {len(db.get_prompts())}')  
-print(f'⚡ Optimizations: {len(db.get_optimizations())}')
+print(f'Datasets: {len(db.get_datasets())}')
+print(f'Prompts: {len(db.get_prompts())}')  
+print(f'Optimizations: {len(db.get_optimizations())}')
 "
 # Expected: 2 datasets, 2 prompts, 2 optimizations
 ```
@@ -239,13 +239,13 @@ curl -s http://localhost:8000/optimization | grep -c "Start Optimization"
 python3 -c "
 try:
     from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
-    print('✅ Real optimization mode enabled')
+    print('Real optimization mode enabled')
 except ImportError:
-    print('⚠️ Demo mode - install nova-prompt-optimizer for real optimizations')
+    print('Demo mode - install nova-prompt-optimizer for real optimizations')
 "
 ```
 
-## 🔧 **Troubleshooting**
+##**Troubleshooting**
 
 ### **Common Issues**
 
@@ -274,7 +274,7 @@ uvicorn.run(app, host='127.0.0.1', port=8080)
 python3 -c "
 from database import db
 db.reset_database()
-print('✅ Database reset successfully')
+print('Database reset successfully')
 "
 ```
 
@@ -368,7 +368,7 @@ curl -X POST http://localhost:8000/admin/reset-database
 python3 -c "from database import db; db.reset_database()"
 ```
 
-## 📁 **Project Structure**
+##**Project Structure**
 
 ```
 frontend/
@@ -395,12 +395,12 @@ frontend/
 └── FEATURES.md             # Feature documentation
 ```
 
-## 🔗 **Related Documentation**
+##**Related Documentation**
 
 - **[Features](FEATURES.md)** - Feature documentation and roadmap
 - **[Nova SDK Documentation](https://github.com/aws-samples/nova-prompt-optimizer)** - Official SDK docs
 
-## 🆘 **Getting Help**
+##**Getting Help**
 
 ### **Check These First**
 1. **Logs**: Check console output for error messages
@@ -422,6 +422,6 @@ frontend/
 
 ---
 
-**🎉 You're ready to start optimizing prompts with Nova!**
+**You're ready to start optimizing prompts with Nova!**
 
 Open http://localhost:8000 in your browser and begin creating datasets, prompts, and running optimizations.
