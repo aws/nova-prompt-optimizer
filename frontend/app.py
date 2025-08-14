@@ -480,9 +480,8 @@ async def datasets_page(request):
                                style="margin-right: 0.5rem; font-size: 0.875rem;",
                                onclick=f"window.location.href='/datasets/edit/{dataset['id']}'"),
                         Button("Delete", 
-                               variant="danger", 
-                               style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
                                onclick=f"confirmDelete('dataset', '{dataset['id']}', '{dataset['name']}')",
+                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs",
                                **{"data-dataset-id": dataset["id"]}),
                         style="display: flex; gap: 0.25rem;"
                     ),
@@ -1467,9 +1466,8 @@ async def prompts_page(request):
                                onclick=f"window.location.href='/prompts/edit/{prompt['id']}'",
                                cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"),
                         Button("Delete", 
-                               variant="danger", 
-                               style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
                                onclick=f"confirmDelete('prompt', '{prompt['id']}', '{prompt['name']}')",
+                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs",
                                **{"data-prompt-id": prompt["id"]}),
                         style="display: flex; gap: 0.25rem;"
                     ),
@@ -1632,10 +1630,10 @@ async def optimization_page(request):
                         P("Select the evaluation metric to measure prompt performance", 
                           style="font-size: 0.875rem; color: #6b7280; margin: 0;"),
                         style="margin-bottom: 1rem;"
-                    ) if available_metrics else Div(
-                        P("⚠️ No metrics available. Create a metric first.", 
-                          style="color: #f59e0b; font-weight: 500; padding: 1rem; background: #fef3c7; border-radius: 0.375rem;"),
-                        style="margin-bottom: 1rem;"
+                    ) if available_metrics else Alert(
+                        "⚠️ No metrics available. Create a metric first.",
+                        variant="warning",
+                        cls="mb-4"
                     ),
                     # Advanced Configuration Section
                     Div(
@@ -1715,9 +1713,9 @@ async def optimization_page(request):
                     ),
                     method="POST",
                     action="/optimization/start"
-                ) if available_prompts and available_datasets else P(
+                ) if available_prompts and available_datasets else Alert(
                     "You need at least one prompt and one dataset to start optimization.",
-                    style="color: #f59e0b; font-weight: 500; padding: 1rem; background: #fef3c7; border-radius: 0.375rem;"
+                    variant="warning"
                 ),
                 
                 style="display: none; margin-top: 1rem;",
