@@ -695,7 +695,11 @@ def create_infer_dataset_tab(datasets=None):
                 Label("Focus Areas (Optional)", cls="block text-sm font-medium mb-2"),
                 Div(
                     Div(
-                        Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2", onchange="toggleSubOptions('accuracy', this)"), "Accuracy & Correctness"),
+                        Div(
+                            Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2", onchange="toggleSubOptions('accuracy', this)"), "Accuracy & Correctness"),
+                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Evaluates how correct and precise the AI output is compared to expected answers. Includes exact matches, semantic correctness, and factual accuracy."),
+                            cls="flex items-center"
+                        ),
                         Div(
                             Label(Input(type="checkbox", name="accuracy_sub", value="exact_match", cls="mr-2"), "Exact Match"),
                             Label(Input(type="checkbox", name="accuracy_sub", value="semantic_match", cls="mr-2"), "Semantic Match"),
@@ -704,7 +708,11 @@ def create_infer_dataset_tab(datasets=None):
                         )
                     ),
                     Div(
-                        Label(Input(type="checkbox", name="focus", value="format", cls="mr-2", onchange="toggleSubOptions('format', this)"), "Format & Structure"),
+                        Div(
+                            Label(Input(type="checkbox", name="focus", value="format", cls="mr-2", onchange="toggleSubOptions('format', this)"), "Format & Structure"),
+                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Validates output format and structure. Checks JSON validity, required fields, data types, and schema compliance for structured outputs."),
+                            cls="flex items-center"
+                        ),
                         Div(
                             Label(Input(type="checkbox", name="format_sub", value="json_valid", cls="mr-2"), "Valid JSON"),
                             Label(Input(type="checkbox", name="format_sub", value="required_fields", cls="mr-2"), "Required Fields"),
@@ -714,7 +722,11 @@ def create_infer_dataset_tab(datasets=None):
                         )
                     ),
                     Div(
-                        Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2", onchange="toggleSubOptions('completeness', this)"), "Completeness"),
+                        Div(
+                            Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2", onchange="toggleSubOptions('completeness', this)"), "Completeness"),
+                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Measures how thoroughly the AI addresses the request. Evaluates if all requirements are met, sufficient detail is provided, and topics are fully covered."),
+                            cls="flex items-center"
+                        ),
                         Div(
                             Label(Input(type="checkbox", name="completeness_sub", value="all_requirements", cls="mr-2"), "All Requirements Met"),
                             Label(Input(type="checkbox", name="completeness_sub", value="detail_level", cls="mr-2"), "Sufficient Detail"),
@@ -723,7 +735,11 @@ def create_infer_dataset_tab(datasets=None):
                         )
                     ),
                     Div(
-                        Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2", onchange="toggleSubOptions('relevance', this)"), "Relevance"),
+                        Div(
+                            Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2", onchange="toggleSubOptions('relevance', this)"), "Relevance"),
+                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Assesses how well the output relates to the input query. Checks topic relevance, context understanding, and alignment with user intent."),
+                            cls="flex items-center"
+                        ),
                         Div(
                             Label(Input(type="checkbox", name="relevance_sub", value="topic_relevance", cls="mr-2"), "Topic Relevance"),
                             Label(Input(type="checkbox", name="relevance_sub", value="context_awareness", cls="mr-2"), "Context Awareness"),
