@@ -1,7 +1,0 @@
-Given an input email from a customer service inquiry, analyze the content to determine the appropriate service category, sentiment, and urgency level. Return a JSON object with the following keys:
-
-- "categories": A dictionary with keys `emergency_repair_services`, `routine_maintenance_requests`, `quality_and_safety_concerns`, `specialized_cleaning_services`, `general_inquiries`, `sustainability_and_environmental_practices`, `training_and_support_requests`, `cleaning_services_scheduling`, `customer_feedback_and_complaints`, `facility_management_issues`, and boolean values indicating whether each category applies.
-- "sentiment": One of `"negative"`, `"neutral"`, or `"positive"` based on the customer's tone.
-- "urgency": One of `"high"`, `"medium"`, or `"low"` based on the immediacy of the request.
-
-Ensure the JSON is valid, compact (no unnecessary whitespace), and contains only the specified keys. For example, if the email requests urgent specialized cleaning, the output should be `{"categories": {"specialized_cleaning_services": true, ...}, "sentiment": "positive", "urgency": "high"}`.

@@ -160,7 +160,7 @@ def run_optimization_worker(optimization_id: str):
         db.add_optimization_log(optimization_id, "debug", f"Dataset content preview: {dataset_content[:200]}...")
         
         # Write dataset to temp file for SDK
-        temp_dataset_path = f"temp_dataset_{optimization_id}.jsonl"
+        temp_dataset_path = f"data/temp_dataset_{optimization_id}.jsonl"
         with open(temp_dataset_path, 'w') as f:
             f.write(dataset_content)
         

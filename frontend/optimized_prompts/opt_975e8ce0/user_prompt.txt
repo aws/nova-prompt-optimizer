@@ -1,1 +1,0 @@
-Extract and return a json with the following keys and values from the provided input: "urgency" as one of `high`, `medium`, `low`; "sentiment" as one of `negative`, `neutral`, `positive`; "categories" as a dictionary with keys from the predefined list and boolean values. The input is: [{{input}}]

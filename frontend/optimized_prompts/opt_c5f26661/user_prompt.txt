@@ -1,1 +1,0 @@
-Analyze the following input and return a json string with the keys "urgency", "sentiment", and "categories". The input is: [{{input}}]

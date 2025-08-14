@@ -727,7 +727,7 @@ class Database:
                 return False  # Optimization not found
             
             # Clean up temp dataset file
-            temp_dataset_file = f"temp_dataset_{optimization_id}.jsonl"
+            temp_dataset_file = f"data/temp_dataset_{optimization_id}.jsonl"
             if os.path.exists(temp_dataset_file):
                 os.remove(temp_dataset_file)
                 print(f"🗑️ Cleaned up temp dataset: {temp_dataset_file}")
