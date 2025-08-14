@@ -21,9 +21,42 @@ class PromptTemplates:
         Flow: User selects dataset -> AI analyzes structure/content -> Suggests relevant metrics -> 
               Feeds into metric_code_generation() to create executable Python code
         """
-        focus_text = ""
+        # Build detailed focus areas text with new granular options
+        focus_mapping = {
+            # Accuracy & Correctness
+            'exact_match': 'exact string matching between predicted and expected outputs',
+            'semantic_equiv': 'semantic equivalence even when wording differs',
+            'factual_accuracy': 'factual correctness and truthfulness of information',
+            'numerical_precision': 'accuracy of numerical values and calculations',
+            'classification_accuracy': 'correct classification or categorization',
+            
+            # Format & Structure
+            'valid_json': 'valid JSON, XML, or YAML format compliance',
+            'required_fields': 'presence of all required fields or elements',
+            'correct_types': 'correct data types for each field',
+            'schema_compliance': 'adherence to predefined schemas or structures',
+            'length_constraints': 'appropriate length limits and constraints',
+            
+            # Completeness
+            'all_requirements': 'addressing all specified requirements',
+            'sufficient_detail': 'providing adequate level of detail',
+            'topic_coverage': 'comprehensive coverage of relevant topics',
+            'edge_cases': 'handling of edge cases and exceptions',
+            'context_preservation': 'maintaining important contextual information',
+            
+            # Relevance
+            'query_alignment': 'alignment with the specific query or request',
+            'context_awareness': 'understanding and using provided context',
+            'topic_relevance': 'relevance to the main topic or subject',
+            'intent_understanding': 'understanding user intent and purpose',
+            'appropriate_scope': 'maintaining appropriate scope and boundaries'
+        }
+        
         if focus_areas:
-            focus_text = f"\nPay special attention to: {', '.join(focus_areas)}"
+            focus_descriptions = [focus_mapping.get(area, area) for area in focus_areas]
+            focus_text = f"\nPay special attention to: {', '.join(focus_descriptions)}"
+        else:
+            focus_text = ""
         
         return f"""You are an expert in AI evaluation metrics. Analyze the following dataset and suggest appropriate evaluation metrics.
 
