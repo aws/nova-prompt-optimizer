@@ -700,16 +700,7 @@ def create_infer_dataset_tab(datasets=None):
                     Div(
                         Div(
                             Label(Input(type="checkbox", name="focus", value="accuracy", cls="mr-2", onchange="toggleSubOptions('accuracy', this)"), "Accuracy & Correctness"),
-                            TooltipProvider(
-                                Tooltip(
-                                    TooltipTrigger(
-                                        Button("ℹ️", variant="ghost", size="sm", cls="ml-2 p-1 h-6 w-6")
-                                    ),
-                                    TooltipContent(
-                                        P("Evaluates how correct and precise the AI output is compared to expected answers. Includes exact matches, semantic correctness, and factual accuracy.")
-                                    )
-                                )
-                            ),
+                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Evaluates how correct and precise the AI output is compared to expected answers. Includes exact matches, semantic correctness, and factual accuracy."),
                             cls="flex items-center"
                         ),
                         Div(
@@ -722,16 +713,7 @@ def create_infer_dataset_tab(datasets=None):
                     Div(
                         Div(
                             Label(Input(type="checkbox", name="focus", value="format", cls="mr-2", onchange="toggleSubOptions('format', this)"), "Format & Structure"),
-                            TooltipProvider(
-                                Tooltip(
-                                    TooltipTrigger(
-                                        Button("ℹ️", variant="ghost", size="sm", cls="ml-2 p-1 h-6 w-6")
-                                    ),
-                                    TooltipContent(
-                                        P("Validates output format and structure. Checks JSON validity, required fields, data types, and schema compliance for structured outputs.")
-                                    )
-                                )
-                            ),
+                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Validates output format and structure. Checks JSON validity, required fields, data types, and schema compliance for structured outputs."),
                             cls="flex items-center"
                         ),
                         Div(
@@ -745,16 +727,7 @@ def create_infer_dataset_tab(datasets=None):
                     Div(
                         Div(
                             Label(Input(type="checkbox", name="focus", value="completeness", cls="mr-2", onchange="toggleSubOptions('completeness', this)"), "Completeness"),
-                            TooltipProvider(
-                                Tooltip(
-                                    TooltipTrigger(
-                                        Button("ℹ️", variant="ghost", size="sm", cls="ml-2 p-1 h-6 w-6")
-                                    ),
-                                    TooltipContent(
-                                        P("Measures how thoroughly the AI addresses the request. Evaluates if all requirements are met, sufficient detail is provided, and topics are fully covered.")
-                                    )
-                                )
-                            ),
+                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Measures how thoroughly the AI addresses the request. Evaluates if all requirements are met, sufficient detail is provided, and topics are fully covered."),
                             cls="flex items-center"
                         ),
                         Div(
@@ -767,16 +740,7 @@ def create_infer_dataset_tab(datasets=None):
                     Div(
                         Div(
                             Label(Input(type="checkbox", name="focus", value="relevance", cls="mr-2", onchange="toggleSubOptions('relevance', this)"), "Relevance"),
-                            TooltipProvider(
-                                Tooltip(
-                                    TooltipTrigger(
-                                        Button("ℹ️", variant="ghost", size="sm", cls="ml-2 p-1 h-6 w-6")
-                                    ),
-                                    TooltipContent(
-                                        P("Assesses how well the output relates to the input query. Checks topic relevance, context understanding, and alignment with user intent.")
-                                    )
-                                )
-                            ),
+                            Span("ℹ️", cls="ml-2 cursor-help text-blue-500", title="Assesses how well the output relates to the input query. Checks topic relevance, context understanding, and alignment with user intent."),
                             cls="flex items-center"
                         ),
                         Div(
