@@ -419,6 +419,16 @@ class RelevanceMetric(MetricAdapter):
                 f"uploads/{row[1]}.jsonl"            # name.jsonl
             ]
             
+            # Also try pattern matching for generated files
+            import os
+            import glob
+            if os.path.exists("uploads/"):
+                # Look for files containing the dataset name or ID
+                pattern_files = []
+                pattern_files.extend(glob.glob(f"uploads/*{row[0]}*.jsonl"))
+                pattern_files.extend(glob.glob(f"uploads/*{row[1].replace(' ', '_')}*.jsonl"))
+                possible_paths.extend(pattern_files)
+            
             content = ""
             file_found = False
             for file_path in possible_paths:
@@ -426,6 +436,7 @@ class RelevanceMetric(MetricAdapter):
                     with open(file_path, 'r') as f:
                         content = f.read()
                         file_found = True
+                        print(f"✅ Found dataset file: {file_path}")
                         break
                 except:
                     continue
