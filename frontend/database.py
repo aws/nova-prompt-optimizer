@@ -744,7 +744,10 @@ class RelevanceMetric(MetricAdapter):
     def get_optimization_by_id(self, optimization_id: str) -> Optional[Dict]:
         """Get a specific optimization by ID"""
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        cursor = conn.execute("SELECT * FROM optimizations WHERE id = ?", (optimization_id,))
+        cursor = conn.execute("""
+            SELECT id, name, prompt, dataset, status, progress, improvement, started, completed, metric_id
+            FROM optimizations WHERE id = ?
+        """, (optimization_id,))
         row = cursor.fetchone()
         conn.close()
         
@@ -759,7 +762,7 @@ class RelevanceMetric(MetricAdapter):
                 "improvement": row[6],
                 "started": row[7],
                 "completed": row[8],
-                "metric_id": row[10] if len(row) > 10 else None  # metric_id is the 11th column (index 10)
+                "metric_id": row[9]  # metric_id is now explicitly selected as 10th column (index 9)
             }
         return None
     
