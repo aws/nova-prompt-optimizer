@@ -709,11 +709,31 @@ def create_infer_dataset_tab(datasets=None):
                     H4("Accuracy & Correctness", cls="font-semibold text-gray-800 mb-2"),
                     P("Evaluates how precise and factually correct the AI output is compared to expected results.", cls="text-sm text-gray-600 mb-3"),
                     Div(
-                        Label(Input(type="checkbox", name="focus", value="exact_match", cls="mr-2"), "Exact String Match", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="semantic_equiv", cls="mr-2"), "Semantic Equivalence", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="factual_accuracy", cls="mr-2"), "Factual Accuracy", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="numerical_precision", cls="mr-2"), "Numerical Precision", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="classification_accuracy", cls="mr-2"), "Classification Accuracy", cls="flex items-center"),
+                        Div(
+                            Input(type="checkbox", name="focus", value="exact_match", cls="mr-2"),
+                            Span("Exact String Match"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="semantic_equiv", cls="mr-2"),
+                            Span("Semantic Equivalence"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="factual_accuracy", cls="mr-2"),
+                            Span("Factual Accuracy"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="numerical_precision", cls="mr-2"),
+                            Span("Numerical Precision"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="classification_accuracy", cls="mr-2"),
+                            Span("Classification Accuracy"),
+                            cls="flex items-center"
+                        ),
                         cls="grid grid-cols-2 gap-2"
                     ),
                     cls="border border-gray-200 rounded-lg p-4 mb-4"
@@ -724,11 +744,31 @@ def create_infer_dataset_tab(datasets=None):
                     H4("Format & Structure", cls="font-semibold text-gray-800 mb-2"),
                     P("Validates output formatting, data types, and structural requirements.", cls="text-sm text-gray-600 mb-3"),
                     Div(
-                        Label(Input(type="checkbox", name="focus", value="valid_json", cls="mr-2"), "Valid JSON/XML/YAML", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="required_fields", cls="mr-2"), "Required Fields Present", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="correct_types", cls="mr-2"), "Correct Data Types", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="schema_compliance", cls="mr-2"), "Schema Compliance", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="length_constraints", cls="mr-2"), "Length Constraints", cls="flex items-center"),
+                        Div(
+                            Input(type="checkbox", name="focus", value="valid_json", cls="mr-2"),
+                            Span("Valid JSON/XML/YAML"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="required_fields", cls="mr-2"),
+                            Span("Required Fields Present"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="correct_types", cls="mr-2"),
+                            Span("Correct Data Types"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="schema_compliance", cls="mr-2"),
+                            Span("Schema Compliance"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="length_constraints", cls="mr-2"),
+                            Span("Length Constraints"),
+                            cls="flex items-center"
+                        ),
                         cls="grid grid-cols-2 gap-2"
                     ),
                     cls="border border-gray-200 rounded-lg p-4 mb-4"
@@ -739,11 +779,31 @@ def create_infer_dataset_tab(datasets=None):
                     H4("Completeness", cls="font-semibold text-gray-800 mb-2"),
                     P("Measures how thoroughly the AI addresses all aspects of the request.", cls="text-sm text-gray-600 mb-3"),
                     Div(
-                        Label(Input(type="checkbox", name="focus", value="all_requirements", cls="mr-2"), "All Requirements Addressed", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="sufficient_detail", cls="mr-2"), "Sufficient Detail Level", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="topic_coverage", cls="mr-2"), "Topic Coverage", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="edge_cases", cls="mr-2"), "Edge Cases Handled", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="context_preservation", cls="mr-2"), "Context Preservation", cls="flex items-center"),
+                        Div(
+                            Input(type="checkbox", name="focus", value="all_requirements", cls="mr-2"),
+                            Span("All Requirements Addressed"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="sufficient_detail", cls="mr-2"),
+                            Span("Sufficient Detail Level"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="topic_coverage", cls="mr-2"),
+                            Span("Topic Coverage"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="edge_cases", cls="mr-2"),
+                            Span("Edge Cases Handled"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="context_preservation", cls="mr-2"),
+                            Span("Context Preservation"),
+                            cls="flex items-center"
+                        ),
                         cls="grid grid-cols-2 gap-2"
                     ),
                     cls="border border-gray-200 rounded-lg p-4 mb-4"
@@ -754,11 +814,31 @@ def create_infer_dataset_tab(datasets=None):
                     H4("Relevance", cls="font-semibold text-gray-800 mb-2"),
                     P("Assesses how well the output relates to and answers the input query.", cls="text-sm text-gray-600 mb-3"),
                     Div(
-                        Label(Input(type="checkbox", name="focus", value="query_alignment", cls="mr-2"), "Query Alignment", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="context_awareness", cls="mr-2"), "Context Awareness", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="topic_relevance", cls="mr-2"), "Topic Relevance", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="intent_understanding", cls="mr-2"), "Intent Understanding", cls="flex items-center"),
-                        Label(Input(type="checkbox", name="focus", value="appropriate_scope", cls="mr-2"), "Appropriate Scope", cls="flex items-center"),
+                        Div(
+                            Input(type="checkbox", name="focus", value="query_alignment", cls="mr-2"),
+                            Span("Query Alignment"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="context_awareness", cls="mr-2"),
+                            Span("Context Awareness"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="topic_relevance", cls="mr-2"),
+                            Span("Topic Relevance"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="intent_understanding", cls="mr-2"),
+                            Span("Intent Understanding"),
+                            cls="flex items-center"
+                        ),
+                        Div(
+                            Input(type="checkbox", name="focus", value="appropriate_scope", cls="mr-2"),
+                            Span("Appropriate Scope"),
+                            cls="flex items-center"
+                        ),
                         cls="grid grid-cols-2 gap-2"
                     ),
                     cls="border border-gray-200 rounded-lg p-4 mb-4"
