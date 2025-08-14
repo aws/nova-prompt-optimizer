@@ -1551,12 +1551,12 @@ async def optimization_page(request):
                                    variant="outline", 
                                    style="font-size: 0.875rem; margin-right: 0.5rem; color: #10b981; border-color: #10b981;",
                                    onclick=f"window.location.href='/optimization/results/{opt['id']}'"
-                                   ) if opt["status"] == "Completed" else None,
+                                   ) if opt["status"] in ["Completed", "Failed"] else None,
                             Button("Monitor Progress", 
                                    variant="outline", 
                                    style="font-size: 0.875rem; margin-right: 0.5rem; color: #3b82f6; border-color: #3b82f6;",
                                    onclick=f"window.location.href='/optimization/monitor/{opt['id']}'"
-                                   ) if opt["status"] in ["Starting", "Running"] else None,
+                                   ) if opt["status"] in ["Starting", "Running", "In Progress"] else None,
                             Button("Stop" if opt["status"] in ["Starting", "Running"] else "Delete", 
                                    variant="danger", 
                                    style="font-size: 0.875rem; background: #ef4444; color: white; border: 1px solid #ef4444;",
