@@ -878,15 +878,19 @@ def metric_selection_page(request):
             ),
             
             # Action Buttons
-            Div(
-                Button("Generate Selected Metrics", 
-                       type="submit", 
-                       cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 mr-3"),
-                Button("Cancel", 
-                       type="button", 
-                       onclick="window.location.href='/metrics'", 
-                       cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50"),
-                cls="flex"
+            Card(
+                header="Actions",
+                content=Div(
+                    Button("Generate Selected Metrics", 
+                           type="submit", 
+                           cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 mr-3"),
+                    Button("Cancel", 
+                           type="button", 
+                           onclick="window.location.href='/metrics'", 
+                           cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50"),
+                    cls="flex"
+                ),
+                cls="mb-6"
             ),
             
             # Hidden fields to preserve data
