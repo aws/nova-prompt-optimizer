@@ -348,8 +348,11 @@ def run_optimization_worker(optimization_id: str):
                             # Clean the code before execution
                             cleaned_code = clean_generated_code(custom_metric['generated_code'])
                             
-                            print(f"🔍 DEBUG - Executing metric code:")
-                            print(f"```python\n{cleaned_code}\n```")
+                            # Show code only once at the beginning
+                            if not hasattr(self, '_code_shown'):
+                                print(f"🔍 DEBUG - Executing metric code:")
+                                print(f"```python\n{cleaned_code}\n```")
+                                self._code_shown = True
                             
                             exec(cleaned_code, global_vars, local_vars)
                             
