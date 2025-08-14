@@ -9,6 +9,13 @@ build/
 develop-eggs/
 dist/
 
+# Frontend generated data and runtime files
+frontend/nova_optimizer.db*
+frontend/data/
+frontend/uploads/
+frontend/optimized_prompts/
+frontend/.sesskey
+
 # Temporary data files
 frontend/data/temp_dataset_*.jsonl
 downloads/
@@ -151,7 +158,6 @@ temp/
 claude-analysis/
 .amazonq
 */.archive*
-
 
 # OS generated files
 .DS_Store
