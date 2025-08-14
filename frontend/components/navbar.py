@@ -63,11 +63,6 @@ def create_navbar_tabs(current_page=None, user=None):
         )
     else:
         user_menu = Div(
-            A(
-                "Login",
-                href="/auth/login",
-                cls="login-link"
-            ),
             cls="auth-container"
         )
     
