@@ -836,7 +836,8 @@ def metric_selection_page(request):
                     Button("Update Intent & Regenerate Metrics",
                            type="button",
                            onclick="regenerateWithIntent()",
-                           cls="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800"),
+                           variant="default",
+                           cls="mt-3"),
                     id="intent_form"
                 )
             ),
@@ -862,9 +863,9 @@ def metric_selection_page(request):
                 content=Div(
                     *[Div(
                         Div(
-                            Input(type="checkbox", name="selected_metrics", value=str(i), id=f"metric-{i}", checked=True, cls="mr-2"),
-                            Label(f"{metric.get('name', f'Metric {i+1}')}", **{"for": f"metric-{i}"}, cls="font-medium"),
-                            cls="mb-2"
+                            Input(type="checkbox", name="selected_metrics", value=str(i), id=f"metric-{i}", checked=True, cls="h-4 w-4 rounded border-gray-300 text-black focus:ring-black focus:ring-2 mr-3"),
+                            Label(f"{metric.get('name', f'Metric {i+1}')}", **{"for": f"metric-{i}"}, cls="font-medium text-sm"),
+                            cls="flex items-center mb-2"
                         ),
                         Div(
                             P(f"Intent Understanding: {metric.get('intent_understanding', 'No description')}", cls="mb-1 text-sm text-gray-600"),
@@ -889,13 +890,15 @@ def metric_selection_page(request):
                            type="submit", 
                            id="generate-btn",
                            onclick="showGeneratingState()",
-                           cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800",
-                           style="width: 75%; margin-right: 0.5rem;"),
+                           variant="default",
+                           size="lg",
+                           cls="flex-1 mr-2"),
                     Button("Cancel", 
                            type="button", 
                            onclick="window.location.href='/metrics'", 
-                           cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50",
-                           style="width: 23%;"),
+                           variant="outline",
+                           size="lg",
+                           cls="w-1/4"),
                     cls="flex"
                 ),
                 cls="mb-6"
@@ -1160,12 +1163,14 @@ def metric_preview_page(request):
             content=Div(
                 Button("Save Metric", 
                        onclick="saveMetric()",
-                       cls="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800",
-                       style="width: 75%; margin-right: 0.5rem;"),
+                       variant="default",
+                       size="lg",
+                       cls="flex-1 mr-2"),
                 Button("Cancel", 
                        onclick="window.location.href='/metrics'",
-                       cls="bg-white text-black px-6 py-2 rounded-md border border-gray-300 hover:bg-gray-50",
-                       style="width: 23%;"),
+                       variant="outline",
+                       size="lg",
+                       cls="w-1/4"),
                 cls="flex"
             ),
             cls="mb-6"
