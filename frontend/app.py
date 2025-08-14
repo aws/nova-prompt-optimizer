@@ -831,8 +831,7 @@ def metric_selection_page(request):
                         name="intent_analysis",
                         id="intent_field",
                         rows=4,
-                        cls="w-full p-3 border border-gray-300 rounded-md resize-none mb-3",
-                        placeholder="Describe what the prompt is asking for and expected output format..."
+                        cls="w-full p-3 border border-gray-300 rounded-md resize-none mb-3"
                     ),
                     Button("Update Intent & Regenerate Metrics",
                            type="button",
