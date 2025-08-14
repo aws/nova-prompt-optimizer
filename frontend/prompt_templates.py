@@ -80,30 +80,39 @@ Dataset Content ({analysis_depth} analysis):
 
 {focus_text}{prompt_analysis_text}
 
-Based on this dataset, suggest 3-5 specific evaluation metrics that would be most appropriate. For each metric, provide:
+CRITICAL: Analyze the ACTUAL data structure in the dataset above. Look at:
+- What fields are present in the data (e.g., "categories", "sentiment", "urgency", etc.)
+- What data types are used (strings, numbers, booleans, objects)
+- What the expected output format appears to be
+- How the input and expected output relate to each other
+
+Based on this SPECIFIC dataset structure, suggest 3-5 evaluation metrics that work with the ACTUAL data fields present. For each metric, provide:
 
 1. **Metric Name**: Clear, descriptive name
-2. **Description**: What it measures and why it's important
-3. **Evaluation Criteria**: Specific criteria for scoring (1-5 scale)
-4. **Example**: How it would evaluate a sample from the dataset
+2. **Description**: What it measures and why it's important for THIS specific data
+3. **Data Fields Used**: Exactly which fields from the dataset this metric will access
+4. **Evaluation Logic**: Specific logic for comparing predicted vs expected values using the actual field names
+5. **Example**: How it would evaluate a sample from THIS dataset using the actual field structure
 
 Focus on metrics that are:
-- Specific to this data type and structure
-- Measurable and objective
-- Relevant for the apparent use case
-- Practical to implement
+- Specific to the ACTUAL data structure shown above
+- Use the EXACT field names present in the dataset
+- Handle the ACTUAL data types (strings, numbers, booleans, objects)
+- Relevant for the apparent use case based on the data content
 
 Format your response as JSON:
 {{
   "metrics": [
     {{
       "name": "Metric Name",
-      "description": "What this metric measures",
-      "criteria": "Scoring criteria (1-5 scale)",
-      "example": "Example evaluation"
+      "description": "What this metric measures for this specific data",
+      "data_fields": ["field1", "field2"],
+      "evaluation_logic": "How to compare using actual field names",
+      "example": "Example using actual data structure"
     }}
   ],
-  "reasoning": "Why these metrics are appropriate for this dataset"
+  "data_structure_analysis": "Analysis of the actual data structure and field types",
+  "reasoning": "Why these metrics are appropriate for this specific dataset structure"
 }}"""
 
     @staticmethod
