@@ -813,6 +813,11 @@ def metric_selection_page(request):
     reasoning = inferred_metrics.get("reasoning", "No reasoning provided")
     intent_analysis = inferred_metrics.get("intent_analysis", "")
     
+    # Debug intent analysis
+    print(f"🔍 DEBUG - Intent analysis value: '{intent_analysis}'")
+    print(f"🔍 DEBUG - Intent analysis length: {len(intent_analysis)}")
+    print(f"🔍 DEBUG - Inferred metrics keys: {list(inferred_metrics.keys())}")
+    
     page_content = Div(
         # Editable Intent Field
         Card(
