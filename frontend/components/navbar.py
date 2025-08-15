@@ -3,6 +3,7 @@ Navigation bar component for Nova Prompt Optimizer using Shad4FastHTML tabs patt
 """
 
 from fasthtml.common import *
+from shad4fast import Button
 
 def create_navbar_tabs(current_page=None, user=None):
     """
@@ -34,7 +35,7 @@ def create_navbar_tabs(current_page=None, user=None):
             A(
                 item["name"],
                 href=item["route"],
-                cls="nav-tab-trigger",
+                cls="nav-tab-trigger" + (" active" if is_active else ""),
                 **{
                     "data-tab-trigger": "",
                     "data-value": item["id"],
@@ -47,9 +48,10 @@ def create_navbar_tabs(current_page=None, user=None):
     
     # Theme toggle button (separate from user menu)
     theme_toggle = Button(
-        "🌙", # Moon icon for dark mode
+        "◐", # Half-filled circle icon for theme toggle
+        variant="ghost",
+        size="sm",
         id="theme-toggle",
-        cls="theme-toggle",
         onclick="toggleTheme()",
         title="Toggle dark/light mode",
         **{"aria-label": "Toggle theme"}
@@ -110,392 +112,9 @@ def create_navbar_tabs_styles():
     Create CSS styles for the tab-based navigation bar (Black & White theme)
     
     Returns:
-        Style element with navbar tabs CSS
+        Empty style - inherits from layout.py
     """
-    return Style("""
-        /* CSS Variables for Theme Support */
-        :root {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8f9fa;
-            --text-primary: #000000;
-            --text-secondary: #666666;
-            --border-color: #e5e5e5;
-            --border-hover: #d1d5db;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --shadow-hover: rgba(0, 0, 0, 0.15);
-        }
-        
-        /* Dark Mode Variables */
-        [data-theme="dark"] {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2d2d2d;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --border-color: #404040;
-            --border-hover: #525252;
-            --shadow-color: rgba(0, 0, 0, 0.3);
-            --shadow-hover: rgba(0, 0, 0, 0.4);
-        }
-        
-        /* Apply theme variables to body */
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        /* Main Navigation Bar */
-        .main-navbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 2rem;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-        
-        /* Brand Section */
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            min-width: 200px; /* Ensure minimum width */
-            flex: 0 0 auto; /* Don't grow or shrink */
-            /* Subtle visual indicator for development - remove in production */
-            /* border: 1px solid rgba(102, 126, 234, 0.1); */
-        }
-        
-        .nav-brand .brand-link {
-            color: var(--text-primary);
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 1.25rem;
-            transition: color 0.2s ease;
-        }
-        
-        .nav-brand .brand-link:hover {
-            color: var(--text-secondary);
-        }
-        
-        /* Tabs Container - More fluid layout */
-        .nav-tabs-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            max-width: 1200px; /* Match main page card width */
-            margin: 0 2rem;
-        }
-        
-        /* Tab List - Remove bounding box, add separators */
-        .nav-tab-list {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 800px;
-            background: transparent; /* Remove background */
-            border-radius: 0; /* Remove border radius */
-            padding: 0; /* Remove padding */
-            border: none; /* Remove border */
-            position: relative;
-        }
-        
-        /* Tab Triggers (Navigation Links) - Clean minimal style */
-        .nav-tab-trigger {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 24px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            font-size: 0.875rem;
-            white-space: nowrap;
-            flex: 1;
-            position: relative;
-        }
-        
-        /* Add separator between tabs (except last one) */
-        .nav-tab-trigger:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 1px;
-            height: 20px;
-            background: var(--border-color);
-            transition: background-color 0.3s ease;
-        }
-        
-        .nav-tab-trigger:hover {
-            color: var(--text-primary);
-            background: var(--bg-secondary);
-            transform: translateY(-1px);
-        }
-        
-        /* Active Tab State - More subtle without box */
-        .nav-tab-trigger[data-state="active"],
-        .nav-tab-trigger[aria-selected="true"] {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            font-weight: 600;
-            box-shadow: 0 2px 4px var(--shadow-color);
-        }
-        
-        .nav-tab-trigger[data-state="active"]:hover,
-        .nav-tab-trigger[aria-selected="true"]:hover {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            transform: translateY(-1px);
-        }
-        
-        /* Theme Toggle Button */
-        .theme-toggle {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-            margin-right: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 40px;
-            height: 36px;
-        }
-        
-        .theme-toggle:hover {
-            background: var(--bg-primary);
-            border-color: var(--border-hover);
-            transform: scale(1.05);
-        }
-        
-        .theme-toggle:active {
-            transform: scale(0.95);
-        }
-        
-        /* User Menu */
-        .user-container, .auth-container {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end; /* Align content to the right */
-            min-width: 200px; /* Match nav-brand minimum width */
-            flex: 0 0 auto; /* Don't grow or shrink */
-            /* Subtle visual indicator for development - remove in production */
-            /* border: 1px solid rgba(102, 126, 234, 0.1); */
-        }
-        
-        .user-menu {
-            position: relative;
-        }
-        
-        .user-summary {
-            padding: 8px 16px;
-            color: var(--text-primary);
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-            border: 1px solid var(--border-color);
-            background: var(--bg-primary);
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-        
-        .user-summary:hover {
-            background: var(--bg-secondary);
-            border-color: var(--border-hover);
-        }
-        
-        .user-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            min-width: 12rem;
-            background: var(--bg-primary);
-            border-radius: 6px;
-            box-shadow: 0 4px 12px var(--shadow-hover);
-            padding: 8px 0;
-            margin-top: 4px;
-            z-index: 1001;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        
-        .dropdown-item {
-            display: block;
-            padding: 8px 16px;
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 0.875rem;
-            transition: background 0.2s ease;
-        }
-        
-        .dropdown-item:hover {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-        
-        .dropdown-item.logout {
-            color: var(--text-primary);
-            border-top: 1px solid var(--border-color);
-            margin-top: 4px;
-            padding-top: 12px;
-        }
-        
-        .dropdown-item.logout:hover {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-        
-        /* Login Link */
-        .login-link {
-            padding: 8px 16px;
-            color: var(--text-primary);
-            text-decoration: none;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            font-size: 0.875rem;
-            background: var(--bg-primary);
-        }
-        
-        .login-link:hover {
-            background: var(--bg-secondary);
-            border-color: var(--border-hover);
-        }
-        
-        /* Focus States for Accessibility */
-        .nav-tab-trigger:focus-visible,
-        .theme-toggle:focus-visible {
-            outline: 2px solid #3b82f6;
-            outline-offset: 2px;
-        }
-        
-        .user-summary:focus-visible,
-        .login-link:focus-visible {
-            outline: 2px solid #3b82f6;
-            outline-offset: 2px;
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .nav-tabs-container {
-                margin: 0 1rem;
-                max-width: 900px;
-            }
-            
-            .nav-tab-list {
-                max-width: 700px;
-            }
-            
-            /* Maintain matching widths on tablets */
-            .nav-brand,
-            .user-container, .auth-container {
-                min-width: 150px;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .main-navbar {
-                padding: 0.75rem 1rem;
-            }
-            
-            .nav-tabs-container {
-                margin: 0 0.5rem;
-                max-width: 600px;
-            }
-            
-            .nav-tab-list {
-                max-width: 500px;
-            }
-            
-            .nav-tab-trigger {
-                padding: 10px 16px;
-                font-size: 0.8rem;
-            }
-            
-            /* Maintain matching widths on mobile */
-            .nav-brand,
-            .user-container, .auth-container {
-                min-width: 120px;
-            }
-            
-            /* Adjust separator height for smaller screens */
-            .nav-tab-trigger:not(:last-child)::after {
-                height: 16px;
-            }
-            
-            .theme-toggle {
-                margin-right: 0.5rem;
-                padding: 6px 10px;
-                min-width: 36px;
-                height: 32px;
-                font-size: 0.9rem;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .main-navbar {
-                padding: 0.5rem 0.75rem;
-            }
-            
-            .nav-tabs-container {
-                margin: 0 0.25rem;
-            }
-            
-            .nav-tab-trigger {
-                padding: 8px 12px;
-                font-size: 0.75rem;
-            }
-            
-            /* Maintain matching widths on small mobile */
-            .nav-brand,
-            .user-container, .auth-container {
-                min-width: 100px;
-            }
-            
-            /* Smaller separator for mobile */
-            .nav-tab-trigger:not(:last-child)::after {
-                height: 14px;
-            }
-            
-            .theme-toggle {
-                margin-right: 0.25rem;
-                padding: 4px 8px;
-                min-width: 32px;
-                height: 28px;
-                font-size: 0.8rem;
-            }
-        }
-        
-        /* Clean transitions */
-        .nav-tab-trigger {
-            transition: all 0.15s ease;
-        }
-        
-        /* Remove any remaining icon styles */
-        .nav-icon,
-        .nav-text,
-        .brand-icon,
-        .brand-text,
-        .user-icon,
-        .username,
-        .login-icon,
-        .login-text {
-            /* These classes are no longer used but kept for compatibility */
-        }
-    """)
+    return Style("")
 
 def create_navbar_tabs_script():
     """
@@ -513,10 +132,9 @@ def create_navbar_tabs_script():
             // Set the new theme
             document.documentElement.setAttribute('data-theme', newTheme);
             
-            // Update the toggle button icon
+            // Update the toggle button title (no need to change icon since ◐ works for both)
             const toggleButton = document.getElementById('theme-toggle');
             if (toggleButton) {
-                toggleButton.textContent = newTheme === 'dark' ? '☀️' : '🌙';
                 toggleButton.title = newTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
             }
             
@@ -524,6 +142,9 @@ def create_navbar_tabs_script():
             localStorage.setItem('theme', newTheme);
             
             console.log('Theme switched to:', newTheme);
+            
+            // Force a page refresh to apply theme changes
+            window.location.reload();
         }
         
         // Initialize theme on page load
@@ -537,7 +158,6 @@ def create_navbar_tabs_script():
             // Update the toggle button
             const toggleButton = document.getElementById('theme-toggle');
             if (toggleButton) {
-                toggleButton.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
                 toggleButton.title = savedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
             }
             

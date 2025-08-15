@@ -12,14 +12,19 @@ class MetricService:
     """Service for generating custom MetricAdapter implementations using Nova Premier"""
     
     def __init__(self):
-        self.bedrock = boto3.client('bedrock-runtime')
+        import botocore.config
+        config = botocore.config.Config(
+            read_timeout=30,
+            connect_timeout=10,
+            retries={'max_attempts': 2}
+        )
+        self.bedrock = boto3.client('bedrock-runtime', config=config)
     
     def generate_metric_code(self, name: str, criteria: Dict, model_id: str = "us.amazon.nova-premier-v1:0", rate_limit: int = 60) -> str:
         """Generate MetricAdapter subclass code using Amazon Nova Premier"""
         
         print(f"🛠️ MetricService - Generating code for: {name}")
         print(f"🤖 Using model: {model_id}, Rate limit: {rate_limit} RPM")
-        print("⏱️ Note: Rate limiting removed for faster response")
         
         from prompt_templates import get_metric_code_prompt
         prompt = get_metric_code_prompt(name, criteria)
@@ -28,6 +33,7 @@ class MetricService:
 
         try:
             print("📤 Sending request to Bedrock for code generation...")
+            
             response = self.bedrock.invoke_model(
                 modelId=model_id,
                 body=json.dumps({
@@ -74,6 +80,9 @@ class MetricService:
         # Remove any remaining markdown artifacts
         code = re.sub(r'^\s*```.*?\n', '', code, flags=re.MULTILINE)
         code = re.sub(r'\n\s*```\s*$', '', code)
+        
+        # Remove dummy MetricAdapter class definition if present
+        code = re.sub(r'class MetricAdapter:\s*\n\s*pass\s*\n\s*', '', code)
         
         return code.strip()
     

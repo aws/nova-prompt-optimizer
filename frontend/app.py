@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 
 from fasthtml.common import *
+from starlette.staticfiles import StaticFiles
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -18,7 +19,7 @@ from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 
 # Import Shad4FastHTML components
-from shad4fast import ShadHead, Button, Input, Textarea, Alert
+from shad4fast import ShadHead, Button, Input, Textarea, Alert, Switch, Accordion, AccordionItem, AccordionTrigger, AccordionContent
 
 # Import existing components
 from components.layout import create_main_layout
@@ -28,7 +29,7 @@ from components.metrics_page import create_metrics_page, create_metric_tabs
 from database import db
 from metric_service import MetricService
 from components.navbar import create_navbar, create_navbar_styles, create_navbar_script
-from components.ui import Card, CardContainer, FormField, Badge
+from components.ui import Card, CardContainer, FormField, Badge, CardSection, CardNested, MainContainer
 
 # Nova Prompt Optimizer SDK imports
 try:
@@ -97,34 +98,12 @@ app = FastHTML(
                     form.submit();
                 }
             }
-            
-            // Show success/error messages
-            function showMessage(message, type = 'success') {
-                const messageDiv = document.createElement('div');
-                messageDiv.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 12px 20px;
-                    border-radius: 6px;
-                    color: white;
-                    font-weight: 500;
-                    z-index: 1000;
-                    background: ${type === 'success' ? '#10b981' : '#ef4444'};
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                `;
-                messageDiv.textContent = message;
-                
-                document.body.appendChild(messageDiv);
-                
-                // Remove after 3 seconds
-                setTimeout(() => {
-                    messageDiv.remove();
-                }, 3000);
-            }
         """)
     ]
 )
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 # Root route - Dashboard
 @app.get("/")
@@ -141,83 +120,95 @@ async def index(request):
     # Enhanced dashboard with nested card structure
     return create_main_layout(
         "Dashboard",
-        Div(
-            Card(
-                header=H3("Overview"),
-                content=Div(
-                    Div(
-                        A(
-                            Div(
-                                H3(str(len(uploaded_datasets)), style="font-size: 2rem; margin: 0; color: #667eea;"),
-                                P("Datasets", style="margin: 0; color: #6b7280; font-weight: 500;"),
-                                style="text-align: center;"
-                            ),
-                            href="/datasets",
-                            style="text-decoration: none; display: block; padding: 1rem; border-radius: 0.5rem; transition: background-color 0.2s ease;",
-                            onmouseover="this.style.backgroundColor='#f8f9fa'",
-                            onmouseout="this.style.backgroundColor='transparent'"
-                        ),
-                        A(
-                            Div(
-                                H3(str(len(created_prompts)), style="font-size: 2rem; margin: 0; color: #667eea;"),
-                                P("Prompts", style="margin: 0; color: #6b7280; font-weight: 500;"),
-                                style="text-align: center;"
-                            ),
-                            href="/prompts",
-                            style="text-decoration: none; display: block; padding: 1rem; border-radius: 0.5rem; transition: background-color 0.2s ease;",
-                            onmouseover="this.style.backgroundColor='#f8f9fa'",
-                            onmouseout="this.style.backgroundColor='transparent'"
-                        ),
-                        A(
-                            Div(
-                                H3(str(len(optimization_runs)), style="font-size: 2rem; margin: 0; color: #667eea;"),
-                                P("Optimizations", style="margin: 0; color: #6b7280; font-weight: 500;"),
-                                style="text-align: center;"
-                            ),
-                            href="/optimization",
-                            style="text-decoration: none; display: block; padding: 1rem; border-radius: 0.5rem; transition: background-color 0.2s ease;",
-                            onmouseover="this.style.backgroundColor='#f8f9fa'",
-                            onmouseout="this.style.backgroundColor='transparent'"
-                        ),
-                        A(
-                            Div(
-                                H3(str(len(metrics)), style="font-size: 2rem; margin: 0; color: #667eea;"),
-                                P("Metrics", style="margin: 0; color: #6b7280; font-weight: 500;"),
-                                style="text-align: center;"
-                            ),
-                            href="/metrics",
-                            style="text-decoration: none; display: block; padding: 1rem; border-radius: 0.5rem; transition: background-color 0.2s ease;",
-                            onmouseover="this.style.backgroundColor='#f8f9fa'",
-                            onmouseout="this.style.backgroundColor='transparent'"
-                        ),
-                        style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;"
-                    )
-                ),
-                nested=True
+        MainContainer(
+            CardSection(
+                H2("System Overview", cls="text-2xl font-semibold"),
+                
+                # Stats nested cards
+                Div(
+                    CardNested(
+                        H3("Prompts", cls="text-lg font-medium"),
+                        Div(
+                            H3(str(len(created_prompts)), cls="text-3xl font-bold text-primary mb-2"),
+                            P("Active prompt templates", cls="text-sm text-muted-foreground"),
+                            A("Manage →", href="/prompts", cls="inline-flex items-center text-sm text-primary hover:underline mt-2")
+                        )
+                    ),
+                    
+                    CardNested(
+                        H3("Datasets", cls="text-lg font-medium"),
+                        Div(
+                            H3(str(len(uploaded_datasets)), cls="text-3xl font-bold text-primary mb-2"),
+                            P("Total uploaded datasets", cls="text-sm text-muted-foreground"),
+                            A("View All →", href="/datasets", cls="inline-flex items-center text-sm text-primary hover:underline mt-2")
+                        )
+                    ),
+                    
+                    CardNested(
+                        H3("Metrics", cls="text-lg font-medium"),
+                        Div(
+                            H3(str(len(metrics)), cls="text-3xl font-bold text-primary mb-2"),
+                            P("Available evaluation metrics", cls="text-sm text-muted-foreground"),
+                            A("Configure →", href="/metrics", cls="inline-flex items-center text-sm text-primary hover:underline mt-2")
+                        )
+                    ),
+                    
+                    CardNested(
+                        H3("Optimizations", cls="text-lg font-medium"),
+                        Div(
+                            H3(str(len(optimization_runs)), cls="text-3xl font-bold text-primary mb-2"),
+                            P("Completed optimizations", cls="text-sm text-muted-foreground"),
+                            A("View Results →", href="/results", cls="inline-flex items-center text-sm text-primary hover:underline mt-2")
+                        )
+                    ),
+                    cls="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                )
             ),
             
-            Card(
-                header=H3("Recent Activity"),
-                content=Div(
-                    P("Welcome to Nova Prompt Optimizer! Get started by exploring your data and creating optimized prompts.", 
-                      style="color: #6b7280; margin-bottom: 1rem;"),
-                    Div(
-                        A("View All Datasets", href="/datasets", 
-                          style="color: #667eea; text-decoration: none; margin-right: 1rem; font-weight: 500;"),
-                        A("Browse Prompts", href="/prompts", 
-                          style="color: #667eea; text-decoration: none; margin-right: 1rem; font-weight: 500;"),
-                        A("View Results", href="/results", 
-                          style="color: #667eea; text-decoration: none; font-weight: 500;")
-                    )
-                ),
-                nested=True
+            CardSection(
+                H2("Quick Actions", cls="text-2xl font-semibold"),
+                
+                Div(
+                    CardNested(
+                        H3("Start New Optimization", cls="text-lg font-medium"),
+                        Div(
+                            P("Create and optimize prompts with Nova AI", cls="text-sm text-muted-foreground mb-4"),
+                            Button("Start Optimization", 
+                                   hx_get="/optimization", 
+                                   hx_target="body", 
+                                   cls="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2")
+                        )
+                    ),
+                    
+                    CardNested(
+                        H3("Upload Dataset", cls="text-lg font-medium"),
+                        Div(
+                            P("Add new training data for optimization", cls="text-sm text-muted-foreground mb-4"),
+                            Button("Upload Data", 
+                                   hx_get="/datasets", 
+                                   hx_target="body",
+                                   variant="secondary",
+                                   cls="border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2")
+                        )
+                    ),
+                    
+                    CardNested(
+                        H3("View Metrics", cls="text-lg font-medium"),
+                        Div(
+                            P("Analyze optimization performance", cls="text-sm text-muted-foreground mb-4"),
+                            Button("View Metrics", 
+                                   hx_get="/metrics", 
+                                   hx_target="body",
+                                   variant="secondary",
+                                   cls="border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2")
+                        )
+                    ),
+                    cls="grid grid-cols-1 md:grid-cols-3 gap-4"
+                )
             )
-        ),
-        current_page="dashboard",
-        user=user.to_dict() if user else None
+        )
     )
 
-# Test route
 @app.get("/test")
 async def test_page(request):
     return H1("Test page works!")
@@ -295,11 +286,13 @@ async def metrics_page(request):
                     ),
                     Div(
                         Button("Edit", 
-                               onclick=f"window.location.href='/metrics/edit/{metric['id']}'",
-                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"),
+                               variant="secondary",
+                               size="sm",
+                               onclick=f"window.location.href='/metrics/edit/{metric['id']}'"),
                         Button("Delete", 
-                               onclick=f"confirmDelete('metric', '{metric['id']}', '{metric['name']}')",
-                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs")
+                               variant="destructive",
+                               size="sm",
+                               onclick=f"confirmDelete('metric', '{metric['id']}', '{metric['name']}')")
                     ),
                     style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; margin-bottom: 0.75rem;"
                 ) for metric in metrics] if metrics else [
@@ -364,8 +357,8 @@ def create_metric_card(metric):
                 style="flex: 1;"
             ),
             Div(
-                Button("Edit", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs"),
-                Button("Delete", cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs",
+                Button("Edit", variant="secondary", size="sm"),
+                Button("Delete", variant="destructive",
                        onclick=f"confirmDelete('metric', '{metric['id']}', '{metric['name']}')")
             ),
             style="display: flex; justify-content: space-between; align-items: flex-start;"
@@ -475,15 +468,17 @@ async def datasets_page(request):
                     ),
                     Div(
                         Button("View", 
-                               onclick=f"window.location.href='/datasets/view/{dataset['id']}'",
-                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"),
+                               variant="outline",
+                               size="sm",
+                               onclick=f"window.location.href='/datasets/view/{dataset['id']}'"),
                         Button("Edit", 
-                               variant="ghost", 
-                               style="margin-right: 0.5rem; font-size: 0.875rem;",
+                               variant="secondary",
+                               size="sm",
                                onclick=f"window.location.href='/datasets/edit/{dataset['id']}'"),
                         Button("Delete", 
+                               variant="destructive",
+                               size="sm",
                                onclick=f"confirmDelete('dataset', '{dataset['id']}', '{dataset['name']}')",
-                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs",
                                **{"data-dataset-id": dataset["id"]}),
                         style="display: flex; gap: 0.25rem;"
                     ),
@@ -858,18 +853,21 @@ def metric_selection_page(request):
                 content=Div(
                     *[Div(
                         Div(
-                            Input(type="checkbox", name="selected_metrics", value=str(i), id=f"metric-{i}", checked=True, cls="h-4 w-4 rounded border-gray-300 text-black focus:ring-black focus:ring-2 mr-3"),
-                            Label(f"{metric.get('name', f'Metric {i+1}')}", **{"for": f"metric-{i}"}, cls="font-medium text-sm"),
-                            cls="flex items-center mb-2"
+                            Div(
+                                Label(f"{metric.get('name', f'Metric {i+1}')}", **{"for": f"metric-{i}"}, cls="font-semibold text-base"),
+                                cls="flex-1"
+                            ),
+                            Switch(name="selected_metrics", value=str(i), id=f"metric-{i}", checked=True),
+                            cls="flex items-center justify-between mb-3"
                         ),
                         Div(
-                            P(f"Intent Understanding: {metric.get('intent_understanding', 'No description')}", cls="mb-1 text-sm text-gray-600"),
-                            P(f"Data Fields: {', '.join(metric.get('data_fields', []))}", cls="mb-1 text-sm text-gray-600"),
-                            P(f"Logic: {metric.get('evaluation_logic', 'No logic')}", cls="mb-1 text-sm text-gray-600"),
+                            P(f"Intent: {metric.get('intent_understanding', 'No description')}", cls="mb-2 text-sm text-gray-600"),
+                            P(f"Fields: {', '.join(metric.get('data_fields', []))}", cls="mb-2 text-sm text-gray-600"),
+                            P(f"Logic: {metric.get('evaluation_logic', 'No logic')}", cls="mb-2 text-sm text-gray-600"),
                             P(f"Example: {metric.get('example', 'No example')}", cls="text-xs text-gray-500"),
-                            cls="ml-6 p-2 bg-gray-50 rounded"
+                            cls="ml-6 p-3 bg-gray-50 rounded-md border"
                         ),
-                        cls="mb-4 p-3 border border-gray-200 rounded-md"
+                        cls="mb-4 p-4 border border-gray-200 rounded-lg"
                     ) for i, metric in enumerate(metrics)] if metrics else [
                         P("No metrics were suggested by the AI", cls="text-red-500 text-center py-8")
                     ]
@@ -884,7 +882,6 @@ def metric_selection_page(request):
                     Button("Generate Selected Metrics", 
                            type="submit", 
                            id="generate-btn",
-                           onclick="showGeneratingState()",
                            cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 flex-1 mr-2"),
                     Button("Cancel", 
                            type="button", 
@@ -908,13 +905,14 @@ def metric_selection_page(request):
         Script(f"""
             const selectionData = {json.dumps(selection_data)};
             
-            function showGeneratingState() {{
+            // Show loading state on form submit
+            document.querySelector('form[action="/metrics/generate-selected"]').addEventListener('submit', function() {{
                 const button = document.getElementById('generate-btn');
                 button.disabled = true;
                 button.textContent = 'Generating Metrics...';
                 button.style.cursor = 'wait';
                 document.body.style.cursor = 'wait';
-            }}
+            }});
             
             function regenerateWithIntent() {{
                 const newIntent = document.getElementById('intent_field').value;
@@ -1466,11 +1464,13 @@ async def prompts_page(request):
                     ),
                     Div(
                         Button("Edit", 
-                               onclick=f"window.location.href='/prompts/edit/{prompt['id']}'",
-                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"),
+                               variant="secondary",
+                               size="sm",
+                               onclick=f"window.location.href='/prompts/edit/{prompt['id']}'"),
                         Button("Delete", 
+                               variant="destructive",
+                               size="sm",
                                onclick=f"confirmDelete('prompt', '{prompt['id']}', '{prompt['name']}')",
-                               cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs",
                                **{"data-prompt-id": prompt["id"]}),
                         style="display: flex; gap: 0.25rem;"
                     ),
@@ -1758,15 +1758,18 @@ async def optimization_page(request):
                                    cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"
                                    ) if opt["status"] == "Failed" else None,
                             Button("View Results", 
+                                   variant="outline",
+                                   size="sm",
                                    onclick=f"window.location.href='/optimization/results/{opt['id']}'",
-                                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"
-                                   ) if opt.get("status") in ["Completed", "Failed", "Complete", "completed", "complete"] else Button("Monitor Progress", 
+                                   ) if opt.get("status") in ["Completed", "Failed", "Complete", "completed", "complete"] or opt.get("status") == 100 else Button("Monitor Progress", 
+                                   variant="default",
+                                   size="sm",
                                    onclick=f"window.location.href='/optimization/monitor/{opt['id']}'",
-                                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 py-1 text-xs mr-2"
                                    ),
                             Button("Stop" if opt["status"] in ["Starting", "Running"] else "Delete", 
+                                   variant="destructive",
+                                   size="sm",
                                    onclick=f"confirmDelete('optimization', '{opt['id']}', '{opt['name']}')",
-                                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3 py-1 text-xs",
                                    **{"data-optimization-id": opt["id"]}),
                             style="display: flex; gap: 0.25rem;"
                         ),
@@ -2376,15 +2379,6 @@ def optimization_results_page(request):
                                     ),
                                 ),
                                 
-                                # LLM Response (what was evaluated)
-                                Div(
-                                    H5("LLM Response (Used for Scoring):", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
-                                    Div(
-                                        eval(data.split('|', 1)[1])['response'] if '|' in data and data.split('|', 1)[1] else "No response available",
-                                        style="background: #fef3c7; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border-left: 4px solid #f59e0b; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
-                                    ),
-                                ),
-                                
                                 style="background: #ffffff; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem;"
                             ) if '|' in data else 
                             # Fallback for non-structured data
@@ -2431,15 +2425,6 @@ def optimization_results_page(request):
                                     ),
                                 ),
                                 
-                                # LLM Response (what was evaluated)
-                                Div(
-                                    H5("LLM Response (Used for Scoring):", style="margin: 0.5rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;"),
-                                    Div(
-                                        eval(data.split('|', 1)[1])['response'] if '|' in data and data.split('|', 1)[1] else "No response available",
-                                        style="background: #fef3c7; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border-left: 4px solid #f59e0b; font-family: 'Monaco', 'Consolas', monospace; font-size: 0.875rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"
-                                    ),
-                                ),
-                                
                                 # Few-shot info for optimized
                                 (Div(
                                     P(f"Few-shot Examples: {eval(data.split('|', 1)[1])['few_shot_count']}", 
@@ -2468,8 +2453,32 @@ def optimization_results_page(request):
         
         # Few-shot Examples Card (separate display)
         Card(
-            header=H3("Few-shot Examples"),
+            header=Div(
+                H3("Few-shot Examples"),
+                Button("More Info", 
+                       variant="ghost", 
+                       size="sm",
+                       onclick="toggleInfo('few-shot-info')",
+                       style="margin-left: auto;"),
+                style="display: flex; justify-content: space-between; align-items: center;"
+            ),
             content=Div(
+                # Collapsible info section
+                Div(
+                    H4("Implementation:", style="font-weight: 600; margin-bottom: 0.5rem;"),
+                    Ul(
+                        Li("Few-shot examples are part of the Nova SDK's optimization workflow"),
+                        Li("They're generated automatically during the MIPROv2 + Nova Model Tips optimization process"),
+                        Li("The examples are designed to be task-specific and help improve the model's performance on the target dataset"),
+                        style="margin-bottom: 1rem; padding-left: 1rem;"
+                    ),
+                    P("The few-shot examples essentially act as \"training wheels\" that help the language model understand the specific patterns and requirements of your task without requiring actual fine-tuning.",
+                      style="font-style: italic; color: #6b7280;"),
+                    id="few-shot-info",
+                    style="display: none; padding: 1rem; background: #f9fafb; border-radius: 0.5rem; margin-bottom: 1rem;"
+                ),
+                
+                # Original few-shot examples content
                 *[
                     Div(
                         H4(f"Generated {eval(candidate.get('prompt_text', '').split('|', 1)[1])['count']} Few-shot Examples", 
@@ -2492,13 +2501,6 @@ def optimization_results_page(request):
                                                     style="background: #f0f9ff; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 0.5rem; border-left: 3px solid #3b82f6; font-size: 0.8rem; white-space: pre-wrap; word-wrap: break-word;"
                                                 )
                                             ),
-                                            Div(
-                                                H6("Output:", style="margin: 0.5rem 0 0.25rem 0; color: #4b5563; font-size: 0.8rem; font-weight: 600;"),
-                                                Div(
-                                                    content.split("'output': '")[1].split("'}")[0] if "'output': '" in content else "No output specified",
-                                                    style="background: #f0fdf4; padding: 0.75rem; border-radius: 0.25rem; border-left: 3px solid #10b981; font-size: 0.8rem; white-space: pre-wrap; word-wrap: break-word;"
-                                                )
-                                            )
                                         ] if "'input': '" in content else [
                                             # Fallback - just display the content cleanly
                                             Div(
@@ -2540,13 +2542,25 @@ def optimization_results_page(request):
         Div(
             Button("Delete Optimization", 
                    onclick=f"if(confirm('Are you sure you want to delete this optimization? This will remove all related files and cannot be undone.')) {{ fetch('/optimizations/delete/{optimization_id}', {{method: 'POST'}}).then(() => window.location.href='/optimization'); }}",
-                   variant="outline",
+                   variant="secondary",
                    style="background: #fee2e2; color: #dc2626; border-color: #fca5a5; margin-right: 1rem;"),
             Button("Back to Optimizations", 
                    onclick="window.location.href='/optimization'",
                    cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
             style="margin-top: 2rem;"
-        )
+        ),
+        
+        # JavaScript for toggle functionality
+        Script("""
+            function toggleInfo(elementId) {
+                const element = document.getElementById(elementId);
+                if (element.style.display === 'none') {
+                    element.style.display = 'block';
+                } else {
+                    element.style.display = 'none';
+                }
+            }
+        """)
     )
     
     return create_main_layout("Optimization Results", page_content, current_page="optimization")
@@ -3248,12 +3262,10 @@ if __name__ == "__main__":
         datasets = db_test.get_datasets()
         
         if not metrics:
-            print("❌ No metrics found in database - optimization will fail")
-            print("💡 Run: python3 setup.py to fix this issue")
-            sys.exit(1)
+            print("⚠️ No metrics found in database - you can create them in the UI")
             
         if not datasets:
-            print("❌ No datasets found in database")
+            print("⚠️ No datasets found in database - you can create them in the UI")
             print("💡 Run: python3 setup.py to fix this issue")
             sys.exit(1)
             

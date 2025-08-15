@@ -218,6 +218,62 @@ Format your response as JSON:
         API Call: Bedrock Nova via MetricService.generate_metric_code()
         
         Input: Metric name, evaluation criteria (from dataset analysis or user input)
+        Output: Complete Python class inheriting from MetricAdapter with apply() method
+        
+        Flow: Metric criteria -> AI generates Python code -> Code saved to database -> 
+              Used by sdk_worker.py during optimization to score prompt candidates
+        """
+        return f"""Generate a Python MetricAdapter subclass for evaluating AI outputs with GRANULAR SCORING.
+
+Requirements:
+- Metric Name: {name}
+- Evaluation Criteria: {criteria.get('natural_language', '')}
+- Dataset Format: {criteria.get('dataset_format', 'json')}
+
+Required imports:
+from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
+from typing import List, Any, Dict
+import json
+import re
+import math
+
+Generate a complete Python class that inherits from MetricAdapter:
+
+class GeneratedMetric(MetricAdapter):
+    def apply(self, y_pred: Any, y_true: Any):
+        # Handle both JSON and plain text inputs safely
+        try:
+            # Try to parse as JSON if it looks like JSON
+            if isinstance(y_pred, str) and y_pred.strip().startswith('{{'):
+                y_pred = json.loads(y_pred)
+            if isinstance(y_true, str) and y_true.strip().startswith('{{'):
+                y_true = json.loads(y_true)
+        except:
+            pass
+        
+        # Your evaluation logic here - return precise decimal score between 0.0 and 1.0
+        score = 0.0
+        # Add your granular scoring logic here
+        
+        return round(score, 3)
+
+    def batch_apply(self, y_preds: List[Any], y_trues: List[Any]):
+        scores = [self.apply(pred, true) for pred, true in zip(y_preds, y_trues)]
+        return sum(scores) / len(scores) if scores else 0.0
+
+Return only the Python class code, no explanations or markdown formatting."""
+        """
+        METRIC CODE GENERATION PROMPT
+        
+        Purpose: Converts metric descriptions/criteria into executable Python MetricAdapter classes
+        Used in: Multiple places where metrics need executable code
+        Called by: 
+          - metric_service.py -> generate_metric_code() (for inferred metrics)
+          - Natural language metric creation
+          - Manual metric code generation
+        API Call: Bedrock Nova via MetricService.generate_metric_code()
+        
+        Input: Metric name, evaluation criteria (from dataset analysis or user input)
         Output: Complete Python class inheriting from MetricAdapter with evaluate_single() method
         
         Flow: Metric criteria -> AI generates Python code -> Code saved to database -> 
@@ -236,17 +292,17 @@ Available imports (ONLY use these - no other imports allowed):
 - import math
 - from typing import Any, List, Dict
 
-Generate a complete Python class that inherits from MetricAdapter:
+Generate a complete Python class that inherits from MetricAdapter (DO NOT define MetricAdapter):
 
 class GeneratedMetric(MetricAdapter):
-    def apply(self, y_pred, y_true):
+    def evaluate_single(self, prediction, ground_truth=None, **kwargs):
         # Handle both JSON and plain text inputs safely
         try:
             # Try to parse as JSON if it looks like JSON
-            if isinstance(y_pred, str) and y_pred.strip().startswith('{{'):
-                y_pred = json.loads(y_pred)
-            if isinstance(y_true, str) and y_true.strip().startswith('{{'):
-                y_true = json.loads(y_true)
+            if isinstance(prediction, str) and prediction.strip().startswith('{{'):
+                prediction = json.loads(prediction)
+            if isinstance(ground_truth, str) and ground_truth.strip().startswith('{{'):
+                ground_truth = json.loads(ground_truth)
         except:
             # If JSON parsing fails, use as plain text
             pass
@@ -272,18 +328,29 @@ class GeneratedMetric(MetricAdapter):
         # IMPORTANT: Always return precise decimal score between 0.0 and 1.0
         return round(score, 3)  # Round to 3 decimal places for precision
 
+    def batch_evaluate(self, predictions, ground_truths=None, **kwargs):
+        if ground_truths is None:
+            ground_truths = [None] * len(predictions)
+        scores = [self.evaluate_single(pred, gt, **kwargs) for pred, gt in zip(predictions, ground_truths)]
+        return scores
+
+    def apply(self, y_pred, y_true):
+        # Legacy method - delegate to evaluate_single
+        return self.evaluate_single(y_pred, y_true)
+
     def batch_apply(self, y_preds, y_trues):
-        scores = [self.apply(pred, true) for pred, true in zip(y_preds, y_trues)]
-        return sum(scores) / len(scores) if scores else 0.0
+        # Legacy method - delegate to batch_evaluate
+        return self.batch_evaluate(y_preds, y_trues)
 
 Requirements:
 1. Must inherit from MetricAdapter
-2. Must implement both apply() and batch_apply() methods
-3. Handle both JSON and plain text inputs safely
-4. Use ONLY these imports: json, re, math, typing
-5. Return precise decimal scores between 0-1 (avoid 0, 0.5, 1 only)
-6. Use granular scoring with at least 10+ possible score values
-7. Consider partial credit and multiple quality dimensions
+2. Must implement evaluate_single(prediction, ground_truth=None, **kwargs) method
+3. Must implement batch_evaluate(predictions, ground_truths=None, **kwargs) method
+4. Handle both JSON and plain text inputs safely
+5. Use ONLY these imports: json, re, math, typing
+6. Return precise decimal scores between 0-1 (avoid 0, 0.5, 1 only)
+7. Use granular scoring with at least 10+ possible score values
+8. Consider partial credit and multiple quality dimensions
 
 Return only the Python class code, no explanations or markdown formatting."""
 

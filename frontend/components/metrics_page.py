@@ -5,142 +5,12 @@ Metrics page component for Nova Prompt Optimizer
 from fasthtml.common import *
 from components.ui import *
 
-def create_metrics_styles():
-    """Create CSS styles for metrics page"""
-    return Style("""
-        .metrics-page {
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .metric-card {
-            transition: all 0.2s ease;
-        }
-        
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .tab-trigger {
-            padding: 0.75rem 1.5rem;
-            border-bottom: 2px solid transparent;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-weight: 500;
-            color: #64748b;
-            transition: all 0.2s ease;
-        }
-        
-        .tab-trigger.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-        
-        .tab-trigger:hover {
-            color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
-        }
-        
-        .tab-panel {
-            display: none;
-        }
-        
-        .tab-panel.active {
-            display: block;
-        }
-            display: block;
-        }
-        
-        .example-prompt {
-            padding: 0.5rem 1rem;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .example-prompt:hover {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            transition: border-color 0.2s ease;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .button-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .button-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        
-        .button-secondary {
-            background: transparent;
-            color: #667eea;
-            border: 1px solid #667eea;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .button-secondary:hover {
-            background: #667eea;
-            color: white;
-        }
-        
-        @media (max-width: 768px) {
-            .metrics-page {
-                padding: 1rem;
-            }
-            
-            .flex {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    """)
-
 def create_metrics_page(metrics, datasets=None):
     """Create the metrics management page"""
     if datasets is None:
         datasets = []
     
     return Div(
-        # Add styles
-        create_metrics_styles(),
-        
         # Header section
         create_metrics_header(),
         
@@ -527,27 +397,17 @@ def create_metric_tabs(datasets=None):
     if datasets is None:
         datasets = []
     
-    # Add CSS for full width card content
-    style_tag = Style("""
-        .card-content {
-            width: 100% !important;
-            max-width: none !important;
-        }
-    """)
-    
     return Div(
-        style_tag,
         # Tab triggers
         Div(
             A("Natural Language", 
               cls="nav-tab-trigger active",
               **{"data-tab": "natural-language", "role": "tab", "aria-selected": "true"}),
-            Div(cls="border-l border-gray-300 h-6"),  # Separator
             A("Infer from Assets",
               cls="nav-tab-trigger",
               **{"data-tab": "infer-assets", "role": "tab", "aria-selected": "false"}),
-            cls="flex items-center gap-4 border-b mb-6",
-            style="display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 1.5rem;"
+            cls="flex items-center border-b mb-6",
+            style="display: flex; align-items: center; border-bottom: 1px solid #e5e7eb; margin-bottom: 1.5rem;"
         ),
         
         # Tab contents

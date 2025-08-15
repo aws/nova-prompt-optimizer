@@ -4,7 +4,7 @@ Layout components for Nova Prompt Optimizer Frontend
 
 from typing import Optional, List, Dict, Any
 from fasthtml.common import *
-from shad4fast import ShadHead
+from shad4fast import ShadHead, Button, Card
 from .navbar import create_navbar, create_navbar_styles, create_navbar_tabs_script
 from .ui import create_ui_styles, CardContainer
 from config import get_settings
@@ -350,49 +350,189 @@ def create_main_layout(
 ) -> Html:
     """Create main page layout"""
     
-    # Build head section
+    # Build head section with official Shad4FastHTML
     head_content = [
         Title(f"{title} - {settings.APP_NAME}"),
-        Meta(charset="utf-8"),
-        Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
+        ShadHead(tw_cdn=True, theme_handle=True),
+        
+        # Global theme toggle function (available on all pages)
+        Script("""
+            function toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                
+                const toggleButton = document.getElementById('theme-toggle');
+                if (toggleButton) {
+                    toggleButton.title = newTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+                }
+                
+                console.log('Theme switched to:', newTheme);
+                window.location.reload();
+            }
+        """),
         
         # Favicon (data URL to avoid 404)
         Link(rel="icon", type="image/png", href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="),
-        Meta(name="description", content="Nova Prompt Optimizer - Advanced AI Prompt Engineering Platform"),
         
-        # CSS - Shad4FastHTML setup
-        Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"),
+        # Essential layout styles that work with Shad4FastHTML
         Style("""
-            :root {
-                --background: 0 0% 100%;
-                --foreground: 222.2 84% 4.9%;
-                --primary: 222.2 47.4% 11.2%;
-                --primary-foreground: 210 40% 98%;
-                --secondary: 210 40% 96%;
-                --secondary-foreground: 222.2 84% 4.9%;
-                --muted: 210 40% 96%;
-                --muted-foreground: 215.4 16.3% 46.9%;
-                --accent: 210 40% 96%;
-                --accent-foreground: 222.2 84% 4.9%;
-                --destructive: 0 84.2% 60.2%;
-                --destructive-foreground: 210 40% 98%;
-                --border: 214.3 31.8% 91.4%;
-                --input: 214.3 31.8% 91.4%;
-                --ring: 222.2 84% 4.9%;
+            /* Global Layout */
+            .main-container {
+                max-width: 95%;
+                margin: 0 auto;
+                padding: 1rem;
             }
-            .bg-primary { background-color: hsl(var(--primary)); }
-            .text-primary-foreground { color: hsl(var(--primary-foreground)); }
-            .hover\\:bg-primary\\/90:hover { background-color: hsl(var(--primary) / 0.9); }
-            .bg-secondary { background-color: hsl(var(--secondary)); }
-            .text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
-            .bg-destructive { background-color: hsl(var(--destructive)); }
-            .text-destructive-foreground { color: hsl(var(--destructive-foreground)); }
-            .border-input { border-color: hsl(var(--input)); }
-            .bg-background { background-color: hsl(var(--background)); }
-            .hover\\:bg-accent:hover { background-color: hsl(var(--accent)); }
-            .hover\\:text-accent-foreground:hover { color: hsl(var(--accent-foreground)); }
+            
+            /* Card System using Shad4FastHTML variables */
+            .card-section {
+                background: hsl(var(--background));
+                border: 1px solid hsl(var(--border));
+                border-radius: 8px;
+                margin-bottom: 1.5rem;
+                overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            
+            .card-header {
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid hsl(var(--border));
+                background: hsl(var(--muted) / 0.3);
+                font-weight: 600;
+            }
+            
+            .card-content {
+                padding: 1.5rem;
+            }
+            
+            .card-nested {
+                background: hsl(var(--muted) / 0.1);
+                border: 1px solid hsl(var(--border));
+                border-radius: 6px;
+                margin-bottom: 1rem;
+            }
+            
+            .card-nested .card-header {
+                padding: 0.75rem 1rem;
+                background: hsl(var(--muted) / 0.2);
+            }
+            
+            .card-nested .card-content {
+                padding: 1rem;
+            }
+            
+            /* Navbar styling */
+            .main-navbar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 1rem 2rem;
+                background: hsl(var(--background));
+                border-bottom: 1px solid hsl(var(--border));
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            
+            /* Navbar brand */
+            .nav-brand {
+                display: flex;
+                align-items: center;
+                min-width: 200px;
+                flex: 0 0 auto;
+            }
+            
+            .nav-brand .brand-link {
+                color: hsl(var(--foreground));
+                text-decoration: none;
+                font-weight: 700;
+                font-size: 1.25rem;
+            }
+            
+            /* Navbar tabs container */
+            .nav-tabs-container {
+                flex: 1;
+                display: flex;
+                justify-content: center;
+                max-width: 1200px;
+                margin: 0 2rem;
+            }
+            
+            .nav-tab-list {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 2rem;
+                width: 100%;
+                max-width: 800px;
+                background: transparent;
+                padding: 0;
+                border: none;
+            }
+            
+            /* Tab triggers with separators */
+            .nav-tab-trigger {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 12px 24px;
+                color: hsl(var(--muted-foreground));
+                text-decoration: none;
+                font-weight: 500;
+                border-radius: 6px;
+                transition: all 0.2s ease;
+                position: relative;
+            }
+            
+            .nav-tab-trigger:hover {
+                background: hsl(var(--accent));
+                color: hsl(var(--accent-foreground));
+            }
+            
+            .nav-tab-trigger.active {
+                background: hsl(var(--primary));
+                color: hsl(var(--primary-foreground));
+            }
+            
+            /* Tab separators - centered between items */
+            .nav-tab-trigger:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                right: -1rem;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 1px;
+                height: 20px;
+                background: hsl(var(--border));
+            }
+            
+            /* User section */
+            .user-summary {
+                padding: 8px 16px;
+                color: hsl(var(--foreground));
+                cursor: pointer;
+                border-radius: 4px;
+                border: 1px solid hsl(var(--border));
+                background: hsl(var(--background));
+                font-weight: 500;
+                font-size: 0.875rem;
+                transition: all 0.2s ease;
+            }
+            
+            .user-summary:hover {
+                background: hsl(var(--accent));
+                color: hsl(var(--accent-foreground));
+            }
+            
+            /* Override CSS variables after ShadHead() */
+            :root {
+                --destructive: 0 84.2% 60.2% !important;
+                --destructive-foreground: 210 40% 98% !important;
+            }
         """),
-        ShadHead(),  # Shad4FastHTML components and scripts
         
         # Navbar styles
         create_navbar_styles(),
@@ -408,6 +548,34 @@ def create_main_layout(
         # TODO: Add back when static files are created
         # Script(src="/static/js/utils.js"),
         # Script(src="/static/js/collaboration.js"),
+        
+        # Global JavaScript functions
+        Script("""
+            // Show success/error messages
+            function showMessage(message, type = 'success') {
+                const messageDiv = document.createElement('div');
+                messageDiv.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    color: white;
+                    font-weight: 500;
+                    z-index: 1000;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    background: ${type === 'success' ? '#10b981' : '#ef4444'};
+                `;
+                messageDiv.textContent = message;
+                document.body.appendChild(messageDiv);
+                
+                setTimeout(() => {
+                    messageDiv.style.opacity = '0';
+                    messageDiv.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => messageDiv.remove(), 300);
+                }, 3000);
+            }
+        """),
         
         # HTMX
         Script(src="https://unpkg.com/htmx.org@1.9.10"),

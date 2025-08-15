@@ -720,7 +720,7 @@ def run_optimization_worker(optimization_id: str):
         db.add_optimization_log(optimization_id, "info", "📊 Starting evaluation...")
         
         # Update progress
-        db.update_optimization_status(optimization_id, "Running", 80, "Evaluating results...")
+        db.update_optimization_status(optimization_id, "Running", 80)
         
         # Import batched evaluator
         # 8. Baseline evaluation using SDK Evaluator (matches notebook pattern)

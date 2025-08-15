@@ -1,16 +1,6 @@
-# Nova Prompt Optimizer - Frontend Installation Guide
+# Nova Prompt Optimizer - Frontend
 
 A modern web interface for the Nova Prompt Optimizer SDK, built with FastHTML and SQLite for simplicity and performance.
-
-## **Table of Contents**
-- [Quick Start](#-quick-start)
-- [Prerequisites](#-prerequisites)
-- [Installation Methods](#-installation-methods)
-- [Configuration](#-configuration)
-- [Running the Application](#-running-the-application)
-- [Verification](#-verification)
-- [Troubleshooting](#-troubleshooting)
-- [Development Setup](#-development-setup)
 
 ## **Quick Start**
 
@@ -39,7 +29,7 @@ python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies and setup
-pip install python-fasthtml starlette python-multipart boto3 nova-prompt-optimizer
+pip install -r requirements.txt
 python3 setup.py
 
 # Validate installation
@@ -61,18 +51,17 @@ open http://localhost:8000
 - **1GB+ disk space** (for dependencies and data)
 
 ### **Operating System Support**
--**macOS** (10.14+)
--**Linux** (Ubuntu 18.04+, CentOS 7+)
--**Windows** (10+, WSL recommended)
+- **macOS** (10.14+)
+- **Linux** (Ubuntu 18.04+, CentOS 7+)
+- **Windows** (10+, WSL recommended)
 
 ### **Browser Support**
--**Chrome** (90+)
--**Firefox** (88+)
--**Safari** (14+)
--**Edge** (90+)
+- **Chrome** (90+)
+- **Firefox** (88+)
+- **Safari** (14+)
+- **Edge** (90+)
 
-
-## ⚙**Configuration**
+## **Configuration**
 
 ### **Default Configuration**
 The application works out-of-the-box with these defaults:
@@ -112,7 +101,7 @@ To use real Nova models:
 4. Click **"Request access"**
 5. Wait for approval (usually instant)
 
-## 🏃 **Running the Application**
+## **Running the Application**
 
 ### **Standard Run**
 ```bash
@@ -123,9 +112,9 @@ source .venv/bin/activate
 python3 app.py
 
 # Expected output:
-#Nova Prompt Optimizer SDK loaded successfully
-#Database initialized: nova_optimizer.db
-#Initial sample data inserted
+# ✅ Nova Prompt Optimizer SDK loaded successfully
+# ✅ Database initialized: nova_optimizer.db
+# ✅ Initial sample data inserted
 # INFO: Started server process
 # INFO: Uvicorn running on http://127.0.0.1:8000
 ```
@@ -153,62 +142,68 @@ pip install gunicorn
 gunicorn app:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
-## **Verification**
+## **Features**
 
-### **Step 1: Check Application Status**
-```bash
-# Test if app is running
-curl -s -o /dev/null -w "%{http_code}" http://localhost:8000
-# Expected: 200
+### **Core Features**
+- **Dataset Management**: Upload and manage CSV datasets
+- **Prompt Creation**: Create and edit system/user prompts
+- **Metric Generation**: AI-powered metric creation and selection
+- **Optimization**: Real-time prompt optimization using Nova SDK
+- **Results Analysis**: Detailed comparison of baseline vs optimized prompts
+- **Few-shot Examples**: Automatic generation and display of training examples
+
+### **User Interface**
+- **Modern Design**: Clean, responsive interface using Shad4FastHTML
+- **Dark/Light Mode**: Toggle between themes with persistent preference
+- **Real-time Updates**: Live progress monitoring during optimizations
+- **Interactive Components**: Switches, accordions, and collapsible sections
+- **Mobile Friendly**: Responsive design works on all devices
+
+### **Technical Features**
+- **Rate Limiting**: Intelligent rate limiting for AWS Bedrock API calls
+- **Error Handling**: Comprehensive error handling and user feedback
+- **Database**: SQLite for simplicity and portability
+- **Logging**: Detailed optimization logs and progress tracking
+- **File Management**: Automatic cleanup and organization
+
+## **Project Structure**
+
 ```
-
-### **Step 2: Verify Database**
-```bash
-# Check if database was created
-ls -la nova_optimizer.db
-# Expected: Database file exists
-
-# Check database contents
-python3 -c "
-from database import db
-print(f'Datasets: {len(db.get_datasets())}')
-print(f'Prompts: {len(db.get_prompts())}')  
-print(f'Optimizations: {len(db.get_optimizations())}')
-"
-# Expected: 2 datasets, 2 prompts, 2 optimizations
-```
-
-### **Step 3: Test Core Features**
-```bash
-# Test dashboard
-curl -s http://localhost:8000/ | grep -c "Dashboard"
-# Expected: 1 or more
-
-# Test optimization page
-curl -s http://localhost:8000/optimization | grep -c "Start Optimization"
-# Expected: 1
-```
-
-### **Step 4: Verify SDK Integration**
-```bash
-# Check SDK status in logs
-python3 -c "
-try:
-    from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
-    print('Real optimization mode enabled')
-except ImportError:
-    print('Demo mode - install nova-prompt-optimizer for real optimizations')
-"
+frontend/
+├── app.py                    # Main FastHTML application
+├── sdk_worker.py            # Nova SDK optimization worker
+├── database.py              # SQLite database layer
+├── config.py                # Configuration settings
+├── metric_service.py        # AI metric generation service
+├── prompt_templates.py      # AI prompt templates
+├── simple_rate_limiter.py   # Rate limiting utility
+├── requirements.txt         # Python dependencies
+├── setup.py                 # Database initialization
+├── health_check.py          # System health validation
+├── install.sh               # Automated installation script
+├── start.sh                 # Application startup script
+├── nova_optimizer.db        # SQLite database file
+├── components/              # UI components
+│   ├── layout.py           # Page layouts and styling
+│   ├── navbar.py           # Navigation bar
+│   ├── ui.py               # UI elements
+│   └── metrics_page.py     # Metrics interface
+├── uploads/                # User uploaded datasets
+├── optimized_prompts/      # Optimization results
+├── data/                   # Temporary optimization data
+├── .venv/                  # Virtual environment
+├── README.md               # This file
+└── FEATURES.md             # Feature documentation
 ```
 
 ## **Troubleshooting**
 
 ### **Common Issues**
 
-#### **Issue: "ModuleNotFoundError: No module named 'fasthtml'"**
+#### **Issue: "ModuleNotFoundError"**
 ```bash
-# Solution: Install FastHTML
-pip install fasthtml
+# Solution: Install dependencies
+pip install -r requirements.txt
 
 # Verify virtual environment is activated
 which python3  # Should show .venv path
@@ -227,11 +222,7 @@ uvicorn.run(app, host='127.0.0.1', port=8080)
 #### **Issue: Database errors**
 ```bash
 # Solution: Reset database
-python3 -c "
-from database import db
-db.reset_database()
-print('Database reset successfully')
-"
+python3 setup.py
 ```
 
 #### **Issue: AWS credentials not found**
@@ -241,15 +232,6 @@ aws configure
 # OR set environment variables
 export AWS_ACCESS_KEY_ID="your-key"
 export AWS_SECRET_ACCESS_KEY="your-secret"
-```
-
-#### **Issue: Nova SDK import errors**
-```bash
-# Solution: Install SDK
-pip install nova-prompt-optimizer
-
-# If still failing, check Python version
-python3 --version  # Should be 3.8+
 ```
 
 ### **Debug Mode**
@@ -267,46 +249,13 @@ uvicorn.run(app, host='127.0.0.1', port=8000, log_level='debug')
 ### **Clean Installation**
 ```bash
 # If all else fails, clean install
-rm -rf .venv nova_optimizer.db __pycache__
+rm -rf .venv nova_optimizer.db
 python3 -m venv .venv
 source .venv/bin/activate
-pip install fasthtml starlette python-multipart nova-prompt-optimizer
+pip install -r requirements.txt
+python3 setup.py
 python3 app.py
 ```
-
-
-
-## **Frontend Project Structure**
-
-```
-frontend/
-├── app.py                    # Main application
-├── sdk_worker.py            # Optimization worker process
-├── database.py              # SQLite database layer
-├── config.py                # Configuration settings
-├── metric_service.py        # Metric generation service
-├── prompt_templates.py      # AI prompt templates
-├── simple_rate_limiter.py   # Rate limiting utility
-├── requirements.txt         # Python dependencies
-├── nova_optimizer.db        # SQLite database file
-├── components/              # UI components
-│   ├── layout.py           # Page layouts
-│   ├── navbar.py           # Navigation bar
-│   ├── ui.py               # UI elements
-│   └── metrics_page.py     # Metrics interface
-├── data/                   # Temporary optimization data
-├── uploads/                # User uploaded datasets
-├── optimized_prompts/      # Optimization results
-├── .venv/                  # Virtual environment
-├── __pycache__/            # Python cache
-├── README.md               # This file
-└── FEATURES.md             # Feature documentation
-```
-
-## **Related Documentation**
-
-- **[Features](FEATURES.md)** - Feature documentation and roadmap
-- **[Nova SDK Documentation](https://github.com/aws-samples/nova-prompt-optimizer)** - Official SDK docs
 
 ## **Getting Help**
 
@@ -318,18 +267,12 @@ frontend/
 
 ### **Common Solutions**
 - **Restart the app**: `Ctrl+C` then `python3 app.py`
-- **Reset database**: Use admin reset route
+- **Reset database**: Run `python3 setup.py`
 - **Reinstall dependencies**: Delete `.venv` and reinstall
 - **Check AWS credentials**: Verify AWS configuration
 
-### **Still Need Help?**
-- Check the **[Troubleshooting](#-troubleshooting)** section above
-- Review error messages carefully
-- Ensure all prerequisites are met
-- Try the clean installation process
-
 ---
 
-**You're ready to start optimizing prompts with Nova!**
+**Ready to optimize prompts with Nova!**
 
 Open http://localhost:8000 in your browser and begin creating datasets, prompts, and running optimizations.

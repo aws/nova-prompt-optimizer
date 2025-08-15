@@ -404,3 +404,58 @@ def create_ui_styles():
         Empty style - Shad4FastHTML handles all styling
     """
     return Style("")
+
+def CardSection(header_content: Any, *content: Any, **kwargs) -> Any:
+    """
+    Main card section component for primary content areas
+    
+    Args:
+        header_content: Content for the card header
+        *content: Card body content
+        **kwargs: Additional HTML attributes
+    
+    Returns:
+        Card section element
+    """
+    return Div(
+        Div(header_content, cls="card-header"),
+        Div(*content, cls="card-content"),
+        cls=f"card-section {kwargs.get('cls', '')}".strip(),
+        **{k: v for k, v in kwargs.items() if k != 'cls'}
+    )
+
+def CardNested(header_content: Any, *content: Any, **kwargs) -> Any:
+    """
+    Nested card component for sub-sections within main cards
+    
+    Args:
+        header_content: Content for the nested card header
+        *content: Nested card body content
+        **kwargs: Additional HTML attributes
+    
+    Returns:
+        Nested card element
+    """
+    return Div(
+        Div(header_content, cls="card-header"),
+        Div(*content, cls="card-content"),
+        cls=f"card-nested {kwargs.get('cls', '')}".strip(),
+        **{k: v for k, v in kwargs.items() if k != 'cls'}
+    )
+
+def MainContainer(*content: Any, **kwargs) -> Any:
+    """
+    Main container for centered 95% width layout
+    
+    Args:
+        *content: Container content
+        **kwargs: Additional HTML attributes
+    
+    Returns:
+        Main container element
+    """
+    return Div(
+        *content,
+        cls=f"main-container {kwargs.get('cls', '')}".strip(),
+        **{k: v for k, v in kwargs.items() if k != 'cls'}
+    )
