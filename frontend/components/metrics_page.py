@@ -410,26 +410,7 @@ def create_metric_tabs(datasets=None):
         Div(
             create_infer_dataset_tab(datasets),
             cls="tab-content"
-        )
-    )
-                        });
-                        
-                        // Add active class to clicked trigger
-                        this.classList.add('active');
-                        this.setAttribute('aria-selected', 'true');
-                        
-                        // Show corresponding panel
-                        const targetPanel = document.getElementById(targetTab);
-                        console.log('Target panel:', targetPanel);
-                        if (targetPanel) {
-                            targetPanel.classList.add('active');
-                            targetPanel.style.display = 'block';
-                            console.log('Showed panel:', targetTab);
-                        }
-                    });
-                });
-            });
-        """),
+        ),
         
         cls="metric-tabs"
     )
