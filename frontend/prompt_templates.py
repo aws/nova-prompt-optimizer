@@ -240,6 +240,9 @@ IMPORTANT DATA STRUCTURE NOTES:
 2. Handle nested dictionaries with boolean values correctly
 3. Use the exact field names from the actual data samples
 4. The 'answer' field might be a JSON string that needs json.loads()
+5. CRITICAL: Categories can have MULTIPLE True values - handle multi-label classification correctly
+6. For categories, compare ALL boolean values, not just the first True one
+7. Use: correct_matches = sum(pred_cats.get(k, False) == true_cats.get(k, False) for k in true_cats.keys())
 
 Required imports:
 from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
