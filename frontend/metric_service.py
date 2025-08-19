@@ -59,16 +59,7 @@ class MetricService:
             print(f"❌ Error type: {type(e)}")
             raise Exception(f"Nova Premier API call failed: {str(e)}")
         
-        class_name = f"Generated{name.replace(' ', '')}Metric"
-        dataset_format = criteria.get('dataset_format', 'json')
-        scoring_fields = criteria.get('scoring_fields', [])
-        
-        if dataset_format == 'json':
-            return self._generate_json_metric(class_name, scoring_fields)
-        elif dataset_format == 'text':
-            return self._generate_text_metric(class_name, criteria)
-        else:
-            return self._generate_basic_metric(class_name)
+        # Removed fallback code - only use AI-generated metrics
     
     def _clean_generated_code(self, raw_code: str) -> str:
         """Clean generated code by removing markdown formatting"""
@@ -108,14 +99,20 @@ class MetricService:
             # {field_name} categories validation
             categories_true = y_true.get("{field_name}", {{}})
             categories_pred = y_pred.get("{field_name}", {{}})
+            print(f"🔍 CATEGORIES DEBUG - {field_name}:")
+            print(f"  categories_true: {{categories_true}} (type: {{type(categories_true)}})")
+            print(f"  categories_pred: {{categories_pred}} (type: {{type(categories_pred)}})")
             if isinstance(categories_true, dict) and isinstance(categories_pred, dict):
                 correct = sum(
                     categories_true.get(k, False) == categories_pred.get(k, False)
                     for k in categories_true
                 )
                 {field_name}_score = correct / len(categories_true) if categories_true else 0.0
+                print(f"  correct matches: {{correct}} / {{len(categories_true)}}")
+                print(f"  {field_name}_score: {{{field_name}_score}}")
             else:
                 {field_name}_score = 0.0
+                print(f"  ❌ Type mismatch or missing data - score: 0.0")
             result["{field_name}_score"] = {field_name}_score
             weighted_scores.append({field_name}_score * {weight})""")
         
@@ -135,22 +132,34 @@ class {class_name}(MetricAdapter):
         result = {{"is_valid_json": False}}
         weighted_scores = []
 
+        print(f"🔍 METRIC DEBUG - Raw inputs:")
+        print(f"  y_pred: {{y_pred}} (type: {{type(y_pred)}})")
+        print(f"  y_true: {{y_true}} (type: {{type(y_true)}})")
+
         try:
             y_true = y_true if isinstance(y_true, dict) else self.parse_json(y_true)
             y_pred = y_pred if isinstance(y_pred, dict) else self.parse_json(y_pred)
-        except json.JSONDecodeError:
+            print(f"🔍 METRIC DEBUG - After parsing:")
+            print(f"  y_pred: {{y_pred}}")
+            print(f"  y_true: {{y_true}}")
+        except json.JSONDecodeError as e:
+            print(f"❌ METRIC DEBUG - JSON parsing failed: {{e}}")
             result["total"] = 0.0
             return result
 
         if isinstance(y_pred, str):
+            print(f"❌ METRIC DEBUG - y_pred still string: {{y_pred}}")
             result["total"] = 0.0
             return result
 
         result["is_valid_json"] = True
         {field_validation}
         
+        print(f"🔍 METRIC DEBUG - weighted_scores: {{weighted_scores}}")
+        
         # Calculate total weighted score
         result["total"] = sum(weighted_scores) / len(weighted_scores) if weighted_scores else 0.0
+        print(f"🔍 METRIC DEBUG - final total: {{result['total']}}")
         return result
 
     def apply(self, y_pred: Any, y_true: Any):
@@ -301,15 +310,27 @@ class {class_name}(MetricAdapter):
             metric = metric_class()
             results = []
             
-            for sample in sample_data[:3]:  # Test first 3 samples
+            for i, sample in enumerate(sample_data[:3]):  # Test first 3 samples
                 try:
-                    score = metric.apply(sample.get('prediction', ''), sample.get('ground_truth', ''))
+                    pred = sample.get('prediction', '')
+                    truth = sample.get('ground_truth', '')
+                    
+                    print(f"🔍 SAMPLE {i+1} FULL DEBUG:")
+                    print(f"  prediction: {pred}")
+                    print(f"  ground_truth: {truth}")
+                    print(f"  pred type: {type(pred)}")
+                    print(f"  truth type: {type(truth)}")
+                    
+                    score = metric.apply(pred, truth)
+                    print(f"  final score: {score}")
+                    
                     results.append({
                         'input': sample,
                         'score': score,
                         'success': True
                     })
                 except Exception as e:
+                    print(f"❌ SAMPLE {i+1} ERROR: {str(e)}")
                     results.append({
                         'input': sample,
                         'error': str(e),

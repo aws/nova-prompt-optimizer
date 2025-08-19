@@ -398,12 +398,13 @@ def create_metric_tabs(datasets=None):
         datasets = []
     
     return Div(
-        # Single tab header
+        # Tab triggers - only one tab now
         Div(
-            H4("Infer Metrics from Assets", cls="text-lg font-medium text-gray-900 mb-4"),
-            P("Analyze your dataset and prompts to automatically generate appropriate evaluation metrics.", 
-              cls="text-sm text-gray-600 mb-6"),
-            cls="border-b pb-4 mb-6"
+            A("Infer from Assets",
+              cls="nav-tab-trigger active",
+              **{"data-tab": "infer-assets", "role": "tab", "aria-selected": "true"}),
+            cls="flex items-center border-b mb-6",
+            style="display: flex; align-items: center; border-bottom: 1px solid #e5e7eb; margin-bottom: 1.5rem;"
         ),
         
         # Tab content - only infer from dataset
@@ -548,9 +549,9 @@ def create_infer_dataset_tab(datasets=None):
             cls="space-y-4"
         ),
         
-        cls="tab-panel",
+        cls="tab-panel active",
         id="infer-assets",
-        style="display: none;"
+        style="display: block;"
     )
 
 # Natural language tab removed - focusing only on "Infer from Assets"
