@@ -128,27 +128,8 @@ from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import Metric
 
 class {class_name}(MetricAdapter):
     def parse_json(self, input_string: str):
-        """Parse JSON with fallback to code block extraction"""
-        try:
-            return json.loads(input_string)
-        except json.JSONDecodeError as err:
-            error = err
-
-        patterns = [
-            re.compile(r"```json\\s*(.*?)\\s*```", re.DOTALL | re.IGNORECASE),
-            re.compile(r"```(.*?)```", re.DOTALL)
-        ]
-
-        for pattern in patterns:
-            match = pattern.search(input_string)
-            if match:
-                json_candidate = match.group(1).strip()
-                try:
-                    return json.loads(json_candidate)
-                except json.JSONDecodeError:
-                    continue
-
-        raise error
+        """Parse JSON directly without fallback logic"""
+        return json.loads(input_string)
 
     def _calculate_metrics(self, y_pred: Any, y_true: Any) -> Dict:
         result = {{"is_valid_json": False}}
