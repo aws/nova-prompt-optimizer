@@ -252,38 +252,15 @@ class {class_name}(MetricAdapter):
 '''
     
     def parse_natural_language(self, description: str) -> Dict:
-        """Parse natural language description to scoring criteria"""
+        """Parse natural language description to scoring criteria - now fully dynamic"""
         
         criteria = {
-            'dataset_format': 'json',  # Default
+            'dataset_format': 'json',  # Default - will be determined dynamically
             'scoring_fields': []
         }
         
-        description_lower = description.lower()
-        
-        # Detect format
-        if 'json' in description_lower:
-            criteria['dataset_format'] = 'json'
-        elif 'text' in description_lower or 'classification' in description_lower:
-            criteria['dataset_format'] = 'text'
-        
-        # Extract field names and types
-        field_patterns = [
-            (r'sentiment.*?(?:accuracy|correct)', {'name': 'sentiment', 'type': 'exact_match', 'weight': 1.0}),
-            (r'urgency.*?(?:accuracy|correct)', {'name': 'urgency', 'type': 'exact_match', 'weight': 1.0}),
-            (r'categor(?:y|ies).*?(?:accuracy|correct)', {'name': 'categories', 'type': 'categories', 'weight': 1.0}),
-            (r'format.*?validation', {'name': 'format', 'type': 'json_validation', 'weight': 0.3}),
-        ]
-        
-        for pattern, field_config in field_patterns:
-            if re.search(pattern, description_lower):
-                criteria['scoring_fields'].append(field_config)
-        
-        # If no specific fields found, create a generic one
-        if not criteria['scoring_fields']:
-            criteria['scoring_fields'] = [
-                {'name': 'output', 'type': 'exact_match', 'weight': 1.0}
-            ]
+        # Remove hardcoded patterns - let AI determine everything dynamically
+        # The AI will analyze the description and determine appropriate format and fields
         
         return criteria
     

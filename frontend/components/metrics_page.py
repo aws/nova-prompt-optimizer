@@ -393,61 +393,25 @@ def create_metric_modal(datasets=None):
     )
 
 def create_metric_tabs(datasets=None):
-    """Create the two-tab interface for metric creation"""
+    """Create the single-tab interface for metric creation - Infer from Assets only"""
     if datasets is None:
         datasets = []
     
     return Div(
-        # Tab triggers
+        # Single tab header
         Div(
-            A("Natural Language", 
-              cls="nav-tab-trigger active",
-              **{"data-tab": "natural-language", "role": "tab", "aria-selected": "true"}),
-            A("Infer from Assets",
-              cls="nav-tab-trigger",
-              **{"data-tab": "infer-assets", "role": "tab", "aria-selected": "false"}),
-            cls="flex items-center border-b mb-6",
-            style="display: flex; align-items: center; border-bottom: 1px solid #e5e7eb; margin-bottom: 1.5rem;"
+            H4("Infer Metrics from Assets", cls="text-lg font-medium text-gray-900 mb-4"),
+            P("Analyze your dataset and prompts to automatically generate appropriate evaluation metrics.", 
+              cls="text-sm text-gray-600 mb-6"),
+            cls="border-b pb-4 mb-6"
         ),
         
-        # Tab contents
+        # Tab content - only infer from dataset
         Div(
-            # Natural Language tab
-            create_natural_language_tab(),
-            
-            # Infer from Dataset tab
             create_infer_dataset_tab(datasets),
-            
             cls="tab-content"
-        ),
-        
-        # Add JavaScript for tab functionality
-        Script("""
-            // Tab switching functionality for metrics tabs only
-            document.addEventListener('DOMContentLoaded', function() {
-                const metricTabTriggers = document.querySelectorAll('.nav-tab-trigger[data-tab]');
-                const tabPanels = document.querySelectorAll('.tab-panel');
-                
-                console.log('Found metric tab triggers:', metricTabTriggers.length);
-                console.log('Found tab panels:', tabPanels.length);
-                
-                metricTabTriggers.forEach(trigger => {
-                    trigger.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const targetTab = this.getAttribute('data-tab');
-                        
-                        if (!targetTab) return; // Skip if no data-tab attribute
-                        
-                        console.log('Switching to tab:', targetTab);
-                        
-                        // Remove active class from metric tab triggers only
-                        metricTabTriggers.forEach(t => {
-                            t.classList.remove('active');
-                            t.setAttribute('aria-selected', 'false');
-                        });
-                        tabPanels.forEach(p => {
-                            p.classList.remove('active');
-                            p.style.display = 'none';
+        )
+    )
                         });
                         
                         // Add active class to clicked trigger
@@ -608,86 +572,7 @@ def create_infer_dataset_tab(datasets=None):
         style="display: none;"
     )
 
-def create_natural_language_tab():
-    """Create the natural language input tab"""
-    
-    return Div(
-        Div(
-            Label("Metric Name", cls="block text-sm font-medium mb-2"),
-            Input(type="text", placeholder="e.g., Sentiment Analysis Metric",
-                  cls="form-input w-full", name="name", **{"data-field": "metric-name"}),
-            cls="mb-4"
-        ),
-        
-        Div(
-            Label("Description (Optional)", cls="block text-sm font-medium mb-2"),
-            Input(type="text", placeholder="Brief description of what this metric evaluates",
-                  cls="form-input w-full", name="description", **{"data-field": "metric-description"}),
-            cls="mb-4"
-        ),
-        
-        Div(
-            Label("Model Selection", cls="block text-sm font-medium mb-2"),
-            Select(
-                Option("Select a model...", value="", disabled=True, selected=True),
-                Option("Amazon Nova Premier", value="us.amazon.nova-premier-v1:0"),
-                Option("Amazon Nova Pro", value="us.amazon.nova-pro-v1:0"),
-                Option("Amazon Nova Lite", value="us.amazon.nova-lite-v1:0"),
-                name="model_id",
-                cls="form-input w-full",
-                **{"data-field": "model-selection"}
-            ),
-            cls="mb-4"
-        ),
-        
-        Div(
-            Label("Natural Language Description", cls="block text-sm font-medium mb-2"),
-            Textarea(
-                placeholder="Describe how you want to evaluate your outputs...\n\nExamples:\n• Score based on correct sentiment and urgency classification\n• Evaluate JSON output for category accuracy and completeness\n• Check if response contains required fields and proper format",
-                rows="8",
-                cls="form-input w-full",
-                name="natural_language",
-                **{"data-field": "natural-language-input"}
-            ),
-            cls="mb-4"
-        ),
-        
-        # Preview button
-        Div(
-            Button("Preview Generated Code", 
-                   type="button",
-                   onclick="previewMetricCode()",
-                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full"),
-            cls="mb-4"
-        ),
-        
-        # Code preview area (initially hidden)
-        Div(
-            Label("Generated Code Preview", cls="block text-sm font-medium mb-2"),
-            Pre(
-                Code("", id="code-preview", cls="language-python"),
-                cls="bg-gray-100 p-4 rounded border max-h-96 overflow-y-auto",
-                style="display: none;",
-                id="code-preview-container"
-            ),
-            Div(
-                Button("Accept & Create Metric", 
-                       type="button",
-                       onclick="createMetric()",
-                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mr-2"),
-                Button("Edit Description", 
-                       type="button",
-                       onclick="editDescription()",
-                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
-                style="display: none;",
-                id="code-actions"
-            ),
-            cls="mb-4"
-        ),
-        cls="natural-language-tab tab-panel active",
-        id="natural-language",
-        style="display: block;"
-    )
+# Natural language tab removed - focusing only on "Infer from Assets"
 
 def create_code_preview_section():
     """Create the code preview section"""
