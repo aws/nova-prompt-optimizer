@@ -223,31 +223,96 @@ Format your response as JSON:
         Flow: Metric criteria -> AI generates Python code -> Code saved to database -> 
               Used by sdk_worker.py during optimization to score prompt candidates
         """
-        return f"""Generate a Python MetricAdapter subclass for evaluating AI outputs with GRANULAR SCORING.
+        
+        # Include actual data samples if available
+        data_examples = ""
+        if 'metrics_description' in criteria:
+            data_examples = f"""
+
+CRITICAL: ANALYZE THE ACTUAL DATA STRUCTURE FROM THESE EXAMPLES:
+{criteria.get('metrics_description', '')}
+
+The above shows the EXACT data structure you must handle. Do NOT assume generic field names.
+Look at the actual field names and data types (dict, list, string, boolean, etc.).
+"""
+
+        return f"""Generate a Python MetricAdapter subclass for evaluating AI outputs.
 
 Requirements:
 - Metric Name: {name}
 - Evaluation Criteria: {criteria.get('natural_language', '')}
 - Dataset Format: {criteria.get('dataset_format', 'json')}
 
+{data_examples}
+
+CRITICAL INSTRUCTIONS:
+1. ANALYZE the actual data structure from the examples above
+2. Use the EXACT field names shown in the data
+3. Handle the EXACT data types (dict with boolean values, not lists)
+4. Do NOT use generic field names like 'category', 'sentiment' unless they exist in the data
+5. Handle nested dictionaries and boolean values correctly
+
 Required imports:
 from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
 from typing import List, Any, Dict
 import json
-import re
-import math
 
 Generate a complete Python class that inherits from MetricAdapter:
 
 class GeneratedMetric(MetricAdapter):
-    def apply(self, y_pred: Any, y_true: Any):
-        # Handle both JSON and plain text inputs safely
+    def _calculate_category_accuracy(self, pred_categories: dict, true_categories: dict) -> float:
+        # Handle the actual nested boolean dictionary structure
+        if not isinstance(pred_categories, dict) or not isinstance(true_categories, dict):
+            return 0.0
+        
+        correct_matches = sum(
+            pred_categories.get(key, False) == true_categories.get(key, False)
+            for key in true_categories.keys()
+        )
+        return correct_matches / len(true_categories) if true_categories else 0.0
+    
+    def _calculate_single_label_accuracy(self, pred_label: str, true_label: str) -> float:
+        return 1.0 if pred_label == true_label else 0.0
+    
+    def apply(self, y_pred: Any, y_true: Any) -> float:
         try:
-            # Try to parse as JSON if it looks like JSON
             if isinstance(y_pred, str) and y_pred.strip().startswith('{{'):
                 y_pred = json.loads(y_pred)
             if isinstance(y_true, str) and y_true.strip().startswith('{{'):
                 y_true = json.loads(y_true)
+        except:
+            pass
+
+        if not isinstance(y_pred, dict) or not isinstance(y_true, dict):
+            return 0.0
+
+        # Use ACTUAL field names from the data structure
+        category_accuracy = self._calculate_category_accuracy(
+            y_pred.get('categories', {{}}), 
+            y_true.get('categories', {{}})
+        )
+        sentiment_accuracy = self._calculate_single_label_accuracy(
+            y_pred.get('sentiment'), 
+            y_true.get('sentiment')
+        )
+        urgency_accuracy = self._calculate_single_label_accuracy(
+            y_pred.get('urgency'), 
+            y_true.get('urgency')
+        )
+
+        score = (category_accuracy + sentiment_accuracy + urgency_accuracy) / 3
+        return round(score, 3)
+
+    def batch_apply(self, y_preds: List[Any], y_trues: List[Any]) -> float:
+        scores = [self.apply(pred, true) for pred, true in zip(y_preds, y_trues)]
+        return sum(scores) / len(scores) if scores else 0.0
+
+IMPORTANT: 
+- Use the EXACT field names from the actual data
+- Handle nested dictionaries with boolean values correctly
+- Do NOT assume generic structures - analyze the provided examples
+- Helper methods should come BEFORE apply() and batch_apply()
+"""
         except:
             pass
         
