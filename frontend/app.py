@@ -806,7 +806,7 @@ def metric_selection_page(request):
         Card(
             header="Intent Analysis",
             content=Div(
-                P("Review and edit the AI's understanding of your prompt's intent:", 
+                P("Review and edit the AI's understanding of your dataset task:", 
                   cls="text-sm text-gray-600 mb-3"),
                 Form(
                     Textarea(

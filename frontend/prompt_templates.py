@@ -237,9 +237,9 @@ The above shows the EXACT data structure you must handle. Use the actual field n
 
 IMPORTANT DATA STRUCTURE NOTES:
 1. CRITICAL: Analyze the EXACT data structure from the examples
-2. Your data may have fields directly at root level: {"categories": {...}, "sentiment": "...", "urgency": "..."}
-3. OR nested under "answer": {"answer": {"categories": {...}, "sentiment": "...", "urgency": "..."}}
-4. OR "answer" as JSON string: {"answer": '{"categories": {...}, "sentiment": "...", "urgency": "...}'}
+2. Your data may have fields directly at root level: {{"categories": {{}}, "sentiment": "value", "urgency": "value"}}
+3. OR nested under "answer": {{"answer": {{"categories": {{}}, "sentiment": "value", "urgency": "value"}}}}
+4. OR "answer" as JSON string: {{"answer": '{{"categories": {{}}, "sentiment": "value", "urgency": "value"}}'}}
 5. Handle ALL possible structures with fallback logic:
    - Try direct access first: y_pred.get('categories', dict())
    - Then try nested: y_pred.get('answer', dict()).get('categories', dict())
