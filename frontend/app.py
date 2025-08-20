@@ -2647,7 +2647,7 @@ def optimization_results_page(request):
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            window.location.href = `/optimization/${data.new_optimization_id}/monitor`;
+                            window.location.href = `/optimization/monitor/${data.new_optimization_id}`;
                         } else {
                             alert('Error: ' + (data.error || 'Failed to start optimization'));
                         }
