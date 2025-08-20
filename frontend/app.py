@@ -546,7 +546,6 @@ async def infer_metrics_from_dataset(request):
     form_data = await request.form()
     metric_name = form_data.get("metric_name")
     dataset_id = form_data.get("dataset_id")
-    prompt_id = form_data.get("prompt_id")  # New: get selected prompt
     analysis_depth = form_data.get("analysis_depth", "standard")
     focus_areas = form_data.getlist("focus")
     
@@ -556,7 +555,7 @@ async def infer_metrics_from_dataset(request):
     
     model_id = form_data.get("model_id", "us.amazon.nova-premier-v1:0")
     
-    print(f"📋 Parameters: name={metric_name}, dataset={dataset_id}, prompt={prompt_id}, depth={analysis_depth}")
+    print(f"📋 Parameters: name={metric_name}, dataset={dataset_id}, depth={analysis_depth}")
     print(f"⚡ Rate limit: {rate_limit} RPM, Model: {model_id}")
     print(f"🎯 Focus areas: {focus_areas}")
     
@@ -577,18 +576,11 @@ async def infer_metrics_from_dataset(request):
         dataset_content = read_dataset_content(dataset_id, max_samples)
         print(f"✅ Dataset content loaded: {len(dataset_content)} characters")
         
-        # Get prompt content if selected
-        prompt_content = None
-        if prompt_id:
-            prompt_data = db.get_prompt(prompt_id)
-            if prompt_data:
-                prompt_content = f"System Prompt: {prompt_data.get('system_prompt', '')}\nUser Prompt: {prompt_data.get('user_prompt', '')}"
-                print(f"✅ Prompt content loaded: {len(prompt_content)} characters")
-        
+        # No prompt processing - analyze dataset only
         print("🤖 Creating AI prompt for metric inference...")
         # Create AI prompt for metric inference
         from prompt_templates import get_dataset_analysis_prompt
-        prompt = get_dataset_analysis_prompt(dataset_content, focus_areas, analysis_depth, prompt_content)
+        prompt = get_dataset_analysis_prompt(dataset_content, focus_areas, analysis_depth, prompt_content=None)
         print(f"✅ Prompt created: {len(prompt)} characters")
         
         print("🔄 Calling AI for metric inference...")

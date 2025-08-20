@@ -470,17 +470,6 @@ def create_infer_dataset_tab(datasets=None):
             ),
             
             Div(
-                Label("Select Prompt (Optional)", cls="block text-sm font-medium mb-2"),
-                P("Analyzing the original prompt helps understand the intended task and evaluation criteria.", cls="text-sm text-gray-600 mb-2"),
-                Select(
-                    *prompt_options,
-                    name="prompt_id",
-                    cls="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                ),
-                cls="mb-6"
-            ),
-            
-            Div(
                 Label("Analysis Depth", cls="block text-sm font-medium mb-2"),
                 Select(
                     Option("Quick Analysis (5 samples)", value="quick"),
