@@ -2680,6 +2680,7 @@ async def optimize_further(request):
         
         # Parse the optimized prompt data
         import json
+        import ast
         try:
             prompt_text = optimized_candidate['prompt_text']
             print(f"🔍 DEBUG - Raw prompt_text: {prompt_text[:200]}...")
@@ -2687,15 +2688,22 @@ async def optimize_further(request):
             if '|' in prompt_text:
                 data_part = prompt_text.split('|', 1)[1]
                 print(f"🔍 DEBUG - Data part: {data_part[:200]}...")
-                optimized_data = json.loads(data_part)
+                
+                # Try JSON first, then Python dict format
+                try:
+                    optimized_data = json.loads(data_part)
+                except json.JSONDecodeError:
+                    # It's a Python dict string, use ast.literal_eval
+                    optimized_data = ast.literal_eval(data_part)
+                    print("🔍 DEBUG - Used ast.literal_eval for Python dict format")
             else:
                 print("🔍 DEBUG - No | separator found in prompt_text")
                 return {"success": False, "error": "Invalid prompt data format"}
                 
-        except json.JSONDecodeError as e:
-            print(f"🔍 DEBUG - JSON decode error: {e}")
+        except (json.JSONDecodeError, ValueError, SyntaxError) as e:
+            print(f"🔍 DEBUG - Parse error: {e}")
             print(f"🔍 DEBUG - Problematic data: {data_part if 'data_part' in locals() else 'N/A'}")
-            return {"success": False, "error": f"Invalid JSON in optimized prompt: {str(e)}"}
+            return {"success": False, "error": f"Invalid data in optimized prompt: {str(e)}"}
         
         # Create new optimization with optimized prompt as baseline
         new_optimization_id = db.create_optimization(
