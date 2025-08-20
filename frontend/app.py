@@ -2460,8 +2460,14 @@ def optimization_results_page(request):
                 # 2. Optimized Prompt (last)
                 *[
                     Div(
-                        H4("Optimized Prompt", 
-                           style="margin-bottom: 1rem; color: #1f2937; font-size: 1.25rem;"),
+                        Div(
+                            H4("Optimized Prompt", 
+                               style="margin-bottom: 1rem; color: #1f2937; font-size: 1.25rem; flex: 1;"),
+                            Button("Optimize Further", 
+                                   onclick=f"optimizeFurther('{optimization_id}')",
+                                   cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1"),
+                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;"
+                        ),
                         
                         P(f"Score: {candidate.get('score', 'N/A')}", 
                           style="margin-bottom: 1rem; font-weight: 600; color: #059669;"),
@@ -2622,10 +2628,86 @@ def optimization_results_page(request):
                     element.style.display = 'none';
                 }
             }
+            
+            function optimizeFurther(optimizationId) {
+                if (confirm('Start a new optimization using this optimized prompt as the baseline?')) {
+                    fetch(`/optimization/${optimizationId}/optimize-further`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.href = `/optimization/${data.new_optimization_id}/monitor`;
+                        } else {
+                            alert('Error: ' + (data.error || 'Failed to start optimization'));
+                        }
+                    })
+                    .catch(error => {
+                        alert('Error: ' + error.message);
+                    });
+                }
+            }
         """)
     )
     
     return create_main_layout("Optimization Results", page_content, current_page="optimization")
+
+@app.post("/optimization/{optimization_id}/optimize-further")
+async def optimize_further(request):
+    """Start a new optimization using the optimized prompt as baseline"""
+    optimization_id = request.path_params["optimization_id"]
+    
+    try:
+        # Get the original optimization details
+        optimization = db.get_optimization(optimization_id)
+        if not optimization:
+            return {"success": False, "error": "Optimization not found"}
+        
+        # Get the optimized prompt from candidates
+        candidates = db.get_prompt_candidates(optimization_id)
+        optimized_candidate = None
+        
+        for candidate in candidates:
+            if candidate.get('prompt_text', '').startswith('OPTIMIZED|'):
+                optimized_candidate = candidate
+                break
+        
+        if not optimized_candidate:
+            return {"success": False, "error": "No optimized prompt found"}
+        
+        # Parse the optimized prompt data
+        import json
+        optimized_data = json.loads(optimized_candidate['prompt_text'].split('|', 1)[1])
+        
+        # Create new optimization with optimized prompt as baseline
+        new_optimization_id = db.create_optimization(
+            dataset_id=optimization['dataset_id'],
+            metric_id=optimization['metric_id'],
+            baseline_system_prompt=optimized_data.get('system', ''),
+            baseline_user_prompt=optimized_data.get('user', ''),
+            model_id=optimization['model_id'],
+            rate_limit=optimization.get('rate_limit', 60)
+        )
+        
+        # Start the optimization process
+        from sdk_worker import start_optimization_worker
+        import threading
+        
+        worker_thread = threading.Thread(
+            target=start_optimization_worker,
+            args=(new_optimization_id,),
+            daemon=True
+        )
+        worker_thread.start()
+        
+        return {"success": True, "new_optimization_id": new_optimization_id}
+        
+    except Exception as e:
+        print(f"Error in optimize_further: {e}")
+        return {"success": False, "error": str(e)}
 
 @app.post("/optimizations/delete/{optimization_id}")
 async def delete_optimization(request):
