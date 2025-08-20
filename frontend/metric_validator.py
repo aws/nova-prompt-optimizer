@@ -115,39 +115,91 @@ class MetricValidator:
             return f"""
 🔴 **Metric Validation Failed**
 
+**What happened:** The AI-generated metric code has technical issues that prevent it from working.
+
 **Error:** {validation_result.get('error_message', 'Unknown error')}
 
-**What this means:** The generated metric code has issues and won't work properly for optimization.
+**What this means:** 
+• The metric won't be able to score your prompts during optimization
+• This could be due to data structure mismatches or coding errors
+• The optimization process would fail or give incorrect results
 
-**Next steps:** Try creating the metric again or contact support.
+**Next steps:** 
+• Try creating the metric again - the AI might generate better code
+• Check if your dataset format matches what the AI expects
+• Contact support if the issue persists
+
+**Technical details (for developers):**
+{validation_result.get('technical_details', 'No additional details')}
 """
         
-        report = "🟢 **Metric Validation Passed**\n\n"
+        report = """🟢 **Metric Validation Passed**
+
+**What this means:** Your AI-generated metric code works correctly and is ready for optimization!
+
+**How validation works:**
+• We tested your metric with real samples from your dataset
+• The metric successfully processed the data and generated scores
+• We checked for common issues like data structure mismatches
+
+"""
         
-        # Score summary
+        # Score summary with explanation
         dist = validation_result["score_distribution"]
-        report += f"**Score Range:** {dist['min_score']:.3f} to {dist['max_score']:.3f}\n"
-        report += f"**Average Score:** {dist['avg_score']:.3f}\n"
-        report += f"**Score Variety:** {dist['unique_scores']} different scores\n\n"
+        report += f"""**Score Analysis:**
+• **Score Range:** {dist['min_score']:.3f} to {dist['max_score']:.3f}
+• **Average Score:** {dist['avg_score']:.3f}
+• **Score Variety:** {dist['unique_scores']} different scores across samples
+
+**Why this matters:**
+• Good metrics show varied scores (not all the same)
+• Scores between 0.0 and 1.0 indicate the metric is working
+• Variety means the metric can distinguish good vs bad outputs
+
+"""
         
-        # Sample results
+        # Sample results with explanation
         report += "**Sample Test Results:**\n"
+        report += "*We tested your metric with actual data from your dataset:*\n\n"
         for sample in validation_result["sample_scores"]:
             if isinstance(sample["score"], (int, float)):
-                report += f"• Sample {sample['sample_index']}: Score {sample['score']:.3f}\n"
+                report += f"• **Sample {sample['sample_index']}:** Score {sample['score']:.3f}\n"
+                report += f"  Input: {sample['input_preview']}\n\n"
             else:
-                report += f"• Sample {sample['sample_index']}: ❌ {sample.get('error', 'Failed')}\n"
+                report += f"• **Sample {sample['sample_index']}:** ❌ Failed - {sample.get('error', 'Unknown error')}\n"
+                report += f"  Input: {sample['input_preview']}\n\n"
         
-        # Warnings
+        # Warnings with detailed explanations
         if validation_result["warnings"]:
-            report += "\n**⚠️ Warnings:**\n"
+            report += "\n**⚠️ Potential Issues Found:**\n"
             for warning in validation_result["warnings"]:
                 report += f"• {warning}\n"
+                
+                if "same score" in warning:
+                    report += "  *This means your metric might not be able to distinguish between good and bad outputs during optimization.*\n\n"
+                elif "perfect score" in warning:
+                    report += "  *This suggests your test data might be too easy, or the metric isn't challenging enough.*\n\n"
+                elif "zero score" in warning:
+                    report += "  *This usually indicates a data structure mismatch - the metric is looking for fields that don't exist in your data.*\n\n"
         
-        # Recommendations
+        # Recommendations with explanations
         if validation_result["recommendations"]:
             report += "\n**💡 Recommendations:**\n"
             for rec in validation_result["recommendations"]:
                 report += f"• {rec}\n"
+                
+                if "challenging test data" in rec:
+                    report += "  *Try adding more diverse or difficult examples to your dataset.*\n\n"
+                elif "correct field names" in rec:
+                    report += "  *The metric might be looking for data fields with different names than what your dataset contains.*\n\n"
+                elif "varied scores" in rec:
+                    report += "  *This is good! Your metric can distinguish between different quality levels.*\n\n"
+        
+        report += """
+**Next Steps:**
+✅ Your metric is ready to use for prompt optimization
+✅ The optimization process will use this metric to score different prompt variations
+✅ Higher scores indicate better prompt performance on your specific task
+"""
         
         return report
