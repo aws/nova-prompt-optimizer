@@ -239,11 +239,11 @@ IMPORTANT DATA STRUCTURE NOTES:
 1. CRITICAL: Analyze the EXACT data structure from the examples
 2. Your data may have fields directly at root level: {"categories": {...}, "sentiment": "...", "urgency": "..."}
 3. OR nested under "answer": {"answer": {"categories": {...}, "sentiment": "...", "urgency": "..."}}
-4. OR "answer" as JSON string: {"answer": "{\"categories\": {...}, \"sentiment\": \"...\", \"urgency\": \"...\"}"}
+4. OR "answer" as JSON string: {"answer": '{"categories": {...}, "sentiment": "...", "urgency": "...}'}
 5. Handle ALL possible structures with fallback logic:
-   - Try direct access first: y_pred.get('categories', {})
-   - Then try nested: y_pred.get('answer', {}).get('categories', {})
-   - Then try JSON string: json.loads(y_pred.get('answer', '{}')).get('categories', {})
+   - Try direct access first: y_pred.get('categories', dict())
+   - Then try nested: y_pred.get('answer', dict()).get('categories', dict())
+   - Then try JSON string: json.loads(y_pred.get('answer', '{{}}' )).get('categories', dict())
 6. Categories can have MULTIPLE True values - handle multi-label classification correctly
 7. For categories, compare ALL boolean values: sum(pred_cats.get(k, False) == true_cats.get(k, False) for k in true_cats.keys())
 
