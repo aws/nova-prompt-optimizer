@@ -2668,8 +2668,12 @@ async def optimize_further(request):
     optimization_id = request.path_params["optimization_id"]
     
     try:
+        # Create fresh database connection to avoid "closed database" errors
+        from database import Database
+        db_local = Database()
+        
         # Get the original optimization details
-        optimization = db.get_optimization(optimization_id)
+        optimization = db_local.get_optimization(optimization_id)
         if not optimization:
             return {"success": False, "error": "Optimization not found"}
         
@@ -2677,7 +2681,7 @@ async def optimize_further(request):
         print(f"🔍 DEBUG - Optimization data: {optimization}")
         
         # Get the optimized prompt from candidates
-        candidates = db.get_prompt_candidates(optimization_id)
+        candidates = db_local.get_prompt_candidates(optimization_id)
         optimized_candidate = None
         few_shot_examples = []
         
@@ -2771,14 +2775,14 @@ async def optimize_further(request):
             baseline_system += few_shot_context
             print(f"🔍 DEBUG - Added {len(few_shot_examples)} few-shot examples as instructional examples")
         
-        new_prompt_id = db.create_prompt(
+        new_prompt_id = db_local.create_prompt(
             name=f"Optimized from {optimization_id} (with {len(few_shot_examples)} few-shot examples)",
             system_prompt=baseline_system,
             user_prompt=baseline_user
         )
         
         # Find dataset ID from name
-        datasets = db.get_datasets()
+        datasets = db_local.get_datasets()
         dataset_name = optimization.get('dataset')
         dataset_id = None
         
@@ -2793,7 +2797,7 @@ async def optimize_further(request):
         print(f"🔍 DEBUG - Found dataset ID: {dataset_id} for name: {dataset_name}")
         
         # Create new optimization with the new prompt
-        new_optimization_id = db.create_optimization(
+        new_optimization_id = db_local.create_optimization(
             name=f"Further optimization of '{optimization.get('name', optimization_id)}'",
             prompt_id=new_prompt_id,
             dataset_id=dataset_id,
