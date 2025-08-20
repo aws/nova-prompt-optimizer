@@ -1161,6 +1161,20 @@ def metric_preview_page(request):
             cls="mb-6"
         ),
         
+        # VALIDATION RESULTS CARD
+        Card(
+            header="🔍 Metric Validation Results",
+            content=Div(
+                Pre(
+                    preview_data.get('validation_report', 'No validation performed'),
+                    cls="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded border max-h-64 overflow-y-auto"
+                ),
+                P("This validation tests your metric with sample data to ensure it works correctly.", 
+                  cls="text-xs text-gray-500 mt-2")
+            ),
+            cls="mb-6"
+        ),
+        
         Card(
             header="Generated Code",
             content=Div(
