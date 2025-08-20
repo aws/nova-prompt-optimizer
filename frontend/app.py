@@ -1838,7 +1838,7 @@ async def optimization_page(request):
                             Button("Stop" if opt["status"] in ["Starting", "Running"] else "Delete", 
                                    variant="destructive",
                                    size="sm",
-                                   onclick=f"confirmDelete('optimization', '{opt['id']}', '{opt['name']}')",
+                                   onclick=f"confirmDelete('optimization', '{opt['id']}', {json.dumps(opt['name'])})",
                                    **{"data-optimization-id": opt["id"]}),
                             style="display: flex; gap: 0.25rem;"
                         ),
