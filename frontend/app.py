@@ -2708,14 +2708,21 @@ async def optimize_further(request):
             print(f"🔍 DEBUG - Problematic data: {data_part if 'data_part' in locals() else 'N/A'}")
             return {"success": False, "error": f"Invalid data in optimized prompt: {str(e)}"}
         
-        # Create new optimization with optimized prompt as baseline
-        new_optimization_id = db.create_optimization(
-            dataset_id=optimization.get('dataset_id') or optimization.get('id'),  # Fallback to id if dataset_id missing
-            metric_id=optimization.get('metric_id') or optimization.get('id'),
-            baseline_system_prompt=optimized_data.get('system', ''),
-            baseline_user_prompt=optimized_data.get('user', ''),
+        # Create new prompt with optimized content
+        new_prompt_id = db.create_prompt(
+            name=f"Optimized from {optimization_id}",
+            system_prompt=optimized_data.get('system', ''),
+            user_prompt=optimized_data.get('user', ''),
             model_id=optimization.get('model_id', 'us.amazon.nova-premier-v1:0'),
             rate_limit=optimization.get('rate_limit', 60)
+        )
+        
+        # Create new optimization with the new prompt
+        new_optimization_id = db.create_optimization(
+            name=f"Further optimization of {optimization_id}",
+            prompt_id=new_prompt_id,
+            dataset_id=optimization.get('dataset'),  # Use 'dataset' key from debug output
+            metric_id=optimization.get('metric_id')
         )
         
         # Start the optimization process
