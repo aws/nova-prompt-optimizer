@@ -1100,7 +1100,7 @@ async def generate_selected_metrics(request):
         # Get sample data for validation
         from database import Database
         db = Database()
-        dataset = db.get_dataset_by_id(form_data.get("dataset_id"))
+        dataset = db.get_dataset(form_data.get("dataset_id"))
         if dataset and dataset.get('content'):
             import json
             sample_data = []
