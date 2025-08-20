@@ -895,7 +895,7 @@ def run_optimization_worker(optimization_id: str):
                 for i, example in enumerate(optimized_prompt_adapter.few_shot_examples[:5]):  # Limit to first 5
                     few_shot_examples.append({
                         'number': i + 1,
-                        'content': str(example)[:800]  # Limit length for display
+                        'content': str(example)[:2000]  # Increased limit for full examples
                     })
                 
                 few_shot_display = {
