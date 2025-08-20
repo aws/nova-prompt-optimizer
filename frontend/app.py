@@ -2904,7 +2904,7 @@ async def view_prompts(request):
                     Div(
                         H4("Sample Example:", cls="font-medium mb-1"),
                         Pre(few_shot_sample or "No sample available", 
-                            cls="bg-green-50 p-3 rounded text-xs whitespace-pre-wrap border max-h-32 overflow-y-auto"),
+                            cls="bg-green-50 p-3 rounded text-xs whitespace-pre-wrap border max-h-96 overflow-y-auto"),
                         cls="mb-4"
                     ) if few_shot_sample else P("No few-shot examples", cls="text-gray-500"),
                     cls="bg-green-50 p-4 rounded border"
