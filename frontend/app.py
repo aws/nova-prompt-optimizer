@@ -2666,6 +2666,9 @@ async def optimize_further(request):
         if not optimization:
             return {"success": False, "error": "Optimization not found"}
         
+        print(f"🔍 DEBUG - Optimization keys: {list(optimization.keys()) if optimization else 'None'}")
+        print(f"🔍 DEBUG - Optimization data: {optimization}")
+        
         # Get the optimized prompt from candidates
         candidates = db.get_prompt_candidates(optimization_id)
         optimized_candidate = None
@@ -2707,11 +2710,11 @@ async def optimize_further(request):
         
         # Create new optimization with optimized prompt as baseline
         new_optimization_id = db.create_optimization(
-            dataset_id=optimization['dataset_id'],
-            metric_id=optimization['metric_id'],
+            dataset_id=optimization.get('dataset_id') or optimization.get('id'),  # Fallback to id if dataset_id missing
+            metric_id=optimization.get('metric_id') or optimization.get('id'),
             baseline_system_prompt=optimized_data.get('system', ''),
             baseline_user_prompt=optimized_data.get('user', ''),
-            model_id=optimization['model_id'],
+            model_id=optimization.get('model_id', 'us.amazon.nova-premier-v1:0'),
             rate_limit=optimization.get('rate_limit', 60)
         )
         
