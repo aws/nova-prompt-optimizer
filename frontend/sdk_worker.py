@@ -84,7 +84,7 @@ from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
 from amzn_nova_prompt_optimizer.core.inference.adapter import BedrockInferenceAdapter
 from amzn_nova_prompt_optimizer.core.evaluation import Evaluator
 
-def run_optimization_worker(optimization_id: str):
+def run_optimization_worker(optimization_id: str, config: dict = None):
     """Run optimization using the real Nova SDK"""
     db = Database()
     
@@ -95,8 +95,18 @@ def run_optimization_worker(optimization_id: str):
             print(f"❌ Optimization {optimization_id} not found")
             return
         
-        # Use config from command line arguments
-        config = json.loads(sys.argv[2])
+        # Use provided config or try to get from command line
+        if config is None:
+            try:
+                config = json.loads(sys.argv[2]) if len(sys.argv) > 2 else {}
+            except (IndexError, json.JSONDecodeError):
+                # Default config for thread calls
+                config = {
+                    "model_id": "us.amazon.nova-premier-v1:0",
+                    "rate_limit": 60,
+                    "mode": "pro"
+                }
+        
         db.add_optimization_log(optimization_id, "info", "🚀 Starting SDK-based optimization")
         
         # 2. Load prompt data from database

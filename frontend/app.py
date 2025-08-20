@@ -2742,9 +2742,16 @@ async def optimize_further(request):
         from sdk_worker import run_optimization_worker
         import threading
         
+        # Create config for the optimization
+        config = {
+            "model_id": "us.amazon.nova-premier-v1:0",
+            "rate_limit": 60,
+            "mode": "pro"
+        }
+        
         worker_thread = threading.Thread(
             target=run_optimization_worker,
-            args=(new_optimization_id,),
+            args=(new_optimization_id, config),
             daemon=True
         )
         worker_thread.start()
