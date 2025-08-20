@@ -401,11 +401,19 @@ def run_optimization_worker(optimization_id: str):
                                 result = result
                                 
                                 # Ensure result is a valid float between 0-1
-                                if result is None:
+                                # Handle Dict returns (detailed metrics)
+                                if isinstance(result, dict):
+                                    if 'total' in result:
+                                        result = float(result['total'])
+                                        print(f"✅ DEBUG - Extracted total score from dict: {result}")
+                                    else:
+                                        print("⚠️ DEBUG - Dict result has no 'total' field, using 0.0")
+                                        return 0.0
+                                elif result is None:
                                     print("⚠️ DEBUG - Metric returned None, using 0.0")
                                     return 0.0
-                                
-                                result = float(result)
+                                else:
+                                    result = float(result)
                                 
                                 # Handle 0-100 scale conversion
                                 if result > 1.0:
