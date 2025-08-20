@@ -2727,15 +2727,49 @@ async def optimize_further(request):
         baseline_system = optimized_data.get('system', '')
         baseline_user = optimized_data.get('user', '')
         
-        # If we have few-shot examples, append them to the system prompt as context
+        # If we have few-shot examples, format them properly as instructional examples
         if few_shot_examples:
-            few_shot_context = "\n\nFew-shot Examples from Previous Optimization:\n"
+            few_shot_context = "\n\nExample interactions from previous optimization:\n"
+            
             for i, example in enumerate(few_shot_examples[:3], 1):  # Limit to first 3
-                example_content = example.get('content', str(example))[:500]  # Truncate for context
-                few_shot_context += f"\nExample {i}:\n{example_content}\n"
+                example_content = example.get('content', str(example))
+                
+                # Parse the conversation format and extract meaningful examples
+                try:
+                    import json
+                    if isinstance(example_content, str) and example_content.startswith('['):
+                        # Parse the JSON conversation format
+                        conversation = json.loads(example_content)
+                        
+                        # Extract user input and assistant response
+                        user_input = None
+                        assistant_response = None
+                        
+                        for turn in conversation:
+                            if turn.get('role') == 'user':
+                                user_content = turn.get('content', [])
+                                if user_content and isinstance(user_content, list):
+                                    user_input = user_content[0].get('text', '')
+                            elif turn.get('role') == 'assistant':
+                                assistant_content = turn.get('content', [])
+                                if assistant_content and isinstance(assistant_content, list):
+                                    assistant_response = assistant_content[0].get('text', '')
+                        
+                        # Format as instructional example
+                        if user_input and assistant_response:
+                            # Extract just the core input from the user prompt
+                            if 'The input is: [' in user_input:
+                                core_input = user_input.split('The input is: [')[1].split(']')[0]
+                                few_shot_context += f"\nExample {i}:\n"
+                                few_shot_context += f"Input: {core_input[:200]}...\n"
+                                few_shot_context += f"Expected Output: {assistant_response}\n"
+                
+                except (json.JSONDecodeError, KeyError, IndexError):
+                    # Fallback: use truncated string representation
+                    few_shot_context += f"\nExample {i}: {example_content[:100]}...\n"
             
             baseline_system += few_shot_context
-            print(f"🔍 DEBUG - Added {len(few_shot_examples)} few-shot examples to baseline system prompt")
+            print(f"🔍 DEBUG - Added {len(few_shot_examples)} few-shot examples as instructional examples")
         
         new_prompt_id = db.create_prompt(
             name=f"Optimized from {optimization_id} (with {len(few_shot_examples)} few-shot examples)",
