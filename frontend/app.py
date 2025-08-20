@@ -1093,6 +1093,29 @@ async def generate_selected_metrics(request):
         
         generated_code = metric_service.generate_metric_code(metric_name, criteria, model_id=model_id, rate_limit=rate_limit)
         
+        # VALIDATE THE GENERATED METRIC
+        from metric_validator import MetricValidator
+        validator = MetricValidator()
+        
+        # Get sample data for validation
+        from database import Database
+        db = Database()
+        dataset = db.get_dataset_by_id(form_data.get("dataset_id"))
+        if dataset and dataset.get('content'):
+            import json
+            sample_data = []
+            for line in dataset['content'].strip().split('\n')[:10]:  # Use first 10 samples
+                try:
+                    sample_data.append(json.loads(line))
+                except:
+                    continue
+            
+            validation_result = validator.validate_metric(generated_code, sample_data)
+            validation_report = validator.format_validation_report(validation_result)
+        else:
+            validation_result = {"is_valid": True, "warnings": ["No sample data available for validation"]}
+            validation_report = "⚠️ No sample data available for validation"
+        
         # Prepare preview data
         preview_data = {
             "name": metric_name,
@@ -1100,7 +1123,9 @@ async def generate_selected_metrics(request):
             "dataset_format": "JSON",
             "scoring_criteria": reasoning,
             "generated_code": generated_code,
-            "natural_language_input": f"Selected {len(selected_metrics)} metrics: {', '.join([m.get('name', 'Unnamed') for m in selected_metrics])}"
+            "natural_language_input": f"Selected {len(selected_metrics)} metrics: {', '.join([m.get('name', 'Unnamed') for m in selected_metrics])}",
+            "validation_result": validation_result,
+            "validation_report": validation_report
         }
         
         import urllib.parse
