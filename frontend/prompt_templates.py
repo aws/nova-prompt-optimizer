@@ -271,6 +271,8 @@ IMPORTANT PATTERNS TO FOLLOW:
 
 5. **Error Handling**: Return meaningful error information when JSON parsing fails
 
+{f'''6. **Output Format Validation**: Include "is_valid_json" field in your detailed return structure to validate that outputs match the expected JSON format from the dataset.''' if criteria.get('include_format_validation', True) else ''}
+
 CRITICAL: Adapt the field names and scoring logic to match YOUR SPECIFIC DATA STRUCTURE from the examples above. Don't hardcode generic field names.
 
 Required imports:

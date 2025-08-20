@@ -840,6 +840,26 @@ def metric_selection_page(request):
         
         # Metric Selection Form
         Form(
+            # Output Format Validation Section
+            Card(
+                header="Output Format Validation",
+                content=Div(
+                    P("Automatically validate that AI outputs match the expected JSON structure from your dataset.", 
+                      cls="text-sm text-gray-600 mb-3"),
+                    Div(
+                        Switch(name="include_format_validation", value="true", id="format-validation", checked=True),
+                        Label("Include JSON format validation", **{"for": "format-validation"}, cls="ml-2 text-sm font-medium"),
+                        cls="flex items-center mb-2"
+                    ),
+                    Div(
+                        P(f"Detected format: {format_description}", 
+                          cls="text-xs text-gray-500 ml-6"),
+                        cls="ml-6"
+                    )
+                ),
+                cls="mb-6"
+            ),
+            
             Card(
                 header="Available Metrics",
                 content=Div(
@@ -1055,6 +1075,7 @@ async def generate_selected_metrics(request):
     """Generate code for selected metrics"""
     form_data = await request.form()
     selected_indices = form_data.getlist("selected_metrics")
+    include_format_validation = form_data.get("include_format_validation") == "true"
     
     if not selected_indices:
         return RedirectResponse(url="/metrics?error=no_metrics_selected", status_code=302)
@@ -1080,7 +1101,8 @@ async def generate_selected_metrics(request):
         criteria = {
             "natural_language": reasoning,
             "dataset_format": "json",
-            "metrics_description": str(selected_metrics)
+            "metrics_description": str(selected_metrics),
+            "include_format_validation": include_format_validation
         }
         
         generated_code = metric_service.generate_metric_code(metric_name, criteria, model_id=model_id, rate_limit=rate_limit)
@@ -1142,6 +1164,17 @@ def metric_preview_page(request):
         return RedirectResponse(url="/metrics?error=invalid_preview", status_code=302)
     
     # Build the page content
+    # Infer output format from dataset
+    detected_format = "JSON"
+    format_fields = []
+    
+    if metrics and len(metrics) > 0:
+        # Extract field names from the first metric's data_fields
+        first_metric = metrics[0]
+        format_fields = first_metric.get('data_fields', [])
+    
+    format_description = f"JSON with fields: {', '.join(format_fields)}" if format_fields else "JSON format detected"
+    
     page_content = Div(
         Card(
             header="Metric Details",
