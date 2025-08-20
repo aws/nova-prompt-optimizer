@@ -223,7 +223,7 @@ Format your response as JSON:
         Flow: Metric criteria -> AI generates Python code -> Code saved to database -> 
               Used by sdk_worker.py during optimization to score prompt candidates
         """
-        return f"""Generate a Python MetricAdapter subclass for evaluating AI outputs with GRANULAR SCORING.
+        return f"""Generate a Python MetricAdapter subclass for evaluating AI outputs with ROBUST JSON PARSING and DETAILED SCORING.
 
 Requirements:
 - Metric Name: {name}
@@ -233,19 +233,85 @@ Requirements:
 CRITICAL: ANALYZE THE ACTUAL DATA STRUCTURE FROM THESE EXAMPLES:
 {criteria.get('metrics_description', 'No data samples provided')}
 
-The above shows the EXACT data structure you must handle. Use the actual field names and data types.
+IMPORTANT: GENERATE ROBUST CODE FOLLOWING THIS EXACT PATTERN:
 
-IMPORTANT DATA STRUCTURE NOTES:
-1. CRITICAL: Analyze the EXACT data structure from the examples
-2. Your data may have fields directly at root level: {{"categories": {{}}, "sentiment": "value", "urgency": "value"}}
-3. OR nested under "answer": {{"answer": {{"categories": {{}}, "sentiment": "value", "urgency": "value"}}}}
-4. OR "answer" as JSON string: {{"answer": '{{"categories": {{}}, "sentiment": "value", "urgency": "value"}}'}}
-5. Handle ALL possible structures with fallback logic:
-   - Try direct access first: y_pred.get('categories', dict())
-   - Then try nested: y_pred.get('answer', dict()).get('categories', dict())
-   - Then try JSON string: json.loads(y_pred.get('answer', '{{}}' )).get('categories', dict())
-6. Categories can have MULTIPLE True values - handle multi-label classification correctly
-7. For categories, compare ALL boolean values: sum(pred_cats.get(k, False) == true_cats.get(k, False) for k in true_cats.keys())
+class GeneratedMetric(MetricAdapter):
+    def parse_json(self, input_string: str):
+        \"\"\"Robust JSON parsing with markdown code block support\"\"\"
+        try:
+            return json.loads(input_string)
+        except json.JSONDecodeError as err:
+            error = err
+        
+        patterns = [
+            re.compile(r"```json\\s*(.*?)\\s*```", re.DOTALL | re.IGNORECASE),
+            re.compile(r"```(.*?)```", re.DOTALL)
+        ]
+        
+        for pattern in patterns:
+            match = pattern.search(input_string)
+            if match:
+                json_candidate = match.group(1).strip()
+                try:
+                    return json.loads(json_candidate)
+                except json.JSONDecodeError:
+                    continue
+        raise error
+
+    def _calculate_metrics(self, y_pred: Any, y_true: Any) -> Dict:
+        \"\"\"Calculate detailed metrics with component breakdown\"\"\"
+        result = {{
+            "is_valid_json": False,
+            "correct_categories": 0.0,
+            "correct_sentiment": False,
+            "correct_urgency": False,
+        }}
+
+        try:
+            y_true = y_true if isinstance(y_true, dict) else self.parse_json(y_true)
+            y_pred = y_pred if isinstance(y_pred, dict) else self.parse_json(y_pred)
+        except json.JSONDecodeError:
+            result["total"] = 0
+            return result
+        else:
+            result["is_valid_json"] = True
+
+            # Use DIRECT field access based on your actual data structure
+            categories_true = y_true.get("categories", {{}})
+            categories_pred = y_pred.get("categories", {{}})
+
+            if isinstance(categories_true, dict) and isinstance(categories_pred, dict):
+                correct = sum(
+                    categories_true.get(k, False) == categories_pred.get(k, False)
+                    for k in categories_true
+                )
+                result["correct_categories"] = correct / len(categories_true) if categories_true else 0.0
+
+            result["correct_sentiment"] = y_pred.get("sentiment", "") == y_true.get("sentiment", "")
+            result["correct_urgency"] = y_pred.get("urgency", "") == y_true.get("urgency", "")
+
+        # Compute overall score
+        result["total"] = sum(
+            float(result[k]) for k in ["correct_categories", "correct_sentiment", "correct_urgency"]
+        ) / 3.0
+
+        return result
+
+    def apply(self, y_pred: Any, y_true: Any):
+        return self._calculate_metrics(y_pred, y_true)
+
+    def batch_apply(self, y_preds: List[Any], y_trues: List[Any]):
+        evals = [self.apply(y_pred, y_true) for y_pred, y_true in zip(y_preds, y_trues)]
+        float_keys = [k for k, v in evals[0].items() if isinstance(v, (int, float, bool))]
+        return {{k: sum(e[k] for e in evals) / len(evals) for k in float_keys}}
+
+CRITICAL REQUIREMENTS:
+1. Include robust parse_json method with regex patterns for markdown code blocks
+2. Return detailed Dict from apply() method with component breakdown  
+3. Use DIRECT field access - analyze the data samples to determine correct structure
+4. Include is_valid_json validation
+5. Provide individual component scores for debugging
+6. Calculate overall total score as average of components
 
 Required imports:
 from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter

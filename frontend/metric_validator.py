@@ -57,11 +57,22 @@ class MetricValidator:
                     y_pred = y_true
                     
                     score = metric_instance.apply(y_pred, y_true)
-                    scores.append({
-                        "sample_index": i + 1,
-                        "score": score,
-                        "input_preview": str(sample.get('input', ''))[:100] + "..." if len(str(sample.get('input', ''))) > 100 else str(sample.get('input', ''))
-                    })
+                    
+                    # Handle both dict and float returns
+                    if isinstance(score, dict):
+                        total_score = score.get('total', 0)
+                        scores.append({
+                            "sample_index": i + 1,
+                            "score": total_score,
+                            "details": score,
+                            "input_preview": str(sample.get('input', ''))[:100] + "..." if len(str(sample.get('input', ''))) > 100 else str(sample.get('input', ''))
+                        })
+                    else:
+                        scores.append({
+                            "sample_index": i + 1,
+                            "score": score,
+                            "input_preview": str(sample.get('input', ''))[:100] + "..." if len(str(sample.get('input', ''))) > 100 else str(sample.get('input', ''))
+                        })
                     
                 except Exception as e:
                     scores.append({
@@ -164,7 +175,20 @@ class MetricValidator:
         for sample in validation_result["sample_scores"]:
             if isinstance(sample["score"], (int, float)):
                 report += f"• **Sample {sample['sample_index']}:** Score {sample['score']:.3f}\n"
-                report += f"  Input: {sample['input_preview']}\n\n"
+                report += f"  Input: {sample['input_preview']}\n"
+                
+                # Show detailed breakdown if available
+                if "details" in sample and isinstance(sample["details"], dict):
+                    details = sample["details"]
+                    if "is_valid_json" in details:
+                        report += f"  JSON Valid: {details.get('is_valid_json', False)}\n"
+                    if "correct_categories" in details:
+                        report += f"  Categories: {details.get('correct_categories', 0):.3f}\n"
+                    if "correct_sentiment" in details:
+                        report += f"  Sentiment: {'✓' if details.get('correct_sentiment', False) else '✗'}\n"
+                    if "correct_urgency" in details:
+                        report += f"  Urgency: {'✓' if details.get('correct_urgency', False) else '✗'}\n"
+                report += "\n"
             else:
                 report += f"• **Sample {sample['sample_index']}:** ❌ Failed - {sample.get('error', 'Unknown error')}\n"
                 report += f"  Input: {sample['input_preview']}\n\n"
