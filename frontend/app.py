@@ -2715,11 +2715,16 @@ async def optimize_further(request):
             user_prompt=optimized_data.get('user', '')
         )
         
+        # Debug dataset lookup
+        datasets = db.get_datasets()
+        print(f"🔍 DEBUG - Available datasets: {[d['id'] for d in datasets]}")
+        print(f"🔍 DEBUG - Looking for dataset: {optimization.get('dataset')}")
+        
         # Create new optimization with the new prompt
         new_optimization_id = db.create_optimization(
             name=f"Further optimization of {optimization_id}",
             prompt_id=new_prompt_id,
-            dataset_id=optimization.get('dataset'),  # Use 'dataset' key from debug output
+            dataset_id=str(optimization.get('dataset')),  # Ensure string format
             metric_id=optimization.get('metric_id')
         )
         
