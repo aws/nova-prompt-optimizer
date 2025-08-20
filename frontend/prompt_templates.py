@@ -233,85 +233,45 @@ Requirements:
 CRITICAL: ANALYZE THE ACTUAL DATA STRUCTURE FROM THESE EXAMPLES:
 {criteria.get('metrics_description', 'No data samples provided')}
 
-IMPORTANT: GENERATE ROBUST CODE FOLLOWING THIS EXACT PATTERN:
+IMPORTANT PATTERNS TO FOLLOW:
 
-class GeneratedMetric(MetricAdapter):
-    def parse_json(self, input_string: str):
-        \"\"\"Robust JSON parsing with markdown code block support\"\"\"
-        try:
-            return json.loads(input_string)
-        except json.JSONDecodeError as err:
-            error = err
-        
-        patterns = [
-            re.compile(r"```json\\s*(.*?)\\s*```", re.DOTALL | re.IGNORECASE),
-            re.compile(r"```(.*?)```", re.DOTALL)
-        ]
-        
-        for pattern in patterns:
-            match = pattern.search(input_string)
-            if match:
-                json_candidate = match.group(1).strip()
-                try:
-                    return json.loads(json_candidate)
-                except json.JSONDecodeError:
-                    continue
-        raise error
+1. **Robust JSON Parsing**: Include a parse_json method that handles both direct JSON and markdown code blocks:
+   ```python
+   def parse_json(self, input_string: str):
+       try:
+           return json.loads(input_string)
+       except json.JSONDecodeError as err:
+           # Try extracting from markdown code blocks
+           patterns = [
+               re.compile(r"```json\\s*(.*?)\\s*```", re.DOTALL | re.IGNORECASE),
+               re.compile(r"```(.*?)```", re.DOTALL)
+           ]
+           for pattern in patterns:
+               match = pattern.search(input_string)
+               if match:
+                   try:
+                       return json.loads(match.group(1).strip())
+                   except json.JSONDecodeError:
+                       continue
+           raise err
+   ```
 
-    def _calculate_metrics(self, y_pred: Any, y_true: Any) -> Dict:
-        \"\"\"Calculate detailed metrics with component breakdown\"\"\"
-        result = {{
-            "is_valid_json": False,
-            "correct_categories": 0.0,
-            "correct_sentiment": False,
-            "correct_urgency": False,
-        }}
+2. **Detailed Return Structure**: Return a Dict with component breakdown for debugging:
+   - Include "is_valid_json" field
+   - Include individual field accuracy scores
+   - Include "total" field with overall score
+   - Use field names from YOUR ACTUAL DATA
 
-        try:
-            y_true = y_true if isinstance(y_true, dict) else self.parse_json(y_true)
-            y_pred = y_pred if isinstance(y_pred, dict) else self.parse_json(y_pred)
-        except json.JSONDecodeError:
-            result["total"] = 0
-            return result
-        else:
-            result["is_valid_json"] = True
+3. **Direct Field Access**: Analyze the data samples to determine the correct structure:
+   - Use direct access like y_pred.get("field_name") 
+   - Don't use complex fallback logic unless absolutely necessary
+   - Base field names on the actual data structure shown above
 
-            # Use DIRECT field access based on your actual data structure
-            categories_true = y_true.get("categories", {{}})
-            categories_pred = y_pred.get("categories", {{}})
+4. **Component Scoring**: Calculate individual scores for each field being evaluated, then average them
 
-            if isinstance(categories_true, dict) and isinstance(categories_pred, dict):
-                correct = sum(
-                    categories_true.get(k, False) == categories_pred.get(k, False)
-                    for k in categories_true
-                )
-                result["correct_categories"] = correct / len(categories_true) if categories_true else 0.0
+5. **Error Handling**: Return meaningful error information when JSON parsing fails
 
-            result["correct_sentiment"] = y_pred.get("sentiment", "") == y_true.get("sentiment", "")
-            result["correct_urgency"] = y_pred.get("urgency", "") == y_true.get("urgency", "")
-
-        # Compute overall score
-        result["total"] = sum(
-            float(result[k]) for k in ["correct_categories", "correct_sentiment", "correct_urgency"]
-        ) / 3.0
-
-        return result
-
-    def apply(self, y_pred: Any, y_true: Any):
-        return self._calculate_metrics(y_pred, y_true)
-
-    def batch_apply(self, y_preds: List[Any], y_trues: List[Any]):
-        evals = [self.apply(y_pred, y_true) for y_pred, y_true in zip(y_preds, y_trues)]
-        float_keys = [k for k, v in evals[0].items() if isinstance(v, (int, float, bool))]
-        return {{k: sum(e[k] for e in evals) / len(evals) for k in float_keys}}
-
-CRITICAL REQUIREMENTS:
-1. Include robust parse_json method with regex patterns for markdown code blocks
-2. Return detailed Dict from apply() method with component breakdown  
-3. Use DIRECT field access - analyze the data samples to determine correct structure
-4. Include is_valid_json validation
-5. Provide individual component scores for debugging
-6. Calculate overall total score as average of components
+CRITICAL: Adapt the field names and scoring logic to match YOUR SPECIFIC DATA STRUCTURE from the examples above. Don't hardcode generic field names.
 
 Required imports:
 from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
