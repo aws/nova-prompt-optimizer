@@ -2794,7 +2794,7 @@ async def optimize_further(request):
         
         # Create new optimization with the new prompt
         new_optimization_id = db.create_optimization(
-            name=f"Further optimization of {optimization_id}",
+            name=f"Further optimization of '{optimization.get('name', optimization_id)}'",
             prompt_id=new_prompt_id,
             dataset_id=dataset_id,
             metric_id=optimization.get('metric_id')
