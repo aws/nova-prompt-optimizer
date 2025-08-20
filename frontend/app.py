@@ -404,10 +404,17 @@ async def datasets_page(request):
             content=Div(
                 P("Upload your training data in CSV or JSON format.", 
                   style="color: #6b7280; margin-bottom: 1rem;"),
-                Button("Upload New Dataset", 
-                       onclick="showCreateForm('dataset')",
-                       id="create-dataset-btn",
-                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
+                Div(
+                    Button("Upload New Dataset", 
+                           onclick="showCreateForm('dataset')",
+                           id="create-dataset-btn",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2",
+                           style="margin-right: 0.5rem;"),
+                    Button("Generate with AI", 
+                           onclick="startDatasetGenerator()",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
+                    style="display: flex; gap: 0.5rem; margin-bottom: 1rem;"
+                ),
                 
                 # Upload form (hidden by default)
                 Div(
@@ -3469,6 +3476,504 @@ async def reset_database(request):
     db.reset_database()
     print("🔄 Database reset to initial state")
     return RedirectResponse(url="/?reset=true", status_code=302)
+
+# === DATASET GENERATOR API ENDPOINTS ===
+
+@app.post("/datasets/generator/start")
+async def start_generator(request):
+    """Initialize dataset generator session"""
+    try:
+        from dataset_conversation import DatasetConversationService
+        import uuid
+        
+        session_id = f"gen_{uuid.uuid4().hex[:8]}"
+        conversation_service = DatasetConversationService()
+        
+        # Store session in memory (in production, use proper session storage)
+        if not hasattr(app, 'generator_sessions'):
+            app.generator_sessions = {}
+        
+        app.generator_sessions[session_id] = {
+            'conversation_service': conversation_service,
+            'step': 'start'
+        }
+        
+        # Start conversation
+        response = conversation_service.start_conversation()
+        response['session_id'] = session_id
+        
+        return response
+        
+    except Exception as e:
+        print(f"Error starting generator: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/datasets/generator/analyze-prompt")
+async def analyze_prompt(request):
+    """Analyze selected prompt for dataset generation"""
+    try:
+        form_data = await request.form()
+        session_id = form_data.get('session_id')
+        prompt_id = form_data.get('prompt_id')
+        
+        if not session_id or session_id not in app.generator_sessions:
+            return {"success": False, "error": "Invalid session"}
+        
+        # Get prompt data
+        prompt_data = db.get_prompt(prompt_id)
+        if not prompt_data:
+            return {"success": False, "error": "Prompt not found"}
+        
+        # Analyze prompt
+        conversation_service = app.generator_sessions[session_id]['conversation_service']
+        prompt_text = f"System: {prompt_data.get('system_prompt', '')}\nUser: {prompt_data.get('user_prompt', '')}"
+        
+        analysis = conversation_service.analyze_prompt(prompt_text)
+        
+        return {
+            "success": True,
+            "analysis": analysis,
+            "session_id": session_id
+        }
+        
+    except Exception as e:
+        print(f"Error analyzing prompt: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/datasets/generator/conversation")
+async def continue_conversation(request):
+    """Continue conversational requirements gathering"""
+    try:
+        form_data = await request.form()
+        session_id = form_data.get('session_id')
+        user_message = form_data.get('message', '')
+        
+        if not session_id or session_id not in app.generator_sessions:
+            return {"success": False, "error": "Invalid session"}
+        
+        conversation_service = app.generator_sessions[session_id]['conversation_service']
+        response = conversation_service.start_conversation(user_message)
+        
+        return {
+            "success": True,
+            **response
+        }
+        
+    except Exception as e:
+        print(f"Error in conversation: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/datasets/generator/generate-samples")
+async def generate_samples(request):
+    """Generate initial 5 samples for review"""
+    try:
+        form_data = await request.form()
+        session_id = form_data.get('session_id')
+        
+        if not session_id or session_id not in app.generator_sessions:
+            return {"success": False, "error": "Invalid session"}
+        
+        conversation_service = app.generator_sessions[session_id]['conversation_service']
+        generation_config = conversation_service.get_generation_config()
+        
+        # Initialize sample generator
+        from sample_generator import SampleGeneratorService
+        sample_generator = SampleGeneratorService()
+        
+        # Store sample generator in session
+        app.generator_sessions[session_id]['sample_generator'] = sample_generator
+        
+        # Generate samples
+        result = sample_generator.generate_initial_samples(generation_config, session_id)
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error generating samples: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/datasets/generator/annotate")
+async def process_annotations(request):
+    """Process user annotations and iterate on samples"""
+    try:
+        form_data = await request.form()
+        session_id = form_data.get('session_id')
+        
+        if not session_id or session_id not in app.generator_sessions:
+            return {"success": False, "error": "Invalid session"}
+        
+        # Parse annotations from form data
+        annotations = {}
+        for key, value in form_data.items():
+            if key.startswith('annotation_'):
+                sample_id = key.replace('annotation_', '')
+                if value.strip():
+                    annotations[sample_id] = [value.strip()]
+        
+        sample_generator = app.generator_sessions[session_id]['sample_generator']
+        result = sample_generator.process_annotations(session_id, annotations)
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error processing annotations: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/datasets/generator/finalize")
+async def finalize_dataset(request):
+    """Generate and save full dataset"""
+    try:
+        form_data = await request.form()
+        session_id = form_data.get('session_id')
+        dataset_name = form_data.get('dataset_name', 'AI Generated Dataset')
+        num_records = int(form_data.get('num_records', 50))
+        output_format = form_data.get('output_format', 'jsonl')
+        
+        if not session_id or session_id not in app.generator_sessions:
+            return {"success": False, "error": "Invalid session"}
+        
+        sample_generator = app.generator_sessions[session_id]['sample_generator']
+        
+        # Generate full dataset
+        dataset_result = sample_generator.generate_full_dataset(session_id, num_records, output_format)
+        
+        if not dataset_result['success']:
+            return dataset_result
+        
+        # Save dataset to file and database
+        file_extension = dataset_result['file_extension']
+        dataset_content = dataset_result['dataset']
+        
+        # Create dataset file
+        import os
+        os.makedirs('uploads', exist_ok=True)
+        
+        dataset_id = db.create_dataset(
+            name=dataset_name,
+            file_type=file_extension.upper(),
+            file_size=f"{len(dataset_content)} bytes",
+            row_count=dataset_result['record_count']
+        )
+        
+        # Save file
+        file_path = f"uploads/{dataset_name.replace(' ', '_').lower()}_{dataset_id}.{file_extension}"
+        with open(file_path, 'w') as f:
+            f.write(dataset_content)
+        
+        # Clean up session
+        if session_id in app.generator_sessions:
+            del app.generator_sessions[session_id]
+        
+        return {
+            "success": True,
+            "dataset_id": dataset_id,
+            "dataset_name": dataset_name,
+            "record_count": dataset_result['record_count'],
+            "format": output_format,
+            "file_path": file_path
+        }
+        
+    except Exception as e:
+        print(f"Error finalizing dataset: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/datasets/generator")
+async def dataset_generator_page(request):
+    """AI Dataset Generator page"""
+    user = await get_current_user(request)
+    
+    # Get available prompts for optional selection
+    db = Database()
+    available_prompts = db.get_prompts()
+    
+    content = [
+        H1("AI Dataset Generator", style="margin-bottom: 2rem;"),
+        
+        # Step indicator
+        Div(
+            Div("1", cls="step-number active", id="step-1"),
+            Div("2", cls="step-number", id="step-2"),
+            Div("3", cls="step-number", id="step-3"),
+            Div("4", cls="step-number", id="step-4"),
+            Div("5", cls="step-number", id="step-5"),
+            Div("6", cls="step-number", id="step-6"),
+            cls="step-indicator",
+            style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem;"
+        ),
+        
+        # Step 1: Prompt Selection (Optional)
+        Card(
+            header=H3("Step 1: Prompt Selection (Optional)"),
+            content=Div(
+                P("Do you have an existing prompt you'd like to use as reference for dataset generation?", 
+                  style="margin-bottom: 1rem;"),
+                
+                Div(
+                    Select(
+                        Option("No prompt - start from scratch", value="", selected=True),
+                        *[Option(f"{prompt['name']}", value=prompt["id"]) 
+                          for prompt in available_prompts],
+                        id="prompt-select",
+                        style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;"
+                    ),
+                    Button("Continue", 
+                           onclick="startConversation()",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2")
+                )
+            ),
+            id="step-1-card"
+        ),
+        
+        # Step 2: Conversational Requirements (Hidden initially)
+        Card(
+            header=H3("Step 2: Requirements Gathering"),
+            content=Div(
+                Div(id="conversation-area", style="min-height: 200px; margin-bottom: 1rem;"),
+                Div(
+                    Input(type="text", 
+                          id="user-input", 
+                          placeholder="Type your response here...",
+                          style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-right: 0.5rem;"),
+                    Button("Send", 
+                           onclick="sendMessage()",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
+                    style="display: flex; gap: 0.5rem;"
+                )
+            ),
+            id="step-2-card",
+            style="display: none;"
+        ),
+        
+        # Loading indicator
+        Div(
+            P("🤖 AI is thinking...", style="text-align: center; color: #6b7280;"),
+            id="loading-indicator",
+            style="display: none; margin: 1rem 0;"
+        )
+    ]
+    
+    # Add JavaScript for generator functionality
+    content.append(Script("""
+        let currentSession = null;
+        let currentStep = 1;
+        
+        async function startConversation() {
+            const promptSelect = document.getElementById('prompt-select');
+            const selectedPrompt = promptSelect.value;
+            
+            showLoading();
+            
+            try {
+                // Initialize generator session
+                const response = await fetch('/datasets/generator/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: ''
+                });
+                
+                const data = await response.json();
+                
+                if (data.success !== false) {
+                    currentSession = data.session_id;
+                    
+                    // If prompt selected, analyze it first
+                    if (selectedPrompt) {
+                        await analyzePrompt(selectedPrompt);
+                    }
+                    
+                    // Show conversation
+                    showStep(2);
+                    addMessage('ai', data.message);
+                    
+                } else {
+                    alert('Error starting generator: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            
+            hideLoading();
+        }
+        
+        async function analyzePrompt(promptId) {
+            const formData = new FormData();
+            formData.append('session_id', currentSession);
+            formData.append('prompt_id', promptId);
+            
+            const response = await fetch('/datasets/generator/analyze-prompt', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.success && data.analysis) {
+                addMessage('ai', 'I analyzed your prompt and pre-filled some requirements. ' + JSON.stringify(data.analysis.suggestions || []));
+            }
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addMessage('user', message);
+            input.value = '';
+            showLoading();
+            
+            try {
+                const formData = new FormData();
+                formData.append('session_id', currentSession);
+                formData.append('message', message);
+                
+                const response = await fetch('/datasets/generator/conversation', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success !== false) {
+                    addMessage('ai', data.message);
+                    
+                    if (data.ready_for_generation) {
+                        showGenerateSamplesButton();
+                    }
+                } else {
+                    addMessage('ai', 'Error: ' + data.error);
+                }
+            } catch (error) {
+                addMessage('ai', 'Error: ' + error.message);
+            }
+            
+            hideLoading();
+        }
+        
+        function addMessage(sender, message) {
+            const conversationArea = document.getElementById('conversation-area');
+            const messageDiv = document.createElement('div');
+            messageDiv.style.marginBottom = '1rem';
+            messageDiv.style.padding = '0.75rem';
+            messageDiv.style.borderRadius = '0.5rem';
+            
+            if (sender === 'ai') {
+                messageDiv.style.backgroundColor = '#f3f4f6';
+                messageDiv.innerHTML = '<strong>AI:</strong> ' + message;
+            } else {
+                messageDiv.style.backgroundColor = '#dbeafe';
+                messageDiv.innerHTML = '<strong>You:</strong> ' + message;
+            }
+            
+            conversationArea.appendChild(messageDiv);
+            conversationArea.scrollTop = conversationArea.scrollHeight;
+        }
+        
+        function showGenerateSamplesButton() {
+            const conversationArea = document.getElementById('conversation-area');
+            const buttonDiv = document.createElement('div');
+            buttonDiv.style.textAlign = 'center';
+            buttonDiv.style.marginTop = '1rem';
+            buttonDiv.innerHTML = '<button onclick="generateSamples()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">Generate Sample Records</button>';
+            conversationArea.appendChild(buttonDiv);
+        }
+        
+        async function generateSamples() {
+            showLoading();
+            
+            try {
+                const formData = new FormData();
+                formData.append('session_id', currentSession);
+                
+                const response = await fetch('/datasets/generator/generate-samples', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStep(3);
+                    displaySamples(data.samples);
+                } else {
+                    alert('Error generating samples: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            
+            hideLoading();
+        }
+        
+        function displaySamples(samples) {
+            // This will be implemented next
+            alert('Samples generated! (Display functionality coming next)');
+        }
+        
+        function showStep(stepNumber) {
+            // Hide all steps
+            for (let i = 1; i <= 6; i++) {
+                const card = document.getElementById('step-' + i + '-card');
+                const stepIndicator = document.getElementById('step-' + i);
+                if (card) card.style.display = 'none';
+                if (stepIndicator) stepIndicator.classList.remove('active');
+            }
+            
+            // Show current step
+            const currentCard = document.getElementById('step-' + stepNumber + '-card');
+            const currentIndicator = document.getElementById('step-' + stepNumber);
+            if (currentCard) currentCard.style.display = 'block';
+            if (currentIndicator) currentIndicator.classList.add('active');
+            
+            currentStep = stepNumber;
+        }
+        
+        function showLoading() {
+            document.getElementById('loading-indicator').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-indicator').style.display = 'none';
+        }
+        
+        // Allow Enter key to send message
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('user-input');
+            if (input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+            }
+        });
+    """))
+    
+    # Add CSS for step indicator
+    content.append(Style("""
+        .step-indicator .step-number {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .step-indicator .step-number.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    """))
+    
+    return create_main_layout(
+        "AI Dataset Generator",
+        Div(*content),
+        current_page="datasets",
+        user=user.to_dict() if user else None
+    )
 
 if __name__ == "__main__":
     print("🚀 Starting Nova Prompt Optimizer...")
