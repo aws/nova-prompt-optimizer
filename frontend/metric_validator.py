@@ -48,7 +48,7 @@ class MetricValidator:
             metric_instance = metric_class()
             scores = []
             
-            for i, sample in enumerate(sample_data[:5]):  # Test first 5 samples
+            for i, sample in enumerate(sample_data[:10]):  # Test first 10 samples
                 try:
                     # Extract input and expected output
                     y_true = sample.get('answer', sample)

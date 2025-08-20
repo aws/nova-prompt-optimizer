@@ -1159,7 +1159,7 @@ def metric_preview_page(request):
             content=Div(
                 Pre(
                     preview_data.get('validation_report', 'No validation performed'),
-                    cls="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded border max-h-64 overflow-y-auto"
+                    cls="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded border max-h-128 overflow-y-auto"
                 ),
                 P("This validation tests your metric with sample data to ensure it works correctly.", 
                   cls="text-xs text-gray-500 mt-2")
