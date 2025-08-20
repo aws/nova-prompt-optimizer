@@ -3116,8 +3116,8 @@ async def monitor_optimization(request):
                             P(f"Progress: {optimization['progress']}%", 
                               style="margin: 0.25rem 0;",
                               id="progress-text"),
-                            P(f"Improvement: {optimization['improvement']}", 
-                              style="font-weight: 600; color: #10b981;" if optimization['improvement'].startswith('+') else "font-weight: 600;",
+                            P(f"Improvement: {optimization.get('improvement', 'N/A')}", 
+                              style="font-weight: 600; color: #10b981;" if optimization.get('improvement', '').startswith('+') else "font-weight: 600;",
                               id="improvement-text"),
                             style="flex: 1;"
                         ),
