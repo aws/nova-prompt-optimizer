@@ -282,7 +282,12 @@ import json
 import re
 import math
 
-Generate a complete Python class that inherits from MetricAdapter:
+Generate a complete Python class that inherits from MetricAdapter.
+
+CRITICAL: End your code with the metric instantiation line:
+metric_adapter = GeneratedMetric()
+
+This creates the metric instance that the system will use for evaluation.
 
 class GeneratedMetric(MetricAdapter):
     def apply(self, y_pred: Any, y_true: Any):
