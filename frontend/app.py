@@ -2739,11 +2739,11 @@ async def optimize_further(request):
         )
         
         # Start the optimization process
-        from sdk_worker import start_optimization_worker
+        from sdk_worker import run_optimization_worker
         import threading
         
         worker_thread = threading.Thread(
-            target=start_optimization_worker,
+            target=run_optimization_worker,
             args=(new_optimization_id,),
             daemon=True
         )
