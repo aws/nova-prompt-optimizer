@@ -2712,9 +2712,7 @@ async def optimize_further(request):
         new_prompt_id = db.create_prompt(
             name=f"Optimized from {optimization_id}",
             system_prompt=optimized_data.get('system', ''),
-            user_prompt=optimized_data.get('user', ''),
-            model_id=optimization.get('model_id', 'us.amazon.nova-premier-v1:0'),
-            rate_limit=optimization.get('rate_limit', 60)
+            user_prompt=optimized_data.get('user', '')
         )
         
         # Create new optimization with the new prompt
