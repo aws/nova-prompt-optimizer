@@ -70,17 +70,17 @@ Focus on metrics that are:
 
 Format your response as JSON:
 {{
-  "intent_analysis": "REQUIRED: Clear description of what you understand the prompt is asking for and the expected output format. This should be your primary analysis of the task.",
+  "intent_analysis": "REQUIRED: Clear description of the task based on the dataset structure and expected output format. Focus on what evaluation metrics should measure based on the data patterns.",
   "metrics": [
     {{
       "name": "Metric Name",
-      "intent_understanding": "How this metric measures success for the prompt's task",
+      "intent_understanding": "How this metric measures success for the data classification task",
       "data_fields": ["field1", "field2"],
       "evaluation_logic": "Simple comparison logic using actual field names",
       "example": "Example using actual data structure"
     }}
   ],
-  "reasoning": "Why these simple metrics effectively measure the prompt's intended task (focus on task requirements, not dataset format)"
+  "reasoning": "Why these simple metrics effectively measure the data classification task (focus on data structure and evaluation requirements)"
 }}"""
         """
         DATASET ANALYSIS PROMPT
