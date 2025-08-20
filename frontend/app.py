@@ -798,6 +798,17 @@ def metric_selection_page(request):
     
     # Debug intent analysis
     print(f"🔍 DEBUG - Intent analysis value: '{intent_analysis}'")
+    
+    # Infer output format from dataset
+    detected_format = "JSON"
+    format_fields = []
+    
+    if metrics and len(metrics) > 0:
+        # Extract field names from the first metric's data_fields
+        first_metric = metrics[0]
+        format_fields = first_metric.get('data_fields', [])
+    
+    format_description = f"JSON with fields: {', '.join(format_fields)}" if format_fields else "JSON format detected"
     print(f"🔍 DEBUG - Intent analysis length: {len(intent_analysis)}")
     print(f"🔍 DEBUG - Inferred metrics keys: {list(inferred_metrics.keys())}")
     
@@ -1164,17 +1175,6 @@ def metric_preview_page(request):
         return RedirectResponse(url="/metrics?error=invalid_preview", status_code=302)
     
     # Build the page content
-    # Infer output format from dataset
-    detected_format = "JSON"
-    format_fields = []
-    
-    if metrics and len(metrics) > 0:
-        # Extract field names from the first metric's data_fields
-        first_metric = metrics[0]
-        format_fields = first_metric.get('data_fields', [])
-    
-    format_description = f"JSON with fields: {', '.join(format_fields)}" if format_fields else "JSON format detected"
-    
     page_content = Div(
         Card(
             header="Metric Details",
