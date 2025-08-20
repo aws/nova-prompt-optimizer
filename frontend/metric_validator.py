@@ -8,6 +8,43 @@ from typing import Dict, List, Any
 class MetricValidator:
     """Validates generated metric code with sample data"""
     
+    def _create_test_prediction(self, y_true, sample_index):
+        """Create realistic test predictions with some intentional errors"""
+        import copy
+        import random
+        
+        # Start with ground truth
+        y_pred = copy.deepcopy(y_true)
+        
+        # Introduce realistic errors based on sample index to ensure variety
+        random.seed(sample_index)  # Deterministic errors for consistent testing
+        
+        if isinstance(y_pred, dict):
+            # 20% chance of sentiment error
+            if random.random() < 0.2 and 'sentiment' in y_pred:
+                sentiments = ['positive', 'neutral', 'negative']
+                current = y_pred['sentiment']
+                y_pred['sentiment'] = random.choice([s for s in sentiments if s != current])
+            
+            # 15% chance of urgency error  
+            if random.random() < 0.15 and 'urgency' in y_pred:
+                urgencies = ['high', 'medium', 'low']
+                current = y_pred['urgency']
+                y_pred['urgency'] = random.choice([u for u in urgencies if u != current])
+            
+            # 25% chance of category errors
+            if random.random() < 0.25 and 'categories' in y_pred and isinstance(y_pred['categories'], dict):
+                categories = y_pred['categories']
+                # Flip 1-2 random category values
+                cat_keys = list(categories.keys())
+                if cat_keys:
+                    num_flips = random.randint(1, min(2, len(cat_keys)))
+                    for _ in range(num_flips):
+                        key = random.choice(cat_keys)
+                        categories[key] = not categories[key]
+        
+        return y_pred
+
     def validate_metric(self, metric_code: str, sample_data: List[Dict]) -> Dict:
         """
         Test metric with sample data and return validation results
@@ -53,8 +90,8 @@ class MetricValidator:
                     # Extract input and expected output
                     y_true = sample.get('answer', sample)
                     
-                    # Simulate model output (use ground truth for testing)
-                    y_pred = y_true
+                    # Create realistic test scenarios with some errors
+                    y_pred = self._create_test_prediction(y_true, i)
                     
                     score = metric_instance.apply(y_pred, y_true)
                     
