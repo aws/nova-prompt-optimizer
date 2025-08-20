@@ -800,9 +800,7 @@ def metric_selection_page(request):
     print(f"🔍 DEBUG - Intent analysis value: '{intent_analysis}'")
     
     # Infer output format from dataset
-    detected_format = "JSON"
     format_fields = []
-    
     if metrics and len(metrics) > 0:
         # Extract field names from the first metric's data_fields
         first_metric = metrics[0]
