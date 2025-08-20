@@ -783,7 +783,7 @@ def run_optimization_worker(optimization_id: str, config: dict = None):
             else:
                 baseline_dataset_adapter = test_dataset
             
-            baseline_evaluator = Evaluator(prompt_adapter, baseline_dataset_adapter, metric_adapter, inference_adapter)
+            baseline_evaluator = Evaluator(prompt_adapter, baseline_dataset_adapter, metric_adapter.base_metric, inference_adapter)
             model_id = NOVA_MODELS[f"nova-{model_mode}"]["id"]
             
             db.add_optimization_log(optimization_id, "debug", f"Running baseline evaluation with model: {model_id}")
