@@ -2672,11 +2672,19 @@ async def optimize_further(request):
         # Get the optimized prompt from candidates
         candidates = db.get_prompt_candidates(optimization_id)
         optimized_candidate = None
+        few_shot_examples = []
         
         for candidate in candidates:
             if candidate.get('prompt_text', '').startswith('OPTIMIZED|'):
                 optimized_candidate = candidate
-                break
+            elif candidate.get('prompt_text', '').startswith('FEWSHOT|'):
+                # Extract few-shot examples
+                try:
+                    fewshot_data = json.loads(candidate['prompt_text'].split('|', 1)[1])
+                    few_shot_examples = fewshot_data.get('examples', [])
+                    print(f"🔍 DEBUG - Found {len(few_shot_examples)} few-shot examples")
+                except:
+                    print("🔍 DEBUG - Failed to parse few-shot data")
         
         if not optimized_candidate:
             return {"success": False, "error": "No optimized prompt found"}
@@ -2708,11 +2716,24 @@ async def optimize_further(request):
             print(f"🔍 DEBUG - Problematic data: {data_part if 'data_part' in locals() else 'N/A'}")
             return {"success": False, "error": f"Invalid data in optimized prompt: {str(e)}"}
         
-        # Create new prompt with optimized content
+        # Create new prompt with optimized content + few-shot examples
+        baseline_system = optimized_data.get('system', '')
+        baseline_user = optimized_data.get('user', '')
+        
+        # If we have few-shot examples, append them to the system prompt as context
+        if few_shot_examples:
+            few_shot_context = "\n\nFew-shot Examples from Previous Optimization:\n"
+            for i, example in enumerate(few_shot_examples[:3], 1):  # Limit to first 3
+                example_content = example.get('content', str(example))[:500]  # Truncate for context
+                few_shot_context += f"\nExample {i}:\n{example_content}\n"
+            
+            baseline_system += few_shot_context
+            print(f"🔍 DEBUG - Added {len(few_shot_examples)} few-shot examples to baseline system prompt")
+        
         new_prompt_id = db.create_prompt(
-            name=f"Optimized from {optimization_id}",
-            system_prompt=optimized_data.get('system', ''),
-            user_prompt=optimized_data.get('user', '')
+            name=f"Optimized from {optimization_id} (with {len(few_shot_examples)} few-shot examples)",
+            system_prompt=baseline_system,
+            user_prompt=baseline_user
         )
         
         # Find dataset ID from name
@@ -2742,11 +2763,12 @@ async def optimize_further(request):
         from sdk_worker import run_optimization_worker
         import threading
         
-        # Create config for the optimization
+        # Create config for the optimization including few-shot examples
         config = {
             "model_id": "us.amazon.nova-premier-v1:0",
             "rate_limit": 60,
-            "mode": "pro"
+            "mode": "pro",
+            "baseline_few_shot_examples": few_shot_examples  # Pass few-shot examples
         }
         
         worker_thread = threading.Thread(
