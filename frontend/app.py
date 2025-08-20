@@ -1661,7 +1661,7 @@ async def optimization_page(request):
                         style="margin-bottom: 1rem;"
                     ) if available_metrics else Alert(
                         "⚠️ No metrics available. Create a metric first.",
-                        variant="warning",
+                        variant="destructive",
                         cls="mb-4"
                     ),
                     # Advanced Configuration Section
@@ -1744,7 +1744,7 @@ async def optimization_page(request):
                     action="/optimization/start"
                 ) if available_prompts and available_datasets else Alert(
                     "You need at least one prompt and one dataset to start optimization.",
-                    variant="warning"
+                    variant="destructive"
                 ),
                 
                 style="display: none; margin-top: 1rem;",
