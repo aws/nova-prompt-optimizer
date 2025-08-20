@@ -2680,7 +2680,22 @@ async def optimize_further(request):
         
         # Parse the optimized prompt data
         import json
-        optimized_data = json.loads(optimized_candidate['prompt_text'].split('|', 1)[1])
+        try:
+            prompt_text = optimized_candidate['prompt_text']
+            print(f"🔍 DEBUG - Raw prompt_text: {prompt_text[:200]}...")
+            
+            if '|' in prompt_text:
+                data_part = prompt_text.split('|', 1)[1]
+                print(f"🔍 DEBUG - Data part: {data_part[:200]}...")
+                optimized_data = json.loads(data_part)
+            else:
+                print("🔍 DEBUG - No | separator found in prompt_text")
+                return {"success": False, "error": "Invalid prompt data format"}
+                
+        except json.JSONDecodeError as e:
+            print(f"🔍 DEBUG - JSON decode error: {e}")
+            print(f"🔍 DEBUG - Problematic data: {data_part if 'data_part' in locals() else 'N/A'}")
+            return {"success": False, "error": f"Invalid JSON in optimized prompt: {str(e)}"}
         
         # Create new optimization with optimized prompt as baseline
         new_optimization_id = db.create_optimization(
