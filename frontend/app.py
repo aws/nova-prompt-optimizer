@@ -2833,12 +2833,20 @@ async def optimize_further(request):
             "baseline_few_shot_examples": few_shot_examples  # Pass few-shot examples
         }
         
-        worker_thread = threading.Thread(
-            target=run_optimization_worker,
-            args=(new_optimization_id, config),
-            daemon=True
-        )
-        worker_thread.start()
+        # Start the optimization process in background using asyncio instead of threading
+        # to avoid DSPy thread configuration issues
+        import asyncio
+        import subprocess
+        
+        # Use subprocess to run optimization in separate process instead of thread
+        worker_cmd = [
+            sys.executable, "sdk_worker.py", 
+            new_optimization_id, 
+            json.dumps(config)
+        ]
+        
+        # Start worker process in background
+        subprocess.Popen(worker_cmd, cwd=os.path.dirname(__file__))
         
         return {"success": True, "new_optimization_id": new_optimization_id}
         
