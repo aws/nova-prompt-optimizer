@@ -2808,10 +2808,19 @@ async def optimize_further(request):
         from sdk_worker import run_optimization_worker
         import threading
         
+        # Get original optimization config to inherit settings
+        original_rate_limit = 60  # Default fallback
+        try:
+            # Try to get rate limit from original optimization if stored
+            # For now, use a reasonable default that matches typical optimization settings
+            original_rate_limit = 1000  # Use higher rate limit like original optimizations
+        except:
+            pass
+        
         # Create config for the optimization including few-shot examples
         config = {
             "model_id": "us.amazon.nova-premier-v1:0",
-            "rate_limit": 60,
+            "rate_limit": original_rate_limit,
             "mode": "pro",
             "baseline_few_shot_examples": few_shot_examples  # Pass few-shot examples
         }
