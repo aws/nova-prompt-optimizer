@@ -62,6 +62,8 @@ class DatasetConversationService:
         
     def analyze_prompt(self, prompt_text: str) -> Dict[str, Any]:
         """Analyze existing prompt to understand requirements"""
+        print(f"🔍 DEBUG - Analyzing prompt: {prompt_text[:200]}...")
+        
         analysis_prompt = f"""
         Analyze this prompt and extract key information for dataset generation:
         
@@ -81,21 +83,42 @@ class DatasetConversationService:
         """
         
         try:
+            print(f"🔍 DEBUG - Calling Bedrock for prompt analysis")
             response = self._call_bedrock(analysis_prompt)
-            analysis = json.loads(response)
+            print(f"🔍 DEBUG - Bedrock response: {response}")
+            
+            # Extract JSON from response (AI might include explanations)
+            json_start = response.find('{')
+            json_end = response.rfind('}') + 1
+            
+            if json_start >= 0 and json_end > json_start:
+                json_str = response[json_start:json_end]
+                print(f"🔍 DEBUG - Extracted JSON: {json_str}")
+                analysis = json.loads(json_str)
+            else:
+                print(f"🔍 DEBUG - No JSON found in response")
+                return {"error": "Failed to parse analysis", "suggestions": []}
+            
+            print(f"🔍 DEBUG - Parsed analysis: {analysis}")
             
             # Pre-populate checklist based on analysis
             if analysis.get('role_persona'):
                 self.checklist.role_persona = analysis['role_persona']
+                print(f"🔍 DEBUG - Set role_persona: {analysis['role_persona']}")
             if analysis.get('task_goal'):
                 self.checklist.task_goal = analysis['task_goal']
+                print(f"🔍 DEBUG - Set task_goal: {analysis['task_goal']}")
             if analysis.get('input_type'):
                 self.checklist.input_format = analysis['input_type']
+                print(f"🔍 DEBUG - Set input_format: {analysis['input_type']}")
             if analysis.get('output_type'):
                 self.checklist.output_format = analysis['output_type']
+                print(f"🔍 DEBUG - Set output_format: {analysis['output_type']}")
             if analysis.get('domain'):
                 self.checklist.domain_expertise = analysis['domain']
+                print(f"🔍 DEBUG - Set domain_expertise: {analysis['domain']}")
                 
+            print(f"🔍 DEBUG - Updated checklist: {asdict(self.checklist)}")
             return analysis
             
         except Exception as e:
