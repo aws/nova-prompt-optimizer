@@ -3818,6 +3818,28 @@ async def dataset_generator_page(request):
             style="display: none;"
         ),
         
+        # Step 3: Sample Review (Hidden initially)
+        Card(
+            header=H3("Step 3: Sample Review"),
+            content=Div(
+                P("Review the generated samples below. You can edit them or generate new ones.", 
+                  style="margin-bottom: 1rem;"),
+                Div(id="samples-container", style="margin-bottom: 1rem;"),
+                Div(
+                    Button("Generate More Samples", 
+                           onclick="generateMoreSamples()",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+                           style="margin-right: 0.5rem;"),
+                    Button("Finalize Dataset", 
+                           onclick="finalizeDataset()",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
+                    style="display: flex; gap: 0.5rem;"
+                )
+            ),
+            id="step-3-card",
+            style="display: none;"
+        ),
+        
         # Loading indicator
         Div(
             P("🤖 AI is thinking...", style="text-align: center; color: #6b7280;"),
@@ -3979,8 +4001,28 @@ async def dataset_generator_page(request):
         }
         
         function displaySamples(samples) {
-            // This will be implemented next
-            alert('Samples generated! (Display functionality coming next)');
+            const container = document.getElementById('samples-container');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            samples.forEach((sample, index) => {
+                const sampleDiv = document.createElement('div');
+                sampleDiv.className = 'sample-item';
+                sampleDiv.style.cssText = 'border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; background: white;';
+                
+                sampleDiv.innerHTML = `
+                    <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Sample ${index + 1}</h4>
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong>Input:</strong> ${sample.input || 'N/A'}
+                    </div>
+                    <div>
+                        <strong>Output:</strong> ${sample.output || sample.answer || 'N/A'}
+                    </div>
+                `;
+                
+                container.appendChild(sampleDiv);
+            });
         }
         
         function showStep(stepNumber) {
@@ -4000,6 +4042,17 @@ async def dataset_generator_page(request):
             
             currentStep = stepNumber;
         }
+        
+        function generateMoreSamples() {
+            // TODO: Implement generate more samples
+            alert('Generate more samples functionality coming soon!');
+        }
+        
+        function finalizeDataset() {
+            // TODO: Implement finalize dataset
+            alert('Finalize dataset functionality coming soon!');
+        }
+        
         
         function showLoading() {
             document.getElementById('loading-indicator').style.display = 'block';
