@@ -291,14 +291,16 @@ class DatasetConversationService:
             response = self.bedrock.invoke_model(
                 modelId=self.model_id,
                 body=json.dumps({
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 2000,
-                    "temperature": 0.7
+                    "messages": [{"role": "user", "content": [{"text": prompt}]}],
+                    "inferenceConfig": {
+                        "maxTokens": 2000,
+                        "temperature": 0.7
+                    }
                 })
             )
             
             response_body = json.loads(response['body'].read())
-            return response_body['content'][0]['text']
+            return response_body['output']['message']['content'][0]['text']
             
         except ClientError as e:
             print(f"Bedrock API error: {e}")
