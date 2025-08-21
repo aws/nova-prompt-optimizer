@@ -532,6 +532,11 @@ async def datasets_page(request):
                 form.submit();
             }
         }
+        
+        function startDatasetGenerator() {
+            // Navigate to the AI Dataset Generator page
+            window.location.href = '/datasets/generator';
+        }
     """))
     
     return create_main_layout(
