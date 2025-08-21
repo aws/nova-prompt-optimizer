@@ -65,21 +65,22 @@ class DatasetConversationService:
         print(f"🔍 DEBUG - Analyzing prompt: {prompt_text[:200]}...")
         
         analysis_prompt = f"""
-        Analyze this prompt and extract key information for dataset generation:
+        Analyze this user's prompt and extract what they want to create a dataset for:
         
-        PROMPT:
+        USER'S PROMPT:
         {prompt_text}
         
-        Extract and return JSON with:
+        Based on this prompt, what dataset would they need? Return JSON:
         {{
-            "role_persona": "What role/persona should the AI adopt?",
-            "task_goal": "What is the main task/goal?",
-            "input_type": "What type of input does it expect?",
-            "output_type": "What type of output should it generate?",
-            "domain": "What domain/context is this for?",
-            "complexity": "Simple, Medium, or Complex",
-            "suggestions": ["List of suggestions for dataset generation"]
+            "role_persona": "What role should the AI play based on this prompt?",
+            "task_goal": "What task is this prompt trying to accomplish?", 
+            "input_type": "What kind of input would this prompt receive?",
+            "output_type": "What should the AI output for this prompt?",
+            "domain": "What domain/field is this prompt for?",
+            "use_case": "What is the use case for this prompt?"
         }}
+        
+        Focus on the actual prompt content, not the analysis instructions.
         """
         
         try:
@@ -133,13 +134,24 @@ class DatasetConversationService:
             missing_fields = self.checklist.get_missing_fields()
             
             if len(missing_fields) < 5:  # Some fields were pre-filled
-                filled_fields = [field for field in ['role_persona', 'task_goal', 'use_case', 'input_format', 'output_format'] 
-                               if getattr(self.checklist, field) is not None]
+                filled_fields = []
+                if self.checklist.role_persona and self.checklist.role_persona != "Undefined":
+                    filled_fields.append(f"Role: {self.checklist.role_persona}")
+                if self.checklist.task_goal:
+                    filled_fields.append(f"Task: {self.checklist.task_goal}")
+                if self.checklist.input_format:
+                    filled_fields.append(f"Input: {self.checklist.input_format}")
+                if self.checklist.output_format:
+                    filled_fields.append(f"Output: {self.checklist.output_format}")
+                if self.checklist.domain_expertise:
+                    filled_fields.append(f"Domain: {self.checklist.domain_expertise}")
                 
-                summary = "I analyzed your prompt and pre-filled some requirements:\n"
-                for field in filled_fields:
-                    value = getattr(self.checklist, field)
-                    summary += f"• {field.replace('_', ' ').title()}: {value}\n"
+                if filled_fields:
+                    summary = "I analyzed your prompt and pre-filled some requirements:\n"
+                    for field in filled_fields:
+                        summary += f"• {field}\n"
+                else:
+                    summary = "I analyzed your prompt but couldn't extract clear requirements. "
                 
                 if missing_fields:
                     next_field = missing_fields[0]
