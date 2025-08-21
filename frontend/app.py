@@ -3907,7 +3907,8 @@ async def dataset_generator_page(request):
             
             const data = await response.json();
             if (data.success && data.analysis) {
-                addMessage('ai', 'I analyzed your prompt and pre-filled some requirements. ' + JSON.stringify(data.analysis.suggestions || []));
+                // Don't show analysis here - let the conversation service handle it
+                console.log('Prompt analyzed successfully:', data.analysis);
             }
         }
         
