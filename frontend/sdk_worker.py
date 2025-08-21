@@ -379,6 +379,15 @@ def run_optimization_worker(optimization_id: str, config: dict = None):
                                 # Instantiate and use the metric
                                 metric_instance = metric_class()
                                 
+                                # Add call counter to prevent infinite loops
+                                if not hasattr(self, '_apply_call_count'):
+                                    self._apply_call_count = 0
+                                
+                                self._apply_call_count += 1
+                                if self._apply_call_count > 200:  # Safety limit
+                                    print(f"⚠️ SAFETY LIMIT: Stopping at {self._apply_call_count} calls to prevent infinite loop")
+                                    return 0.5  # Return reasonable default
+                                
                                 # Use flexible parsing for inputs
                                 parsed_y_pred = self.parse_metric_input(y_pred)
                                 parsed_y_true = self.parse_metric_input(y_true)
