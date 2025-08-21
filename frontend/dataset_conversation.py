@@ -193,13 +193,25 @@ class DatasetConversationService:
             response_data = self._call_bedrock(update_prompt)
             print(f"🔍 DEBUG - Bedrock response: {response_data}")
             
-            updates = json.loads(response_data)
+            # Extract JSON from response (AI might include explanations)
+            json_start = response_data.find('{')
+            json_end = response_data.rfind('}') + 1
+            
+            if json_start >= 0 and json_end > json_start:
+                json_str = response_data[json_start:json_end]
+                print(f"🔍 DEBUG - Extracted JSON: {json_str}")
+                updates = json.loads(json_str)
+            else:
+                print(f"🔍 DEBUG - No JSON found in response, skipping update")
+                return
+            
             print(f"🔍 DEBUG - Parsed updates: {updates}")
             
             # Update checklist fields
             for field, value in updates.items():
                 if value and hasattr(self.checklist, field):
                     setattr(self.checklist, field, value)
+                    print(f"🔍 DEBUG - Updated {field} = {value}")
                     
         except Exception as e:
             print(f"Error updating checklist: {e}")
