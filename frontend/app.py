@@ -2808,14 +2808,22 @@ async def optimize_further(request):
         from sdk_worker import run_optimization_worker
         import threading
         
-        # Get original optimization config to inherit settings
-        original_rate_limit = 60  # Default fallback
+        # Try to inherit rate limit from original optimization logs
+        original_rate_limit = 60  # Conservative default
         try:
-            # Try to get rate limit from original optimization if stored
-            # For now, use a reasonable default that matches typical optimization settings
-            original_rate_limit = 1000  # Use higher rate limit like original optimizations
-        except:
-            pass
+            # Look for rate limit in optimization logs
+            logs = db_local.get_optimization_logs(optimization_id)
+            for log in logs:
+                if 'RPM' in log.get('message', '') and 'rate limit' in log.get('message', '').lower():
+                    # Extract rate limit from log message like "Rate limit: 1000 RPM"
+                    import re
+                    match = re.search(r'(\d+)\s*RPM', log['message'])
+                    if match:
+                        original_rate_limit = int(match.group(1))
+                        print(f"🔍 DEBUG - Inherited rate limit from original optimization: {original_rate_limit} RPM")
+                        break
+        except Exception as e:
+            print(f"🔍 DEBUG - Could not inherit rate limit, using default: {e}")
         
         # Create config for the optimization including few-shot examples
         config = {
