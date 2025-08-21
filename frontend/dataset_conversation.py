@@ -106,12 +106,42 @@ class DatasetConversationService:
         """Start or continue the requirements gathering conversation"""
         
         if not user_message:
-            # Initial greeting
-            return {
-                "message": "Hi! I'll help you create a high-quality dataset for prompt optimization. Let's start by understanding what you need.\n\nWhat type of task or use case do you want to create evaluation data for? (e.g., 'customer support email classification', 'document summarization', 'question answering')",
-                "step": "task_goal",
-                "checklist_status": self._get_checklist_status()
-            }
+            # Check if we already have some requirements from prompt analysis
+            missing_fields = self.checklist.get_missing_fields()
+            
+            if len(missing_fields) < 5:  # Some fields were pre-filled
+                filled_fields = [field for field in ['role_persona', 'task_goal', 'use_case', 'input_format', 'output_format'] 
+                               if getattr(self.checklist, field) is not None]
+                
+                summary = "I analyzed your prompt and pre-filled some requirements:\n"
+                for field in filled_fields:
+                    value = getattr(self.checklist, field)
+                    summary += f"• {field.replace('_', ' ').title()}: {value}\n"
+                
+                if missing_fields:
+                    next_field = missing_fields[0]
+                    question = self._get_question_for_field(next_field)
+                    summary += f"\nNow let's fill in the remaining details. {question}"
+                    
+                    return {
+                        "message": summary,
+                        "step": next_field,
+                        "checklist_status": self._get_checklist_status()
+                    }
+                else:
+                    return {
+                        "message": summary + "\nPerfect! I have all the information needed to generate your dataset.",
+                        "step": "complete",
+                        "checklist_status": self._get_checklist_status(),
+                        "ready_for_generation": True
+                    }
+            else:
+                # Initial greeting for fresh start
+                return {
+                    "message": "Hi! I'll help you create a high-quality dataset for prompt optimization. Let's start by understanding what you need.\n\nWhat type of task or use case do you want to create evaluation data for? (e.g., 'customer support email classification', 'document summarization', 'question answering')",
+                    "step": "task_goal",
+                    "checklist_status": self._get_checklist_status()
+                }
         
         # Add user message to history
         self.conversation_history.append({"role": "user", "content": user_message})
