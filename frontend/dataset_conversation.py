@@ -109,6 +109,9 @@ class DatasetConversationService:
             if analysis.get('task_goal'):
                 self.checklist.task_goal = analysis['task_goal']
                 print(f"🔍 DEBUG - Set task_goal: {analysis['task_goal']}")
+            if analysis.get('use_case'):
+                self.checklist.use_case = analysis['use_case']
+                print(f"🔍 DEBUG - Set use_case: {analysis['use_case']}")
             if analysis.get('input_type'):
                 self.checklist.input_format = analysis['input_type']
                 print(f"🔍 DEBUG - Set input_format: {analysis['input_type']}")
@@ -135,10 +138,12 @@ class DatasetConversationService:
             
             if len(missing_fields) < 5:  # Some fields were pre-filled
                 filled_fields = []
-                if self.checklist.role_persona and self.checklist.role_persona != "Undefined":
+                if self.checklist.role_persona and "Undefined" not in self.checklist.role_persona:
                     filled_fields.append(f"Role: {self.checklist.role_persona}")
                 if self.checklist.task_goal:
                     filled_fields.append(f"Task: {self.checklist.task_goal}")
+                if self.checklist.use_case:
+                    filled_fields.append(f"Use Case: {self.checklist.use_case}")
                 if self.checklist.input_format:
                     filled_fields.append(f"Input: {self.checklist.input_format}")
                 if self.checklist.output_format:
