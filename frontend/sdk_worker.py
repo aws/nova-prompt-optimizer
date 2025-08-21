@@ -566,6 +566,8 @@ def run_optimization_worker(optimization_id: str, config: dict = None):
             def __getattr__(self, name):
                 return getattr(self.base_metric, name)
         
+        # Store original metric before wrapping to avoid infinite loop issues
+        original_metric = metric_adapter
         metric_adapter = ScoreCapturingMetric(metric_adapter, optimization_id, db)
         
         db.add_optimization_log(optimization_id, "success", "✅ All adapters created")
@@ -623,7 +625,7 @@ def run_optimization_worker(optimization_id: str, config: dict = None):
             
             print(f"🔍 DEBUG - Using official SDK Evaluator for optimized score calculation")
             
-            optimized_evaluator = Evaluator(optimized_prompt_adapter, test_dataset, metric_adapter.base_metric, inference_adapter)
+            optimized_evaluator = Evaluator(optimized_prompt_adapter, test_dataset, original_metric, inference_adapter)
             model_id = NOVA_MODELS[f"nova-{model_mode}"]["id"]
             optimized_score = optimized_evaluator.aggregate_score(model_id=model_id)
             
@@ -783,7 +785,7 @@ def run_optimization_worker(optimization_id: str, config: dict = None):
             else:
                 baseline_dataset_adapter = test_dataset
             
-            baseline_evaluator = Evaluator(prompt_adapter, baseline_dataset_adapter, metric_adapter.base_metric, inference_adapter)
+            baseline_evaluator = Evaluator(prompt_adapter, baseline_dataset_adapter, original_metric, inference_adapter)
             model_id = NOVA_MODELS[f"nova-{model_mode}"]["id"]
             
             db.add_optimization_log(optimization_id, "debug", f"Running baseline evaluation with model: {model_id}")
