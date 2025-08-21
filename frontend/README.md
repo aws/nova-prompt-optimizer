@@ -1,8 +1,8 @@
 # Nova Prompt Optimizer - Frontend
 
-A modern web interface for the Nova Prompt Optimizer SDK, built with FastHTML and SQLite for simplicity and performance.
+A modern web interface for the Nova Prompt Optimizer SDK, built with FastHTML and SQLite. Features AI-powered dataset generation, prompt optimization, and advanced "Optimize Further" capabilities.
 
-## **Quick Start**
+## **🚀 Quick Start**
 
 ### **Automated Installation (Recommended)**
 ```bash
@@ -42,33 +42,13 @@ python3 app.py
 open http://localhost:8000
 ```
 
-## **Prerequisites**
+## **📋 Prerequisites**
 
 ### **System Requirements**
 - **Python 3.8+** (Python 3.11+ recommended)
 - **pip** (Python package manager)
 - **4GB+ RAM** (for running optimizations)
 - **1GB+ disk space** (for dependencies and data)
-
-### **Operating System Support**
-- **macOS** (10.14+)
-- **Linux** (Ubuntu 18.04+, CentOS 7+)
-- **Windows** (10+, WSL recommended)
-
-### **Browser Support**
-- **Chrome** (90+)
-- **Firefox** (88+)
-- **Safari** (14+)
-- **Edge** (90+)
-
-## **Configuration**
-
-### **Default Configuration**
-The application works out-of-the-box with these defaults:
-- **Database**: SQLite (`nova_optimizer.db`)
-- **Port**: 8000
-- **Host**: localhost
-- **Mode**: Demo (if SDK not installed)
 
 ### **AWS Configuration (For Real Optimizations)**
 
@@ -90,9 +70,6 @@ export AWS_SECRET_ACCESS_KEY="your-secret-key"
 export AWS_DEFAULT_REGION="us-east-1"  # or your preferred region
 ```
 
-#### **Option 3: IAM Roles (EC2/Lambda)**
-If running on AWS infrastructure, use IAM roles instead of credentials.
-
 ### **Nova Model Access**
 To use real Nova models:
 1. Go to **Amazon Bedrock Model Access** page
@@ -101,142 +78,322 @@ To use real Nova models:
 4. Click **"Request access"**
 5. Wait for approval (usually instant)
 
-## **Running the Application**
+## **🏗️ Project Structure & File Explanations**
 
-### **Standard Run**
+### **Core Application Files**
+
+#### **`app.py`** - Main FastHTML Application
+- **Purpose**: Primary web server and route handler
+- **Key Features**:
+  - FastHTML web framework setup
+  - All HTTP routes (GET/POST endpoints)
+  - UI rendering and page layouts
+  - File upload handling
+  - Database integration
+- **Main Routes**:
+  - `/` - Dashboard homepage
+  - `/datasets` - Dataset management
+  - `/prompts` - Prompt creation/editing
+  - `/metrics` - AI metric generation
+  - `/optimization` - Optimization interface
+  - `/optimization/results/{id}` - Results viewing
+
+#### **`sdk_worker.py`** - Nova SDK Optimization Engine
+- **Purpose**: Handles all Nova SDK optimization operations
+- **Key Functions**:
+  - `run_optimization_worker()` - Main optimization orchestrator
+  - Dataset adaptation and splitting
+  - Prompt adapter creation and configuration
+  - Metric adapter setup and validation
+  - Baseline and optimized evaluation
+  - Results extraction and storage
+- **Process Flow**:
+  1. Load and validate configuration
+  2. Create dataset, prompt, and metric adapters
+  3. Run baseline evaluation
+  4. Execute Nova optimization
+  5. Evaluate optimized results
+  6. Extract and store prompt candidates
+
+#### **`database.py`** - SQLite Database Layer
+- **Purpose**: All database operations and schema management
+- **Key Tables**:
+  - `datasets` - Uploaded CSV datasets
+  - `prompts` - System/user prompt templates
+  - `metrics` - AI-generated evaluation metrics
+  - `optimizations` - Optimization job records
+  - `optimization_logs` - Detailed progress logs
+  - `prompt_candidates` - Optimization results
+- **Key Functions**:
+  - CRUD operations for all entities
+  - Optimization progress tracking
+  - Results storage and retrieval
+
+#### **`metric_service.py`** - AI Metric Generation Service
+- **Purpose**: Generates custom evaluation metrics using AI
+- **Key Features**:
+  - Dataset analysis and column detection
+  - AI-powered metric code generation
+  - Metric validation and testing
+  - Support for classification, regression, and custom metrics
+- **Process**:
+  1. Analyze dataset structure
+  2. Generate metric code using Nova
+  3. Validate generated code
+  4. Test metric with sample data
+
+### **Configuration & Utilities**
+
+#### **`config.py`** - Application Configuration
+- **Purpose**: Centralized configuration management
+- **Settings**:
+  - Database paths and connection settings
+  - Nova model configurations
+  - Rate limiting parameters
+  - File upload limits
+
+#### **`simple_rate_limiter.py`** - Rate Limiting Utility
+- **Purpose**: Manages AWS Bedrock API rate limits
+- **Features**:
+  - Token bucket algorithm
+  - Configurable rates per minute
+  - Thread-safe implementation
+  - Automatic rate adjustment
+
+#### **`prompt_templates.py`** - AI Prompt Templates
+- **Purpose**: Templates for AI-powered features
+- **Templates**:
+  - Dataset analysis prompts
+  - Metric generation prompts
+  - Sample data generation prompts
+  - Validation and testing prompts
+
+### **Setup & Deployment Scripts**
+
+#### **`setup.py`** - Database Initialization
+- **Purpose**: Creates and initializes SQLite database
+- **Actions**:
+  1. Creates database schema
+  2. Inserts sample data
+  3. Sets up initial configurations
+  4. Validates database integrity
+
+#### **`health_check.py`** - System Health Validation
+- **Purpose**: Validates system readiness
+- **Checks**:
+  - Python version compatibility
+  - Required dependencies
+  - AWS credentials (if configured)
+  - Database connectivity
+  - File system permissions
+
+#### **`install.sh`** - Automated Installation Script
 ```bash
-# Activate environment
+#!/bin/bash
+# Automated installation and setup
+set -e
+
+echo "🚀 Installing Nova Prompt Optimizer Frontend..."
+
+# Create virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
 
-# Start the application
+# Install dependencies
+pip install -r requirements.txt
+
+# Initialize database
+python3 setup.py
+
+# Run health check
+python3 health_check.py
+
+echo "✅ Installation complete! Run ./start.sh to begin."
+```
+
+#### **`start.sh`** - Application Startup Script
+```bash
+#!/bin/bash
+# Application startup script
+set -e
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run health check
+python3 health_check.py
+
+# Start application
+echo "🚀 Starting Nova Prompt Optimizer..."
 python3 app.py
-
-# Expected output:
-# ✅ Nova Prompt Optimizer SDK loaded successfully
-# ✅ Database initialized: nova_optimizer.db
-# ✅ Initial sample data inserted
-# INFO: Started server process
-# INFO: Uvicorn running on http://127.0.0.1:8000
 ```
 
-### **Custom Port/Host**
-```bash
-# Run on different port
-python3 -c "
-import uvicorn
-from app import app
-uvicorn.run(app, host='0.0.0.0', port=8080)
-"
-```
+## **🎯 Key Features**
 
-### **Background/Production Run**
-```bash
-# Install uvicorn for production
-pip install uvicorn
+### **1. AI Dataset Generation** ⭐ NEW FEATURE
+- **Purpose**: Generate synthetic datasets using conversational AI
+- **Process**:
+  1. **Describe Dataset**: User describes desired dataset in natural language
+  2. **AI Analysis**: System analyzes requirements and suggests structure
+  3. **Sample Generation**: AI generates realistic sample data
+  4. **Review & Edit**: User reviews and modifies generated samples
+  5. **Finalize**: Dataset saved and ready for optimization
+- **Benefits**:
+  - No need to manually create datasets
+  - Consistent, realistic sample data
+  - Customizable to specific use cases
+  - Integrated with optimization workflow
 
-# Run in background
-nohup uvicorn app:app --host 0.0.0.0 --port 8000 &
+### **2. Optimize Further** ⭐ ADVANCED FEATURE
+- **Purpose**: Iteratively improve already optimized prompts
+- **How It Works**:
+  1. Start with a completed optimization
+  2. Click "Optimize Further" on results page
+  3. System uses optimized prompt as new baseline
+  4. Includes few-shot examples from previous optimization
+  5. Runs new optimization cycle for additional improvements
+- **Key Benefits**:
+  - **Iterative Improvement**: Build upon previous optimizations
+  - **Few-shot Integration**: Automatically includes learned examples
+  - **Baseline Accuracy**: Maintains score consistency across iterations
+  - **Rate Limit Inheritance**: Uses same performance settings
+- **Technical Details**:
+  - Inherits rate limits from original optimization
+  - Preserves few-shot examples in baseline evaluation
+  - Prevents infinite loops with safety mechanisms
+  - Runs in separate process to avoid threading issues
 
-# Or with gunicorn for production
-pip install gunicorn
-gunicorn app:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-```
-
-## **Features**
-
-### **Core Features**
+### **3. Core Optimization Features**
 - **Dataset Management**: Upload and manage CSV datasets
-- **Prompt Creation**: Create and edit system/user prompts
-- **Metric Generation**: AI-powered metric creation and selection
-- **Optimization**: Real-time prompt optimization using Nova SDK
+- **Prompt Creation**: Create and edit system/user prompts with variables
+- **Metric Generation**: AI-powered custom metric creation
+- **Real-time Monitoring**: Live progress tracking during optimizations
 - **Results Analysis**: Detailed comparison of baseline vs optimized prompts
-- **Few-shot Examples**: Automatic generation and display of training examples
 
-### **User Interface**
-- **Modern Design**: Clean, responsive interface using Shad4FastHTML
-- **Dark/Light Mode**: Toggle between themes with persistent preference
-- **Real-time Updates**: Live progress monitoring during optimizations
-- **Interactive Components**: Switches, accordions, and collapsible sections
-- **Mobile Friendly**: Responsive design works on all devices
+## **📊 Step-by-Step Usage Guide**
 
-### **Technical Features**
-- **Rate Limiting**: Intelligent rate limiting for AWS Bedrock API calls
-- **Error Handling**: Comprehensive error handling and user feedback
-- **Database**: SQLite for simplicity and portability
-- **Logging**: Detailed optimization logs and progress tracking
-- **File Management**: Automatic cleanup and organization
+### **Step 1: Create or Generate Dataset**
 
-## **Project Structure**
+#### **Option A: Upload Existing Dataset**
+1. Navigate to **Datasets** page
+2. Click **"Upload Dataset"**
+3. Select CSV file with input/output columns
+4. Review column mapping
+5. Save dataset
 
+#### **Option B: Generate Dataset with AI** ⭐
+1. Navigate to **Datasets** page
+2. Click **"Generate Dataset with AI"**
+3. **Describe Your Dataset**:
+   ```
+   Example: "Create a customer support email classification dataset 
+   with categories for billing, technical, and general inquiries"
+   ```
+4. **Review AI Suggestions**: System analyzes and suggests structure
+5. **Generate Samples**: AI creates realistic sample data
+6. **Review & Edit**: Modify samples as needed
+7. **Finalize**: Save generated dataset
+
+### **Step 2: Create Prompts**
+1. Navigate to **Prompts** page
+2. Click **"Create Prompt"**
+3. Enter **System Prompt**: Instructions for the AI
+4. Enter **User Prompt**: Template with variables like `{input}`
+5. Test prompt with sample data
+6. Save prompt
+
+### **Step 3: Generate Metrics**
+1. Navigate to **Metrics** page
+2. Click **"Generate Metric with AI"**
+3. Select your dataset
+4. Describe evaluation criteria
+5. AI generates custom metric code
+6. Test and validate metric
+7. Save metric
+
+### **Step 4: Run Optimization**
+1. Navigate to **Optimization** page
+2. Select prompt, dataset, and metric
+3. Configure settings (model, rate limit)
+4. Click **"Start Optimization"**
+5. Monitor progress in real-time
+6. View results when complete
+
+### **Step 5: Optimize Further** ⭐
+1. From optimization results page
+2. Click **"Optimize Further"**
+3. System automatically:
+   - Uses optimized prompt as baseline
+   - Includes few-shot examples
+   - Inherits rate limits and settings
+4. Monitor new optimization progress
+5. Compare iterative improvements
+
+## **🔧 Advanced Configuration**
+
+### **Custom Rate Limits**
+```python
+# In config.py
+RATE_LIMITS = {
+    "nova-lite": 1000,    # RPM for Nova Lite
+    "nova-pro": 500,      # RPM for Nova Pro
+    "nova-premier": 100   # RPM for Nova Premier
+}
 ```
-frontend/
-├── app.py                    # Main FastHTML application
-├── sdk_worker.py            # Nova SDK optimization worker
-├── database.py              # SQLite database layer
-├── config.py                # Configuration settings
-├── metric_service.py        # AI metric generation service
-├── prompt_templates.py      # AI prompt templates
-├── simple_rate_limiter.py   # Rate limiting utility
-├── requirements.txt         # Python dependencies
-├── setup.py                 # Database initialization
-├── health_check.py          # System health validation
-├── install.sh               # Automated installation script
-├── start.sh                 # Application startup script
-├── nova_optimizer.db        # SQLite database file
-├── components/              # UI components
-│   ├── layout.py           # Page layouts and styling
-│   ├── navbar.py           # Navigation bar
-│   ├── ui.py               # UI elements
-│   └── metrics_page.py     # Metrics interface
-├── uploads/                # User uploaded datasets
-├── optimized_prompts/      # Optimization results
-├── data/                   # Temporary optimization data
-├── .venv/                  # Virtual environment
-├── README.md               # This file
-└── FEATURES.md             # Feature documentation
+
+### **Database Customization**
+```python
+# Custom database path
+DATABASE_PATH = "/custom/path/nova_optimizer.db"
+
+# Connection pool settings
+CONNECTION_POOL_SIZE = 10
+CONNECTION_TIMEOUT = 30
 ```
 
-## **Troubleshooting**
+### **File Upload Limits**
+```python
+# Maximum file sizes
+MAX_DATASET_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_SAMPLES = 10000                   # Maximum dataset rows
+```
+
+## **🐛 Troubleshooting**
 
 ### **Common Issues**
 
-#### **Issue: "ModuleNotFoundError"**
+#### **Issue: "Optimize Further" Infinite Loop**
 ```bash
-# Solution: Install dependencies
-pip install -r requirements.txt
+# Check logs for safety limit messages
+tail -f optimization_logs.txt
 
-# Verify virtual environment is activated
-which python3  # Should show .venv path
+# Solution: Already fixed in latest version
+# Uses original_metric to prevent wrapper conflicts
 ```
 
-#### **Issue: "Permission denied" on port 8000**
+#### **Issue: Rate Limit Inheritance Not Working**
 ```bash
-# Solution: Use different port
-python3 -c "
-import uvicorn
-from app import app
-uvicorn.run(app, host='127.0.0.1', port=8080)
-"
+# Check optimization logs for rate limit extraction
+# Should see: "Inherited rate limit from original optimization: 1000 RPM"
+
+# Manual fix: Edit config in optimize_further function
 ```
 
-#### **Issue: Database errors**
+#### **Issue: Few-shot Examples Not Included in Baseline**
 ```bash
-# Solution: Reset database
-python3 setup.py
+# Verify baseline_few_shot_examples in config
+# Should see: "Added X few-shot examples to baseline evaluation"
 ```
 
-#### **Issue: AWS credentials not found**
+#### **Issue: DSPy Thread Configuration Error**
 ```bash
-# Solution: Configure AWS credentials
-aws configure
-# OR set environment variables
-export AWS_ACCESS_KEY_ID="your-key"
-export AWS_SECRET_ACCESS_KEY="your-secret"
+# Error: "dspy.settings can only be changed by the thread that initially configured it"
+# Solution: Already fixed - uses subprocess instead of threading
 ```
 
 ### **Debug Mode**
 ```bash
-# Run with debug output
+# Run with detailed debugging
 python3 -c "
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -246,33 +403,80 @@ uvicorn.run(app, host='127.0.0.1', port=8000, log_level='debug')
 "
 ```
 
-### **Clean Installation**
+## **🚀 Deployment**
+
+### **Development**
 ```bash
-# If all else fails, clean install
-rm -rf .venv nova_optimizer.db
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python3 setup.py
+# Standard development server
 python3 app.py
 ```
 
-## **Getting Help**
+### **Production**
+```bash
+# Install production server
+pip install gunicorn
 
-### **Check These First**
-1. **Logs**: Check console output for error messages
-2. **Database**: Verify `nova_optimizer.db` exists and has data
-3. **Network**: Ensure port 8000 is available
-4. **Dependencies**: Verify all packages are installed
+# Run with gunicorn
+gunicorn app:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 
-### **Common Solutions**
-- **Restart the app**: `Ctrl+C` then `python3 app.py`
-- **Reset database**: Run `python3 setup.py`
-- **Reinstall dependencies**: Delete `.venv` and reinstall
-- **Check AWS credentials**: Verify AWS configuration
+# Or with uvicorn
+uvicorn app:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### **Docker Deployment**
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+RUN python3 setup.py
+
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+## **📈 Performance Tips**
+
+### **Optimization Performance**
+- **Use higher rate limits** for faster optimization (1000+ RPM)
+- **Smaller datasets** optimize faster (< 1000 samples)
+- **Simpler metrics** reduce evaluation time
+- **Pro/Premier models** provide better optimization quality
+
+### **System Performance**
+- **SSD storage** improves database performance
+- **8GB+ RAM** recommended for large datasets
+- **Multiple CPU cores** help with parallel processing
+
+## **🔄 Workflow Examples**
+
+### **Basic Optimization Workflow**
+1. Upload customer support emails dataset
+2. Create classification prompt
+3. Generate accuracy metric
+4. Run optimization
+5. Review 15-20% improvement
+6. Deploy optimized prompt
+
+### **Iterative Optimization Workflow** ⭐
+1. Complete basic optimization (baseline: 65%, optimized: 78%)
+2. Click "Optimize Further"
+3. System uses 78% prompt as new baseline
+4. Run second optimization (baseline: 78%, optimized: 85%)
+5. Continue iterating for maximum performance
+
+### **AI Dataset Generation Workflow** ⭐
+1. Describe: "Email sentiment analysis dataset"
+2. AI suggests: input (email text), output (positive/negative/neutral)
+3. Generate 500 realistic email samples
+4. Review and edit samples
+5. Use for prompt optimization
 
 ---
 
-**Ready to optimize prompts with Nova!**
+**🎉 Ready to optimize prompts with Nova!**
 
-Open http://localhost:8000 in your browser and begin creating datasets, prompts, and running optimizations.
+Open http://localhost:8000 in your browser and begin creating datasets, prompts, and running optimizations with advanced AI-powered features.
