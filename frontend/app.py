@@ -3993,6 +3993,7 @@ async def dataset_generator_page(request):
                 
                 if (data.success) {
                     showStep(3);
+                    console.log('Samples received:', data.samples); // Debug log
                     displaySamples(data.samples);
                 } else {
                     alert('Error generating samples: ' + data.error);
@@ -4005,10 +4006,17 @@ async def dataset_generator_page(request):
         }
         
         function displaySamples(samples) {
+            console.log('displaySamples called with:', samples); // Debug log
             const container = document.getElementById('samples-container');
+            console.log('Container found:', container); // Debug log
             if (!container) return;
             
             container.innerHTML = '';
+            
+            if (!samples || samples.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280;">No samples generated yet.</p>';
+                return;
+            }
             
             samples.forEach((sample, index) => {
                 const sampleDiv = document.createElement('div');
