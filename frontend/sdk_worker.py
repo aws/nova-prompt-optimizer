@@ -794,6 +794,15 @@ def run_optimization_worker(optimization_id: str, config: dict = None):
             else:
                 baseline_dataset_adapter = test_dataset
             
+            # Check if this is a "Further Optimization" with few-shot examples
+            baseline_few_shot_examples = config.get('baseline_few_shot_examples', [])
+            if baseline_few_shot_examples:
+                print(f"🔍 DEBUG - Adding {len(baseline_few_shot_examples)} few-shot examples to baseline prompt")
+                # Add few-shot examples to prompt adapter for accurate baseline evaluation
+                for example in baseline_few_shot_examples:
+                    prompt_adapter.add_few_shot(example)
+                db.add_optimization_log(optimization_id, "info", f"📝 Added {len(baseline_few_shot_examples)} few-shot examples to baseline evaluation")
+            
             baseline_evaluator = Evaluator(prompt_adapter, baseline_dataset_adapter, original_metric, inference_adapter)
             model_id = NOVA_MODELS[f"nova-{model_mode}"]["id"]
             
