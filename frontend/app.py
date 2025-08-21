@@ -3826,7 +3826,11 @@ async def dataset_generator_page(request):
                   style="margin-bottom: 1rem;"),
                 Div(id="samples-container", style="margin-bottom: 1rem;"),
                 Div(
-                    Button("Generate More Samples", 
+                    Button("Improve Samples", 
+                           onclick="improveSamples()",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+                           style="margin-right: 0.5rem;"),
+                    Button("Generate More", 
                            onclick="generateMoreSamples()",
                            cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
                            style="margin-right: 0.5rem;"),
@@ -4016,13 +4020,24 @@ async def dataset_generator_page(request):
                     <div style="margin-bottom: 0.5rem;">
                         <strong>Input:</strong> ${sample.input || 'N/A'}
                     </div>
-                    <div>
+                    <div style="margin-bottom: 1rem;">
                         <strong>Output:</strong> ${sample.output || sample.answer || 'N/A'}
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Annotation (optional):</label>
+                        <textarea 
+                            placeholder="Add feedback about quality, missing elements, desired improvements..."
+                            style="width: 100%; min-height: 60px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; resize: vertical;"
+                            data-sample-index="${index}">
+                        </textarea>
                     </div>
                 `;
                 
                 container.appendChild(sampleDiv);
             });
+            
+            // Store samples for later use
+            window.currentSamples = samples;
         }
         
         function showStep(stepNumber) {
@@ -4046,6 +4061,59 @@ async def dataset_generator_page(request):
         function generateMoreSamples() {
             // TODO: Implement generate more samples
             alert('Generate more samples functionality coming soon!');
+        }
+        
+        async function improveSamples() {
+            if (!currentSession) {
+                alert('No active session');
+                return;
+            }
+            
+            // Collect annotations from textareas
+            const annotations = [];
+            const textareas = document.querySelectorAll('[data-sample-index]');
+            
+            textareas.forEach((textarea, index) => {
+                const annotation = textarea.value.trim();
+                if (annotation) {
+                    annotations.push({
+                        sample_index: index,
+                        annotation: annotation
+                    });
+                }
+            });
+            
+            if (annotations.length === 0) {
+                alert('Please add annotations to at least one sample to provide feedback for improvement.');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const formData = new FormData();
+                formData.append('session_id', currentSession);
+                formData.append('annotations', JSON.stringify(annotations));
+                
+                const response = await fetch('/datasets/generator/annotate', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Display improved samples
+                    displaySamples(data.improved_samples);
+                    alert('Samples improved based on your annotations!');
+                } else {
+                    alert('Error improving samples: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            
+            hideLoading();
         }
         
         function finalizeDataset() {
