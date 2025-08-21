@@ -3596,6 +3596,8 @@ async def analyze_prompt(request):
         conversation_service = app.generator_sessions[session_id]['conversation_service']
         prompt_text = f"System: {prompt_data.get('system_prompt', '')}\nUser: {prompt_data.get('user_prompt', '')}"
         
+        print(f"🔍 DEBUG - Prompt text being analyzed: {prompt_text}")
+        
         analysis = conversation_service.analyze_prompt(prompt_text)
         
         return {

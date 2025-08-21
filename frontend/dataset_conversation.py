@@ -65,22 +65,29 @@ class DatasetConversationService:
         print(f"🔍 DEBUG - Analyzing prompt: {prompt_text[:200]}...")
         
         analysis_prompt = f"""
-        Analyze this user's prompt and extract what they want to create a dataset for:
+        You are analyzing a user's prompt to understand what kind of evaluation dataset they need.
         
-        USER'S PROMPT:
+        USER'S ACTUAL PROMPT:
         {prompt_text}
         
-        Based on this prompt, what dataset would they need? Return JSON:
+        Based on this prompt, what evaluation dataset would help test this prompt's performance?
+        
+        For example:
+        - If it's an IT support prompt → need "IT support question answering" dataset
+        - If it's a medical prompt → need "medical question answering" dataset  
+        - If it's a classification prompt → need "text classification" dataset
+        
+        Return JSON:
         {{
-            "role_persona": "What role should the AI play based on this prompt?",
-            "task_goal": "What task is this prompt trying to accomplish?", 
-            "input_type": "What kind of input would this prompt receive?",
-            "output_type": "What should the AI output for this prompt?",
-            "domain": "What domain/field is this prompt for?",
-            "use_case": "What is the use case for this prompt?"
+            "role_persona": "What role does this prompt make the AI play?",
+            "task_goal": "What specific task does this prompt accomplish?", 
+            "input_type": "What kind of input does this prompt expect?",
+            "output_type": "What should the AI output when using this prompt?",
+            "domain": "What domain/field is this prompt designed for?",
+            "use_case": "What evaluation use case would test this prompt?"
         }}
         
-        Focus on the actual prompt content, not the analysis instructions.
+        Focus on the ACTUAL prompt content, not dataset creation instructions.
         """
         
         try:
