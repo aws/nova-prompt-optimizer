@@ -127,10 +127,16 @@ class DatasetConversationService:
     def _get_next_question(self, user_response: str) -> Dict[str, Any]:
         """Determine next question based on user response and checklist state"""
         
+        print(f"🔍 DEBUG - _get_next_question called with: '{user_response}'")
+        print(f"🔍 DEBUG - Current checklist state: {asdict(self.checklist)}")
+        
         # Update checklist based on current conversation context
         self._update_checklist_from_response(user_response)
         
+        print(f"🔍 DEBUG - Updated checklist state: {asdict(self.checklist)}")
+        
         missing_fields = self.checklist.get_missing_fields()
+        print(f"🔍 DEBUG - Missing fields: {missing_fields}")
         
         if not missing_fields:
             return {
@@ -153,7 +159,10 @@ class DatasetConversationService:
     def _update_checklist_from_response(self, response: str):
         """Update checklist based on user response using AI"""
         
+        print(f"🔍 DEBUG - _update_checklist_from_response called with: '{response}'")
+        
         current_step = self._get_current_step()
+        print(f"🔍 DEBUG - Current step: {current_step}")
         
         update_prompt = f"""
         Based on this user response, extract relevant information for dataset generation:
@@ -180,8 +189,12 @@ class DatasetConversationService:
         """
         
         try:
+            print(f"🔍 DEBUG - Calling Bedrock with update prompt")
             response_data = self._call_bedrock(update_prompt)
+            print(f"🔍 DEBUG - Bedrock response: {response_data}")
+            
             updates = json.loads(response_data)
+            print(f"🔍 DEBUG - Parsed updates: {updates}")
             
             # Update checklist fields
             for field, value in updates.items():

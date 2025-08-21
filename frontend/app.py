@@ -3616,11 +3616,17 @@ async def continue_conversation(request):
         session_id = form_data.get('session_id')
         user_message = form_data.get('message', '')
         
+        print(f"🔍 DEBUG - Conversation request: session_id={session_id}, message='{user_message}'")
+        
         if not session_id or session_id not in app.generator_sessions:
+            print(f"🔍 DEBUG - Invalid session: {session_id}, available sessions: {list(app.generator_sessions.keys())}")
             return {"success": False, "error": "Invalid session"}
         
         conversation_service = app.generator_sessions[session_id]['conversation_service']
+        print(f"🔍 DEBUG - Calling conversation service with message: '{user_message}'")
+        
         response = conversation_service.start_conversation(user_message)
+        print(f"🔍 DEBUG - Conversation service response: {response}")
         
         return {
             "success": True,
