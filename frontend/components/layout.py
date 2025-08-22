@@ -693,7 +693,8 @@ def create_main_layout(
                     onclick="toggleTheme()",
                     id="theme-toggle",
                     title="Toggle theme",
-                    cls="text-2xl hover:opacity-70 transition-opacity cursor-pointer bg-transparent border-none p-2"
+                    cls="text-xl text-foreground hover:text-muted-foreground transition-colors bg-transparent border-none p-1",
+                    style="background: none !important; box-shadow: none !important;"
                 ),
                 cls="flex-shrink-0"
             ),
