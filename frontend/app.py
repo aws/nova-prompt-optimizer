@@ -3931,6 +3931,10 @@ async def dataset_generator_page(request):
                 if (conversationData.success !== false) {
                     showStep(2);
                     addMessage('ai', conversationData.message);
+                    
+                    if (conversationData.ready_for_generation) {
+                        showGenerateSamplesButton();
+                    }
                 }
             }
         }
@@ -4008,7 +4012,17 @@ async def dataset_generator_page(request):
             const buttonDiv = document.createElement('div');
             buttonDiv.style.textAlign = 'center';
             buttonDiv.style.marginTop = '1rem';
-            buttonDiv.innerHTML = '<button onclick="generateSamples()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">Generate Sample Records</button>';
+            buttonDiv.innerHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Select Nova Model:</label>
+                    <select id="model-select" style="width: 200px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;">
+                        <option value="us.amazon.nova-lite-v1:0">Nova Lite (Fast)</option>
+                        <option value="us.amazon.nova-pro-v1:0" selected>Nova Pro (Balanced)</option>
+                        <option value="us.amazon.nova-premier-v1:0">Nova Premier (Best Quality)</option>
+                    </select>
+                </div>
+                <button onclick="generateSamples()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">Generate Sample Records</button>
+            `;
             conversationArea.appendChild(buttonDiv);
         }
         
@@ -4016,8 +4030,12 @@ async def dataset_generator_page(request):
             showLoading();
             
             try {
+                const modelSelect = document.getElementById('model-select');
+                const selectedModel = modelSelect ? modelSelect.value : 'us.amazon.nova-pro-v1:0';
+                
                 const formData = new FormData();
                 formData.append('session_id', currentSession);
+                formData.append('model_id', selectedModel);
                 
                 const response = await fetch('/datasets/generator/generate-samples', {
                     method: 'POST',

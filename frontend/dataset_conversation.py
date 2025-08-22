@@ -191,8 +191,9 @@ class DatasetConversationService:
                         "checklist_status": self._get_checklist_status()
                     }
                 else:
+                    # All fields filled but show review with generate option
                     return {
-                        "message": summary + "\nPerfect! I have all the information needed to generate your dataset.",
+                        "message": summary + "\n**Ready to generate sample records!**",
                         "step": "complete",
                         "checklist_status": self._get_checklist_status(),
                         "ready_for_generation": True
