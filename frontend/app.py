@@ -3588,13 +3588,22 @@ async def analyze_prompt(request):
             return {"success": False, "error": "Invalid session"}
         
         # Get prompt data
+        db = Database()
         prompt_data = db.get_prompt(prompt_id)
         if not prompt_data:
             return {"success": False, "error": "Prompt not found"}
         
+        print(f"🔍 DEBUG - Prompt data retrieved: {prompt_data}")
+        
         # Analyze prompt
         conversation_service = app.generator_sessions[session_id]['conversation_service']
-        prompt_text = f"System: {prompt_data.get('system_prompt', '')}\nUser: {prompt_data.get('user_prompt', '')}"
+        
+        # Extract prompt content from variables JSON
+        variables = prompt_data.get('variables', {})
+        system_prompt = variables.get('system_prompt', '')
+        user_prompt = variables.get('user_prompt', '')
+        
+        prompt_text = f"System: {system_prompt}\nUser: {user_prompt}"
         
         print(f"🔍 DEBUG - Prompt text being analyzed: {prompt_text}")
         
@@ -3881,11 +3890,11 @@ async def dataset_generator_page(request):
                     // If prompt selected, analyze it first
                     if (selectedPrompt) {
                         await analyzePrompt(selectedPrompt);
+                    } else {
+                        // No prompt selected, start conversation directly
+                        showStep(2);
+                        addMessage('ai', data.message);
                     }
-                    
-                    // Show conversation
-                    showStep(2);
-                    addMessage('ai', data.message);
                     
                 } else {
                     alert('Error starting generator: ' + data.error);
@@ -3909,8 +3918,20 @@ async def dataset_generator_page(request):
             
             const data = await response.json();
             if (data.success && data.analysis) {
-                // Don't show analysis here - let the conversation service handle it
                 console.log('Prompt analyzed successfully:', data.analysis);
+                
+                // Start conversation after analysis to show pre-filled requirements
+                const conversationResponse = await fetch('/datasets/generator/conversation', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `session_id=${currentSession}`
+                });
+                
+                const conversationData = await conversationResponse.json();
+                if (conversationData.success !== false) {
+                    showStep(2);
+                    addMessage('ai', conversationData.message);
+                }
             }
         }
         
@@ -3959,12 +3980,23 @@ async def dataset_generator_page(request):
             messageDiv.style.padding = '0.75rem';
             messageDiv.style.borderRadius = '0.5rem';
             
+            // Simple markdown rendering
+            function renderMarkdown(text) {
+                return text
+                    .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')  // **bold**
+                    .replace(/\\*(.*?)\\*/g, '<em>$1</em>')              // *italic*
+                    .replace(/^### (.*$)/gm, '<h3>$1</h3>')           // ### headers
+                    .replace(/^## (.*$)/gm, '<h2>$1</h2>')            // ## headers
+                    .replace(/^# (.*$)/gm, '<h1>$1</h1>')             // # headers
+                    .replace(/\\n/g, '<br>');                          // line breaks
+            }
+            
             if (sender === 'ai') {
                 messageDiv.style.backgroundColor = '#f3f4f6';
-                messageDiv.innerHTML = '<strong>AI:</strong> ' + message;
+                messageDiv.innerHTML = '<strong>AI:</strong> ' + renderMarkdown(message);
             } else {
                 messageDiv.style.backgroundColor = '#dbeafe';
-                messageDiv.innerHTML = '<strong>You:</strong> ' + message;
+                messageDiv.innerHTML = '<strong>You:</strong> ' + renderMarkdown(message);
             }
             
             conversationArea.appendChild(messageDiv);

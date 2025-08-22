@@ -70,24 +70,28 @@ class DatasetConversationService:
         USER'S ACTUAL PROMPT:
         {prompt_text}
         
-        Based on this prompt, what evaluation dataset would help test this prompt's performance?
+        Based on this prompt, extract the EXACT requirements for dataset generation.
+        
+        CRITICAL: Look for specific output format requirements, XML structures, classification categories, 
+        scoring systems, and any detailed specifications mentioned in the prompt.
         
         For example:
-        - If it's an IT support prompt → need "IT support question answering" dataset
-        - If it's a medical prompt → need "medical question answering" dataset  
-        - If it's a classification prompt → need "text classification" dataset
+        - If the prompt specifies XML format with specific tags → extract the exact XML structure
+        - If it mentions classification categories → list the exact categories
+        - If it includes scoring systems → note the scoring ranges and criteria
+        - If it specifies demographic inference → include those requirements
         
         Return JSON:
         {{
             "role_persona": "What role does this prompt make the AI play?",
             "task_goal": "What specific task does this prompt accomplish?", 
             "input_type": "What kind of input does this prompt expect?",
-            "output_type": "What should the AI output when using this prompt?",
+            "output_type": "What should the AI output? Include EXACT format specifications, XML structure, classification categories, scoring systems, etc.",
             "domain": "What domain/field is this prompt designed for?",
             "use_case": "What evaluation use case would test this prompt?"
         }}
         
-        Focus on the ACTUAL prompt content, not dataset creation instructions.
+        Focus on extracting the EXACT specifications from the prompt, especially output format details.
         """
         
         try:
@@ -159,20 +163,31 @@ class DatasetConversationService:
                     filled_fields.append(f"Domain: {self.checklist.domain_expertise}")
                 
                 if filled_fields:
-                    summary = "I analyzed your prompt and pre-filled some requirements:\n"
+                    summary = "**Prompt Analysis Complete**\n\n"
+                    summary += "I analyzed your selected prompt and extracted these requirements:\n\n"
+                    summary += "**Extracted Requirements:**\n"
                     for field in filled_fields:
                         summary += f"• {field}\n"
+                    summary += f"\n**Please Review:**\n"
+                    summary += f"• Are these requirements accurate?\n"
+                    summary += f"• Would you like to modify anything?\n"
+                    summary += f"• Any additional requirements to add?\n\n"
                 else:
                     summary = "I analyzed your prompt but couldn't extract clear requirements. "
                 
                 if missing_fields:
                     next_field = missing_fields[0]
                     question = self._get_question_for_field(next_field)
-                    summary += f"\nNow let's fill in the remaining details. {question}"
+                    summary += f"**Next Step:** {next_field.replace('_', ' ').title()}\n\n"
+                    summary += f"**How to Respond:**\n"
+                    summary += f"• *'Continue'* or *'Looks good'* → Proceed with current requirements\n"
+                    summary += f"• *'Change [field] to [value]'* → Modify specific requirements\n"
+                    summary += f"• *'Add [requirement]'* → Include additional details\n\n"
+                    summary += f"What would you like to do?"
                     
                     return {
                         "message": summary,
-                        "step": next_field,
+                        "step": "review_analysis",
                         "checklist_status": self._get_checklist_status()
                     }
                 else:
@@ -207,6 +222,10 @@ class DatasetConversationService:
         print(f"🔍 DEBUG - _get_next_question called with: '{user_response}'")
         print(f"🔍 DEBUG - Current checklist state: {asdict(self.checklist)}")
         
+        # Check if user is asking for clarification or wants to continue
+        continue_keywords = ['continue', 'looks good', 'proceed', 'next', 'done', 'ready']
+        is_continue_request = any(keyword in user_response.lower() for keyword in continue_keywords)
+        
         # Update checklist based on current conversation context
         self._update_checklist_from_response(user_response)
         
@@ -215,12 +234,21 @@ class DatasetConversationService:
         missing_fields = self.checklist.get_missing_fields()
         print(f"🔍 DEBUG - Missing fields: {missing_fields}")
         
-        if not missing_fields:
+        # If user explicitly wants to continue and no missing fields, complete
+        if not missing_fields and is_continue_request:
             return {
                 "message": "Perfect! I have all the information needed to generate your dataset. Here's what I understand:\n\n" + self._summarize_requirements(),
                 "step": "complete",
                 "checklist_status": self._get_checklist_status(),
                 "ready_for_generation": True
+            }
+        
+        # If no missing fields but user didn't explicitly continue, ask for confirmation
+        if not missing_fields:
+            return {
+                "message": "I've updated the requirements based on your feedback. Here's the current summary:\n\n" + self._summarize_requirements() + "\n\nWould you like to continue with these requirements or make any other changes?",
+                "step": "review_updated",
+                "checklist_status": self._get_checklist_status()
             }
         
         # Ask about the next missing field
@@ -250,19 +278,27 @@ class DatasetConversationService:
         Current checklist state:
         {json.dumps(asdict(self.checklist), indent=2)}
         
+        IMPORTANT: If the user is asking for clarification, more details, or to be "more explicit" about a field, 
+        DO NOT mark that field as complete. Instead, provide a more detailed version of that field.
+        
+        For example:
+        - "be more explicit on output" → update output_format with more detailed description
+        - "tell me more about the role" → update role_persona with more details
+        - "what exactly should the input be" → update input_format with specifics
+        
         Update the checklist fields based on the user's response. Return JSON with only the fields that should be updated:
         {{
-            "role_persona": "extracted role/persona if mentioned",
-            "task_goal": "extracted task goal if mentioned",
-            "use_case": "extracted use case if mentioned",
-            "input_format": "extracted input format if mentioned",
-            "output_format": "extracted output format if mentioned",
-            "domain_expertise": "extracted domain if mentioned",
+            "role_persona": "extracted role/persona if mentioned or more detailed if requested",
+            "task_goal": "extracted task goal if mentioned or more detailed if requested", 
+            "use_case": "extracted use case if mentioned or more detailed if requested",
+            "input_format": "extracted input format if mentioned or more detailed if requested",
+            "output_format": "extracted output format if mentioned or MORE DETAILED if user asks for clarification",
+            "domain_expertise": "extracted domain if mentioned or more detailed if requested",
             "diversity_requirements": {{"variations": ["list of variations needed"]}},
             "constraints": {{"length": "any length constraints", "tone": "tone requirements"}}
         }}
         
-        Only include fields that the user actually mentioned or that can be inferred from their response.
+        Only include fields that the user actually mentioned or requested more details about.
         """
         
         try:
