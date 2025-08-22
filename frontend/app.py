@@ -158,7 +158,7 @@ async def index(request):
                         Div(
                             H3(str(len(optimization_runs)), cls="text-3xl font-bold text-primary mb-2"),
                             P("Completed optimizations", cls="text-sm text-muted-foreground"),
-                            A("View Results →", href="/results", cls="inline-flex items-center text-sm text-primary hover:underline mt-2")
+                            A("View Results →", href="/optimization", cls="inline-flex items-center text-sm text-primary hover:underline mt-2")
                         )
                     ),
                     cls="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
