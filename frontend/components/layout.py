@@ -689,7 +689,7 @@ def create_main_layout(
             ),
             Div(
                 Button(
-                    "🌙",
+                    "◐",
                     onclick="toggleTheme()",
                     id="theme-toggle",
                     title="Toggle theme",
