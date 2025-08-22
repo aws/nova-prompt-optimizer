@@ -379,6 +379,23 @@ def create_main_layout(
         
         # Essential layout styles that work with Shad4FastHTML
         Style("""
+            /* Global dark mode text color fixes */
+            [data-theme="dark"] h1,
+            [data-theme="dark"] h2, 
+            [data-theme="dark"] h3,
+            [data-theme="dark"] h4,
+            [data-theme="dark"] h5,
+            [data-theme="dark"] h6 {
+                color: hsl(var(--foreground)) !important;
+            }
+            
+            [data-theme="dark"] [style*="color: #1f2937"],
+            [data-theme="dark"] [style*="color: #374151"],
+            [data-theme="dark"] [style*="color: #111827"] {
+                color: hsl(var(--foreground)) !important;
+            }
+        """),
+        Style("""
             /* Global Layout */
             .main-container {
                 max-width: 95%;

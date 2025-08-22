@@ -1530,7 +1530,7 @@ async def prompts_page(request):
             content=Div(
                 *[Div(
                     Div(
-                        H4(prompt["name"], style="margin: 0 0 0.5rem 0; color: #1f2937;"),
+                        H4(prompt["name"], cls="text-lg font-semibold text-foreground", style="margin: 0 0 0.5rem 0;"),
                         P(f"{prompt['type']} • Variables: {', '.join(prompt['variables'])}", 
                           style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;"),
                         P(f"Created: {prompt['created']} • Performance: {prompt['performance']}", 
