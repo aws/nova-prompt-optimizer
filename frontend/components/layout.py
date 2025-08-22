@@ -353,9 +353,9 @@ def create_navbar_tabs_only(current_page: str = "") -> Div:
         *[A(
             item["name"],
             href=item["path"],
-            cls=f"px-4 py-2 text-sm font-medium rounded-md transition-colors {'bg-primary text-primary-foreground' if current_page == item['key'] else 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+            cls=f"px-4 py-2 text-sm font-medium rounded-md transition-colors text-center flex-1 {'bg-primary text-primary-foreground' if current_page == item['key'] else 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
         ) for item in nav_items],
-        cls="flex items-center gap-2"
+        cls="flex items-center justify-between w-full"
     )
 
 
@@ -702,7 +702,10 @@ def create_main_layout(
         
         # Navigation row (centered)
         Div(
-            create_navbar_tabs_only(current_page),
+            Div(
+                create_navbar_tabs_only(current_page),
+                cls="w-full max-w-6xl"
+            ),
             cls="flex justify-center px-6 py-3 border-b border-border bg-muted/30"
         ),
         
