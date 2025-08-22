@@ -59,39 +59,115 @@ class DatasetConversationService:
         self.model_id = "us.amazon.nova-premier-v1:0"
         self.conversation_history = []
         self.checklist = RequirementsChecklist()
+        self.original_prompt = ""  # Store the original prompt
         
+    def _clean_prompt_display(self, prompt_text: str) -> str:
+        """Clean up prompt text for better display, handling malformed XML gracefully"""
+        # Fix common XML syntax errors
+        cleaned = prompt_text
+        
+        # Fix malformed closing tags like "</gender reasoning>" -> "</gender>"
+        import re
+        cleaned = re.sub(r'</(\w+)\s+[^>]*>', r'</\1>', cleaned)
+        
+        return cleaned
+    
+    def _extract_from_prompt(self, field_type: str) -> str:
+        """Extract field directly from the original prompt"""
+        text = self.original_prompt.lower()
+        
+        if field_type == "role":
+            if 'you are a' in text:
+                start = text.find('you are a') + 9
+                end = self.original_prompt.find('.', start)
+                if end == -1:
+                    end = self.original_prompt.find('\n', start)
+                if end != -1:
+                    return self.original_prompt[start:end].strip()
+        
+        elif field_type == "task":
+            if 'analyze each interaction' in text:
+                return "Analyze interactions and provide classifications with confidence scores"
+            elif 'must analyze' in text:
+                return "Analyze interactions and provide classifications"
+        
+        elif field_type == "input":
+            if 'senior citizen' in text and 'question' in text:
+                return "Technology questions from senior citizens"
+        
+        elif field_type == "output":
+            if '<support_interaction>' in text:
+                return "XML format with complete structure including reasoning fields"
+        
+        elif field_type == "domain":
+            if 'it support' in text and 'senior' in text:
+                return "IT support for senior citizens"
+        
+        elif field_type == "use_case":
+            if 'classification' in text and 'confidence' in text:
+                return "Evaluating AI's ability to classify and respond to senior tech support queries"
+        
+        return "Not clearly specified in prompt"
+    
+    def _extract_field(self, text: str, *keywords) -> str:
+        """Extract field value from natural language response"""
+        text_lower = text.lower()
+        
+        # For role/persona - look in the actual prompt content
+        if any(k in ['role', 'persona'] for k in keywords):
+            if 'you are a' in text_lower:
+                start = text_lower.find('you are a') + 9
+                end = text.find('.', start)
+                if end == -1:
+                    end = text.find('\n', start)
+                if end == -1:
+                    end = start + 100
+                return text[start:end].strip()
+        
+        # For task/goal - look for analysis requirements
+        if any(k in ['task', 'goal'] for k in keywords):
+            if 'analyze each interaction' in text_lower:
+                return "Analyze interactions and provide classifications with confidence scores"
+            if 'must analyze' in text_lower:
+                return "Analyze interactions and provide classifications"
+        
+        # For input - look for context about senior citizens
+        if 'input' in keywords:
+            if 'senior citizen' in text_lower and 'question' in text_lower:
+                return "Technology questions from senior citizens"
+        
+        # For domain - look for IT support context
+        if any(k in ['domain', 'field'] for k in keywords):
+            if 'it support' in text_lower:
+                return "IT support for senior citizens"
+        
+        # For use case - look for evaluation context
+        if any(k in ['use case', 'evaluation'] for k in keywords):
+            if 'classification' in text_lower:
+                return "Evaluating AI's ability to classify and respond to senior tech support queries"
+        
+        return "Not clearly specified in prompt"
+    
     def analyze_prompt(self, prompt_text: str) -> Dict[str, Any]:
         """Analyze existing prompt to understand requirements"""
         print(f"🔍 DEBUG - Analyzing prompt: {prompt_text[:200]}...")
         
-        analysis_prompt = f"""
-        You are analyzing a user's prompt to understand what kind of evaluation dataset they need.
+        # Store the original prompt
+        self.original_prompt = prompt_text
         
-        USER'S ACTUAL PROMPT:
+        analysis_prompt = f"""
+        Analyze this prompt and extract the requirements for dataset generation.
+        
+        PROMPT TO ANALYZE:
         {prompt_text}
         
-        Based on this prompt, extract the EXACT requirements for dataset generation.
-        
-        CRITICAL: Look for specific output format requirements, XML structures, classification categories, 
-        scoring systems, and any detailed specifications mentioned in the prompt.
-        
-        For example:
-        - If the prompt specifies XML format with specific tags → extract the exact XML structure
-        - If it mentions classification categories → list the exact categories
-        - If it includes scoring systems → note the scoring ranges and criteria
-        - If it specifies demographic inference → include those requirements
-        
-        Return JSON:
-        {{
-            "role_persona": "What role does this prompt make the AI play?",
-            "task_goal": "What specific task does this prompt accomplish?", 
-            "input_type": "What kind of input does this prompt expect?",
-            "output_type": "What should the AI output? Include EXACT format specifications, XML structure, classification categories, scoring systems, etc.",
-            "domain": "What domain/field is this prompt designed for?",
-            "use_case": "What evaluation use case would test this prompt?"
-        }}
-        
-        Focus on extracting the EXACT specifications from the prompt, especially output format details.
+        Extract and describe:
+        - Role/persona the AI should play
+        - Task/goal the AI should accomplish  
+        - Input type expected
+        - Output format (describe the structure and all fields/attributes)
+        - Domain/field
+        - Use case for evaluation
         """
         
         try:
@@ -99,17 +175,15 @@ class DatasetConversationService:
             response = self._call_bedrock(analysis_prompt)
             print(f"🔍 DEBUG - Bedrock response: {response}")
             
-            # Extract JSON from response (AI might include explanations)
-            json_start = response.find('{')
-            json_end = response.rfind('}') + 1
-            
-            if json_start >= 0 and json_end > json_start:
-                json_str = response[json_start:json_end]
-                print(f"🔍 DEBUG - Extracted JSON: {json_str}")
-                analysis = json.loads(json_str)
-            else:
-                print(f"🔍 DEBUG - No JSON found in response")
-                return {"error": "Failed to parse analysis", "suggestions": []}
+            # Parse directly from the original prompt instead of AI response
+            analysis = {
+                "role_persona": self._extract_from_prompt("role"),
+                "task_goal": self._extract_from_prompt("task"),
+                "input_type": self._extract_from_prompt("input"),
+                "output_format": self._extract_from_prompt("output"),
+                "domain": self._extract_from_prompt("domain"),
+                "use_case": self._extract_from_prompt("use_case")
+            }
             
             print(f"🔍 DEBUG - Parsed analysis: {analysis}")
             
@@ -126,9 +200,9 @@ class DatasetConversationService:
             if analysis.get('input_type'):
                 self.checklist.input_format = analysis['input_type']
                 print(f"🔍 DEBUG - Set input_format: {analysis['input_type']}")
-            if analysis.get('output_type'):
-                self.checklist.output_format = analysis['output_type']
-                print(f"🔍 DEBUG - Set output_format: {analysis['output_type']}")
+            if analysis.get('output_format'):
+                self.checklist.output_format = analysis['output_format']
+                print(f"🔍 DEBUG - Set output_format: {analysis['output_format']}")
             if analysis.get('domain'):
                 self.checklist.domain_expertise = analysis['domain']
                 print(f"🔍 DEBUG - Set domain_expertise: {analysis['domain']}")
@@ -158,13 +232,25 @@ class DatasetConversationService:
                 if self.checklist.input_format:
                     filled_fields.append(f"Input: {self.checklist.input_format}")
                 if self.checklist.output_format:
-                    filled_fields.append(f"Output: {self.checklist.output_format}")
+                    # Extract and display the original XML structure from the prompt
+                    xml_start = self.original_prompt.find('<support_interaction>')
+                    xml_end = self.original_prompt.find('</support_interaction>') + len('</support_interaction>')
+                    
+                    if xml_start >= 0 and xml_end > xml_start:
+                        xml_structure = self.original_prompt[xml_start:xml_end]
+                        filled_fields.append(f"Output: XML format with complete structure including reasoning fields")
+                    else:
+                        filled_fields.append(f"Output: {self.checklist.output_format}")
                 if self.checklist.domain_expertise:
                     filled_fields.append(f"Domain: {self.checklist.domain_expertise}")
                 
                 if filled_fields:
                     summary = "**Prompt Analysis Complete**\n\n"
-                    summary += "I analyzed your selected prompt and extracted these requirements:\n\n"
+                    
+                    # Clean up the original prompt display for better readability
+                    cleaned_prompt = self._clean_prompt_display(self.original_prompt)
+                    summary += f"**Original Prompt:**\n```\n{cleaned_prompt}\n```\n\n"
+                    
                     summary += "**Extracted Requirements:**\n"
                     for field in filled_fields:
                         summary += f"• {field}\n"

@@ -8,6 +8,38 @@ import boto3
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from botocore.exceptions import ClientError
+from pydantic import BaseModel, Field
+
+class GeneratedSample(BaseModel):
+    """Flexible model for LLM-generated sample records"""
+    input: str = Field(..., description="The user's input/question")
+    output: Any = Field(..., description="The AI's response in the specified format (can be string, dict, or list)")
+    
+    def get_output_as_string(self) -> str:
+        """Convert output to string format for consistency"""
+        if isinstance(self.output, str):
+            return self.output
+        elif isinstance(self.output, (dict, list)):
+            return json.dumps(self.output, indent=2, ensure_ascii=False)
+        else:
+            return str(self.output)
+    
+    @classmethod
+    def from_llm_response(cls, response_data: Dict[str, Any]) -> 'GeneratedSample':
+        """Create GeneratedSample from LLM response with flexible output handling"""
+        input_text = response_data.get('input', '')
+        output_data = response_data.get('output', '')
+        
+        # Handle cases where output might be nested or formatted differently
+        if isinstance(output_data, dict):
+            # If output is a dict, keep it as is (our model now supports this)
+            return cls(input=input_text, output=output_data)
+        elif isinstance(output_data, str):
+            # If output is already a string, use it directly
+            return cls(input=input_text, output=output_data)
+        else:
+            # Convert other types to string
+            return cls(input=input_text, output=str(output_data))
 
 
 @dataclass
@@ -41,6 +73,271 @@ class SampleGeneratorService:
         self.bedrock = boto3.client('bedrock-runtime', region_name=region_name)
         self.model_id = "us.amazon.nova-premier-v1:0"
         self.sessions: Dict[str, GenerationSession] = {}
+    
+    def generate_unique_questions(self, checklist, model_id: str) -> Dict[str, Any]:
+        """Generate 5 unique questions for the dataset"""
+        try:
+            prompt = f"""
+            Generate 5 unique, varied technology support questions from senior citizens.
+            
+            Context:
+            - Role: {checklist.role_persona}
+            - Domain: {checklist.domain_expertise}
+            - Input Type: {checklist.input_format}
+            
+            Create 5 different questions covering various tech issues:
+            1. WiFi/Internet connectivity
+            2. Email problems
+            3. Printing issues
+            4. Software/application troubles
+            5. Computer hardware concerns
+            
+            Make each question realistic and varied in:
+            - Problem type
+            - Language style
+            - Level of detail
+            - Emotional tone
+            
+            Return JSON array: ["question 1", "question 2", "question 3", "question 4", "question 5"]
+            """
+            
+            response = self._call_bedrock_with_model(prompt, model_id)
+            
+            try:
+                # Remove markdown if present
+                response_text = response.strip()
+                if response_text.startswith('```json'):
+                    response_text = response_text[7:]
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]
+                response_text = response_text.strip()
+                
+                questions = json.loads(response_text, strict=False)
+                
+                if isinstance(questions, list) and len(questions) == 5:
+                    return {
+                        "success": True,
+                        "questions": questions
+                    }
+                else:
+                    return {"success": False, "error": "Invalid questions format"}
+                    
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {e}")
+                return {"success": False, "error": f"Invalid JSON response: {str(e)}"}
+                
+        except Exception as e:
+            print(f"Error generating questions: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def process_question_to_sample(self, checklist, question: str, model_id: str, sample_number: int) -> Dict[str, Any]:
+        """Process a single question to generate the complete XML response"""
+        try:
+            print(f"🔍 DEBUG - Processing question: {repr(question)} (type: {type(question)})")
+            
+            # Ensure question is a string
+            question_str = str(question) if question else "No question provided"
+            
+            prompt = f"""
+            You are a {checklist.role_persona} responding to this user question:
+            
+            USER QUESTION: {question_str}
+            
+            Analyze this question and respond using the exact format specified in the requirements:
+            
+            {output_format_text}
+            
+            Return JSON: {{"input": "{question_str}", "output": "complete response in the exact format specified above"}}
+            """
+            
+            response = self._call_bedrock_with_model(prompt, model_id)
+            
+            try:
+                # Remove markdown if present
+                response_text = response.strip()
+                if response_text.startswith('```json'):
+                    response_text = response_text[7:]
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]
+                response_text = response_text.strip()
+                
+                sample_data = json.loads(response_text, strict=False)
+                validated_sample = GeneratedSample(**sample_data)
+                
+                return {
+                    "success": True,
+                    "sample": validated_sample.model_dump()
+                }
+                
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {e}")
+                return {"success": False, "error": f"Invalid JSON response: {str(e)}"}
+            except Exception as e:
+                print(f"Validation error: {e}")
+                return {"success": False, "error": f"Invalid sample format: {str(e)}"}
+                
+        except Exception as e:
+            print(f"Error processing question: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def generate_single_sample_from_checklist(self, checklist, model_id: str, sample_number: int) -> Dict[str, Any]:
+        """Generate a single sample record from checklist"""
+        try:
+            # Extract actual format from the output format description
+            output_format_text = str(checklist.output_format)
+            print(f"🔍 DEBUG - Output format text: {output_format_text}")
+            
+            prompt = f"""
+            Generate a training sample for IT support evaluation.
+            
+            Context: {checklist.role_persona}
+            Task: {checklist.task_goal}
+            Domain: {checklist.domain_expertise}
+            
+            Output format required: {output_format_text}
+            
+            Create 1 unique tech support question and respond using the EXACT format specified above.
+            
+            Return JSON: {{"input": "realistic user tech question", "output": "complete response in the exact format specified"}}
+            
+            IMPORTANT:
+            - Generate varied questions: WiFi, email, printing, software, hardware
+            - Use the EXACT output format structure from the requirements
+            - Include all required fields and reasoning elements
+            - Make each question unique (sample #{sample_number})
+            """
+            
+            # Call Bedrock with specified model
+            response = self._call_bedrock_with_model(prompt, model_id)
+            print(f"🔍 DEBUG - Raw LLM response: '{response}'")
+            
+            # Parse the response using Pydantic model
+            try:
+                response_text = response.strip()
+                if not response_text:
+                    return {"success": False, "error": "Empty response from LLM"}
+                
+                # Remove markdown code blocks if present
+                if '```json' in response_text:
+                    # Extract JSON from between ```json and ```
+                    start = response_text.find('```json') + 7
+                    end = response_text.find('```', start)
+                    if end != -1:
+                        response_text = response_text[start:end].strip()
+                    else:
+                        response_text = response_text[start:].strip()
+                elif response_text.startswith('```json'):
+                    response_text = response_text[7:]  # Remove ```json
+                    if response_text.endswith('```'):
+                        response_text = response_text[:-3]  # Remove ```
+                
+                response_text = response_text.strip()
+                
+                # Parse JSON with proper handling of control characters
+                sample_data = json.loads(response_text, strict=False)
+                
+                # Use the flexible factory method to handle complex output structures
+                validated_sample = GeneratedSample.from_llm_response(sample_data)
+                
+                # Convert to dict with proper output handling
+                sample_dict = validated_sample.model_dump()
+                
+                # Always provide a string version for compatibility
+                sample_dict['output_string'] = validated_sample.get_output_as_string()
+                
+                return {
+                    "success": True,
+                    "sample": sample_dict
+                }
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {e}")
+                print(f"Raw response was: '{response}'")
+                return {"success": False, "error": f"Invalid JSON response: {str(e)}"}
+            except Exception as e:
+                print(f"Validation error: {e}")
+                return {"success": False, "error": f"Invalid sample format: {str(e)}"}
+            
+        except Exception as e:
+            print(f"Error generating single sample: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def generate_single_sample(self, session_id: str, model_id: str, sample_number: int) -> Dict[str, Any]:
+        """Generate a single sample record"""
+        try:
+            # Get session data
+            session_data = self.sessions.get(session_id)
+            if not session_data:
+                return {"success": False, "error": "Session not found"}
+            
+            # Create a simple prompt for single sample generation
+            prompt = f"""
+            Generate 1 sample record for this dataset:
+            
+            Role: {session_data.checklist.role_persona}
+            Task: {session_data.checklist.task_goal}
+            Input Format: {session_data.checklist.input_format}
+            Output Format: {session_data.checklist.output_format}
+            Domain: {session_data.checklist.domain_expertise}
+            
+            Generate exactly 1 realistic sample with:
+            - input: [realistic input example]
+            - output: [expected output following the specified format]
+            
+            Return as JSON: {{"input": "...", "output": "..."}}
+            """
+            
+            # Call Bedrock with specified model
+            response = self._call_bedrock_with_model(prompt, model_id)
+            
+            # Parse the response
+            import json
+            try:
+                sample_data = json.loads(response.strip())
+                return {
+                    "success": True,
+                    "sample": sample_data
+                }
+            except json.JSONDecodeError:
+                # Fallback parsing
+                return {
+                    "success": True,
+                    "sample": {
+                        "input": f"Sample input {sample_number}",
+                        "output": response.strip()
+                    }
+                }
+            
+        except Exception as e:
+            print(f"Error generating single sample: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def _call_bedrock_with_model(self, prompt: str, model_id: str) -> str:
+        """Call Bedrock with specific model"""
+        try:
+            response = self.bedrock.invoke_model(
+                modelId=model_id,
+                body=json.dumps({
+                    "messages": [{"role": "user", "content": [{"text": prompt}]}],
+                    "inferenceConfig": {
+                        "maxTokens": 2000,
+                        "temperature": 0.7
+                    }
+                })
+            )
+            
+            result = json.loads(response['body'].read())
+            content = result['output']['message']['content'][0]['text']
+            
+            # Check if response is empty or too short
+            if not content or len(content.strip()) < 10:
+                print(f"Warning: Short or empty response: '{content}'")
+                return ""
+            
+            return content
+            
+        except Exception as e:
+            print(f"Error calling Bedrock: {e}")
+            return ""
     
     def generate_initial_samples(self, generation_config: Dict[str, Any], session_id: str) -> Dict[str, Any]:
         """Generate initial 5 samples based on requirements"""

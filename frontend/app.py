@@ -46,6 +46,9 @@ except ImportError as e:
     print(f"⚠️ Nova Prompt Optimizer SDK not available: {e}")
     print("   Optimization will run in demo mode")
 
+# Import simple generator
+from simple_routes import create_simple_generator_routes
+
 # Data storage
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
@@ -104,6 +107,9 @@ app = FastHTML(
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="."), name="static")
+
+# Add simple generator routes
+create_simple_generator_routes(app)
 
 # Root route - Dashboard
 @app.get("/")
@@ -412,7 +418,11 @@ async def datasets_page(request):
                            style="margin-right: 0.5rem;"),
                     Button("Generate with AI", 
                            onclick="startDatasetGenerator()",
-                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+                           style="margin-right: 0.5rem;"),
+                    Button("Simple Generator", 
+                           onclick="window.location.href='/simple-generator'",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-green-600 text-white hover:bg-green-700 h-10 px-4 py-2"),
                     style="display: flex; gap: 0.5rem; margin-bottom: 1rem;"
                 ),
                 
@@ -3648,6 +3658,121 @@ async def continue_conversation(request):
         print(f"Error in conversation: {e}")
         return {"success": False, "error": str(e)}
 
+@app.post("/datasets/generator/generate-questions")
+async def generate_questions(request):
+    """Generate 5 unique questions for the dataset"""
+    try:
+        form_data = await request.form()
+        session_id = form_data.get('session_id')
+        model_id = form_data.get('model_id', 'us.amazon.nova-pro-v1:0')
+        
+        if not session_id or session_id not in app.generator_sessions:
+            return {"success": False, "error": "Invalid session"}
+        
+        conversation_service = app.generator_sessions[session_id]['conversation_service']
+        
+        if 'sample_generator' not in app.generator_sessions[session_id]:
+            from sample_generator import SampleGeneratorService
+            app.generator_sessions[session_id]['sample_generator'] = SampleGeneratorService()
+        
+        sample_generator = app.generator_sessions[session_id]['sample_generator']
+        
+        # Generate 5 unique questions
+        result = sample_generator.generate_unique_questions(conversation_service.checklist, model_id)
+        
+        if result.get('success'):
+            return {
+                "success": True,
+                "questions": result['questions']
+            }
+        else:
+            return {
+                "success": False,
+                "error": result.get('error', 'Failed to generate questions')
+            }
+        
+    except Exception as e:
+        print(f"Error generating questions: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/datasets/generator/process-question")
+async def process_question(request):
+    """Process a single question to generate the XML response"""
+    try:
+        form_data = await request.form()
+        session_id = form_data.get('session_id')
+        model_id = form_data.get('model_id', 'us.amazon.nova-pro-v1:0')
+        question = form_data.get('question')
+        sample_number = form_data.get('sample_number', '1')
+        
+        if not session_id or session_id not in app.generator_sessions:
+            return {"success": False, "error": "Invalid session"}
+        
+        conversation_service = app.generator_sessions[session_id]['conversation_service']
+        sample_generator = app.generator_sessions[session_id]['sample_generator']
+        
+        # Process the question to generate XML response
+        result = sample_generator.process_question_to_sample(
+            conversation_service.checklist, question, model_id, int(sample_number)
+        )
+        
+        if result.get('success'):
+            return {
+                "success": True,
+                "sample": result['sample']
+            }
+        else:
+            return {
+                "success": False,
+                "error": result.get('error', 'Failed to process question')
+            }
+        
+    except Exception as e:
+        print(f"Error processing question: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/datasets/generator/generate-single-sample")
+async def generate_single_sample(request):
+    """Generate a single sample record"""
+    try:
+        form_data = await request.form()
+        session_id = form_data.get('session_id')
+        model_id = form_data.get('model_id', 'us.amazon.nova-pro-v1:0')
+        sample_number = form_data.get('sample_number', '1')
+        
+        if not session_id or session_id not in app.generator_sessions:
+            return {"success": False, "error": "Invalid session"}
+        
+        # Get the conversation service (which has the checklist)
+        conversation_service = app.generator_sessions[session_id]['conversation_service']
+        
+        # Create sample generator if it doesn't exist
+        if 'sample_generator' not in app.generator_sessions[session_id]:
+            from sample_generator import SampleGeneratorService
+            app.generator_sessions[session_id]['sample_generator'] = SampleGeneratorService()
+        
+        sample_generator = app.generator_sessions[session_id]['sample_generator']
+        
+        # Generate single sample using conversation service checklist
+        result = sample_generator.generate_single_sample_from_checklist(
+            conversation_service.checklist, model_id, int(sample_number)
+        )
+        
+        if result.get('success'):
+            return {
+                "success": True,
+                "sample": result['sample']
+            }
+        else:
+            return {
+                "success": False,
+                "error": result.get('error', 'Failed to generate sample')
+            }
+        
+    except Exception as e:
+        print(f"Error generating single sample: {e}")
+        return {"success": False, "error": str(e)}
+
 @app.post("/datasets/generator/generate-samples")
 async def generate_samples(request):
     """Generate initial 5 samples for review"""
@@ -4008,54 +4133,168 @@ async def dataset_generator_page(request):
         }
         
         function showGenerateSamplesButton() {
-            const conversationArea = document.getElementById('conversation-area');
-            const buttonDiv = document.createElement('div');
-            buttonDiv.style.textAlign = 'center';
-            buttonDiv.style.marginTop = '1rem';
-            buttonDiv.innerHTML = `
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Select Nova Model:</label>
-                    <select id="model-select" style="width: 200px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;">
-                        <option value="us.amazon.nova-lite-v1:0">Nova Lite (Fast)</option>
-                        <option value="us.amazon.nova-pro-v1:0" selected>Nova Pro (Balanced)</option>
-                        <option value="us.amazon.nova-premier-v1:0">Nova Premier (Best Quality)</option>
-                    </select>
+            // Find the chat input container (the div with display: flex that contains input and Send button)
+            const step2Card = document.getElementById('step-2-card');
+            const inputContainer = step2Card.querySelector('div[style*="display: flex"]');
+            
+            // Create model selector container
+            const modelContainer = document.createElement('div');
+            modelContainer.id = 'model-selector-container';
+            modelContainer.style.cssText = 'margin-top: 1rem;';
+            
+            modelContainer.innerHTML = `
+                <div style="display: flex; align-items: end; gap: 0.5rem; padding: 1rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background: #f9fafb;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #374151;">Select Nova Model:</label>
+                        <select id="model-select" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem;">
+                            <option value="us.amazon.nova-lite-v1:0">Nova Lite (Fast)</option>
+                            <option value="us.amazon.nova-pro-v1:0" selected>Nova Pro (Balanced)</option>
+                            <option value="us.amazon.nova-premier-v1:0">Nova Premier (Best Quality)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button onclick="generateSamples()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 py-1">Generate Sample Records</button>
+                    </div>
                 </div>
-                <button onclick="generateSamples()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">Generate Sample Records</button>
             `;
-            conversationArea.appendChild(buttonDiv);
+            
+            // Insert right after the input container
+            inputContainer.parentNode.insertBefore(modelContainer, inputContainer.nextSibling);
         }
         
         async function generateSamples() {
-            showLoading();
+            const modelSelect = document.getElementById('model-select');
+            const selectedModel = modelSelect ? modelSelect.value : 'us.amazon.nova-pro-v1:0';
+            
+            // Show step 3 and clear samples container
+            showStep(3);
+            const container = document.getElementById('samples-container');
+            container.innerHTML = '<p style="color: #6b7280;">Generating samples...</p>';
             
             try {
-                const modelSelect = document.getElementById('model-select');
-                const selectedModel = modelSelect ? modelSelect.value : 'us.amazon.nova-pro-v1:0';
-                
-                const formData = new FormData();
-                formData.append('session_id', currentSession);
-                formData.append('model_id', selectedModel);
-                
-                const response = await fetch('/datasets/generator/generate-samples', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showStep(3);
-                    console.log('Samples received:', data.samples); // Debug log
-                    displaySamples(data.samples);
-                } else {
-                    alert('Error generating samples: ' + data.error);
+                // Generate 5 samples one at a time
+                for (let i = 1; i <= 5; i++) {
+                    const formData = new FormData();
+                    formData.append('session_id', currentSession);
+                    formData.append('model_id', selectedModel);
+                    formData.append('sample_number', i);
+                    
+                    const response = await fetch('/datasets/generator/generate-single-sample', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.sample) {
+                        displaySingleSample(data.sample, i);
+                    } else {
+                        console.error('Error generating sample:', data.error);
+                        addSampleError(i, data.error);
+                    }
                 }
+                
+                // All samples generated
+                container.innerHTML += '<p style="color: #059669; margin-top: 1rem;"><strong>✅ All samples generated!</strong></p>';
+                
             } catch (error) {
-                alert('Error: ' + error.message);
+                console.error('Error:', error);
+                container.innerHTML = `<p style="color: #dc2626;">Error generating samples: ${error.message}</p>`;
+            }
+        }
+        
+        function displaySingleSample(sample, sampleNumber) {
+            const container = document.getElementById('samples-container');
+            
+            // Clear "generating..." message only on first sample
+            if (sampleNumber === 1) {
+                container.innerHTML = '';
             }
             
-            hideLoading();
+            // Parse the sample if it's a JSON string
+            let parsedSample = sample;
+            if (typeof sample === 'string') {
+                try {
+                    parsedSample = JSON.parse(sample);
+                } catch (e) {
+                    parsedSample = { input: 'Parse error', output: sample };
+                }
+            }
+            
+            const sampleDiv = document.createElement('div');
+            sampleDiv.className = 'sample-item';
+            sampleDiv.style.cssText = 'border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; background: white;';
+            
+            sampleDiv.innerHTML = `
+                <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Sample ${sampleNumber}</h4>
+                <div style="margin-bottom: 0.5rem;">
+                    <strong>Input:</strong> ${parsedSample.input || 'N/A'}
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <strong>Output:</strong>
+                    <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 0.25rem; white-space: pre-wrap; font-family: inherit; font-size: 0.875rem; border: 1px solid #e9ecef; margin-top: 0.5rem; overflow-x: auto;">${renderMarkdown(formatOutput(parsedSample.output || 'N/A'))}</div>
+                </div>
+            `;
+            
+            container.appendChild(sampleDiv);
+        }
+        
+        function renderMarkdown(text) {
+            if (!text) return text;
+            
+            return text
+                // Bold text
+                .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')
+                // Line breaks
+                .replace(/\\n/g, '<br>')
+                // Clean up extra spaces
+                .replace(/\\s+/g, ' ')
+                .trim();
+        }
+        
+        function formatOutput(output) {
+            if (!output || output === 'N/A') return output;
+            
+            // For XML, parse and add headings
+            if (output.trim().startsWith('<support_interaction>')) {
+                try {
+                    // Parse XML content and add headings
+                    let formatted = output;
+                    
+                    // Add headings for each section
+                    formatted = formatted.replace(/<original_question>(.*?)<\\/original_question>/gs, '**Original Question:**\\n$1\\n');
+                    formatted = formatted.replace(/<request_type[^>]*>(.*?)<\\/request_type>/gs, '**Request Type:** $1');
+                    formatted = formatted.replace(/<sentiment[^>]*>(.*?)<\\/sentiment>/gs, '**Sentiment:** $1');
+                    formatted = formatted.replace(/<gender[^>]*>(.*?)<\\/gender>/gs, '**Gender:** $1');
+                    formatted = formatted.replace(/<age_range[^>]*>(.*?)<\\/age_range>/gs, '**Age Range:** $1');
+                    formatted = formatted.replace(/<clarity_score>(.*?)<\\/clarity_score>/gs, '**Clarity Score:** $1');
+                    formatted = formatted.replace(/<clarity_reasoning>(.*?)<\\/clarity_reasoning>/gs, '**Clarity Reasoning:** $1');
+                    formatted = formatted.replace(/<response>(.*?)<\\/response>/gs, '**Support Response:**\\n$1\\n');
+                    formatted = formatted.replace(/<confidence_score>(.*?)<\\/confidence_score>/gs, '**Confidence Score:** $1');
+                    formatted = formatted.replace(/<confidence_reasoning>(.*?)<\\/confidence_reasoning>/gs, '**Confidence Reasoning:** $1');
+                    
+                    // Remove remaining XML tags
+                    formatted = formatted.replace(/<[^>]*>/g, '');
+                    
+                    // Clean up extra whitespace
+                    formatted = formatted.replace(/\\n\\s*\\n/g, '\\n\\n').trim();
+                    
+                    return formatted;
+                } catch (e) {
+                    return output;
+                }
+            }
+            
+            // Return as-is for other formats
+            return output;
+        }
+        
+        function addSampleError(sampleNumber, error) {
+            const container = document.getElementById('samples-container');
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'border: 1px solid #fca5a5; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; background: #fef2f2;';
+            errorDiv.innerHTML = `<p style="color: #dc2626;"><strong>Sample ${sampleNumber} failed:</strong> ${error}</p>`;
+            container.appendChild(errorDiv);
         }
         
         function displaySamples(samples) {
