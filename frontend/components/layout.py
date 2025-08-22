@@ -339,6 +339,26 @@ def create_page_layout(
     )
 
 
+def create_navbar_tabs_only(current_page: str = "") -> Div:
+    """Create just the navigation tabs without title"""
+    nav_items = [
+        {"name": "Dashboard", "path": "/", "key": "dashboard"},
+        {"name": "Prompts", "path": "/prompts", "key": "prompts"},
+        {"name": "Datasets", "path": "/datasets", "key": "datasets"},
+        {"name": "Metrics", "path": "/metrics", "key": "metrics"},
+        {"name": "Optimization", "path": "/optimization", "key": "optimization"},
+    ]
+    
+    return Div(
+        *[A(
+            item["name"],
+            href=item["path"],
+            cls=f"px-4 py-2 text-sm font-medium rounded-md transition-colors {'bg-primary text-primary-foreground' if current_page == item['key'] else 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+        ) for item in nav_items],
+        cls="flex items-center gap-2"
+    )
+
+
 def create_main_layout(
     title: str,
     content: Any,
@@ -661,8 +681,30 @@ def create_main_layout(
     
     # Build body content
     body_content = [
-        # Navigation Bar
-        create_navbar(current_page, user),
+        # Title row with theme toggle
+        Div(
+            Div(
+                H1("Nova Prompt Optimizer", cls="text-2xl font-bold text-foreground"),
+                cls="flex-1"
+            ),
+            Div(
+                Button(
+                    "🌙",
+                    onclick="toggleTheme()",
+                    id="theme-toggle",
+                    title="Toggle theme",
+                    cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 w-9"
+                ),
+                cls="flex-shrink-0"
+            ),
+            cls="flex items-center justify-between px-6 py-4 border-b border-border bg-background"
+        ),
+        
+        # Navigation row (centered)
+        Div(
+            create_navbar_tabs_only(current_page),
+            cls="flex justify-center px-6 py-3 border-b border-border bg-muted/30"
+        ),
         
         # Main container
         Div(
