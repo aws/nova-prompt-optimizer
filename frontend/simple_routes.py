@@ -78,7 +78,7 @@ def create_simple_generator_routes(app):
                     ),
                     
                     Button("Generate Dataset", type="submit", 
-                           style="background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.375rem; font-weight: 500; cursor: pointer; width: 100%;"),
+                           cls="px-4 py-2 text-sm font-medium rounded-md transition-colors text-center w-full bg-primary text-primary-foreground"),
                     
                     method="post",
                     action="/simple-generator/generate"

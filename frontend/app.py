@@ -423,25 +423,25 @@ async def datasets_page(request):
                   style="color: #6b7280; margin-bottom: 1rem;"),
                 Div(
                     Button("Upload New Dataset", 
-                           onclick="showCreateForm('dataset')",
+                           onclick="showCreateForm('dataset'); hideOtherButtons('upload')",
                            id="create-dataset-btn",
                            cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2",
                            style="margin-right: 0.5rem;"),
                     Button("Generate with AI", 
-                           onclick="startDatasetGenerator()",
+                           onclick="startDatasetGenerator(); hideOtherButtons('ai')",
+                           id="generate-ai-btn",
                            cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
                            style="margin-right: 0.5rem;"),
                     Button("Simple Generator", 
                            onclick="window.location.href='/simple-generator'",
+                           id="simple-generator-btn",
                            cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-green-600 text-white hover:bg-green-700 h-10 px-4 py-2"),
+                    id="dataset-action-buttons",
                     style="display: flex; gap: 0.5rem; margin-bottom: 1rem;"
                 ),
                 
                 # Upload form (hidden by default)
                 Div(
-                    Button("Cancel", 
-                           onclick="hideCreateForm('dataset')",
-                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mb-4"),
                     
                     # Dataset upload form
                     Form(
@@ -557,6 +557,19 @@ async def datasets_page(request):
         function startDatasetGenerator() {
             // Navigate to the AI Dataset Generator page
             window.location.href = '/datasets/generator';
+        }
+        
+        function hideOtherButtons(activeType) {
+            const buttons = ['create-dataset-btn', 'generate-ai-btn', 'simple-generator-btn'];
+            const activeButton = activeType === 'upload' ? 'create-dataset-btn' : 
+                                activeType === 'ai' ? 'generate-ai-btn' : 'simple-generator-btn';
+            
+            buttons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn && btnId !== activeButton) {
+                    btn.style.display = 'none';
+                }
+            });
         }
     """))
     
