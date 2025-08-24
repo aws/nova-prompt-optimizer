@@ -46,8 +46,19 @@ except ImportError as e:
     print(f"⚠️ Nova Prompt Optimizer SDK not available: {e}")
     print("   Optimization will run in demo mode")
 
-# Import simple generator
+# Import simple generator routes
 from simple_routes import create_simple_generator_routes
+
+# Maintain backward compatibility for existing imports
+try:
+    from services.simple_dataset_generator import SimpleDatasetGenerator
+except ImportError:
+    from simple_dataset_generator import SimpleDatasetGenerator
+
+try:
+    from services.dataset_conversation import DatasetConversationService
+except ImportError:
+    from dataset_conversation import DatasetConversationService
 
 # Data storage
 DATA_DIR = Path("data")
@@ -108,8 +119,8 @@ app = FastHTML(
 # Mount static files
 app.mount("/static", StaticFiles(directory="."), name="static")
 
-# Add simple generator routes
-create_simple_generator_routes(app)
+# Add flexible generator routes
+create_simple_generator_routes(app)  # Works with any format
 
 # Root route - Dashboard
 @app.get("/")
@@ -4111,7 +4122,10 @@ async def dataset_generator_page(request):
             
             // Simple markdown rendering
             function renderMarkdown(text) {
-                return text
+                // Ensure text is a string
+                const textStr = typeof text === 'string' ? text : String(text);
+                
+                return textStr
                     .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')  // **bold**
                     .replace(/\\*(.*?)\\*/g, '<em>$1</em>')              // *italic*
                     .replace(/^### (.*$)/gm, '<h3>$1</h3>')           // ### headers
@@ -4242,7 +4256,10 @@ async def dataset_generator_page(request):
         function renderMarkdown(text) {
             if (!text) return text;
             
-            return text
+            // Ensure text is a string
+            const textStr = typeof text === 'string' ? text : String(text);
+            
+            return textStr
                 // Bold text
                 .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')
                 // Line breaks
@@ -4255,11 +4272,14 @@ async def dataset_generator_page(request):
         function formatOutput(output) {
             if (!output || output === 'N/A') return output;
             
+            // Ensure output is a string
+            const outputStr = typeof output === 'string' ? output : String(output);
+            
             // For XML, parse and add headings
-            if (output.trim().startsWith('<support_interaction>')) {
+            if (outputStr.trim().startsWith('<support_interaction>')) {
                 try {
                     // Parse XML content and add headings
-                    let formatted = output;
+                    let formatted = outputStr;
                     
                     // Add headings for each section
                     formatted = formatted.replace(/<original_question>(.*?)<\\/original_question>/gs, '**Original Question:**\\n$1\\n');
