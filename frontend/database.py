@@ -1011,7 +1011,212 @@ class RelevanceMetric(MetricAdapter):
             })
         
         conn.close()
-        return logs
+    def create_prompt_template(self, name: str, description: str, builder_data: Dict[str, Any]) -> str:
+        """Create a new prompt template from builder data"""
+        import uuid
+        from datetime import datetime
+        import json
+        
+        template_id = f"template_{uuid.uuid4().hex[:8]}"
+        
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            INSERT INTO prompt_templates 
+            (id, name, description, task, context_items, instructions, 
+             response_format, variables, metadata, created_date, last_modified, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            template_id,
+            name,
+            description,
+            builder_data.get("task", ""),
+            json.dumps(builder_data.get("context", [])),
+            json.dumps(builder_data.get("instructions", [])),
+            json.dumps(builder_data.get("response_format", [])),
+            json.dumps(builder_data.get("variables", [])),
+            json.dumps(builder_data.get("metadata", {})),
+            datetime.now().isoformat(),
+            datetime.now().isoformat(),
+            "user"  # Could be passed as parameter
+        ))
+        self.conn.commit()
+        return template_id
+    
+    def get_prompt_template(self, template_id: str) -> Optional[Dict[str, Any]]:
+        """Get a prompt template by ID"""
+        import json
+        
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT id, name, description, task, context_items, instructions,
+                   response_format, variables, metadata, created_date, last_modified, created_by
+            FROM prompt_templates WHERE id = ?
+        """, (template_id,))
+        
+        row = cursor.fetchone()
+        if not row:
+            return None
+        
+        return {
+            "id": row[0],
+            "name": row[1],
+            "description": row[2],
+            "builder_data": {
+                "task": row[3],
+                "context": json.loads(row[4]) if row[4] else [],
+                "instructions": json.loads(row[5]) if row[5] else [],
+                "response_format": json.loads(row[6]) if row[6] else [],
+                "variables": json.loads(row[7]) if row[7] else [],
+                "metadata": json.loads(row[8]) if row[8] else {}
+            },
+            "created_date": row[9],
+            "last_modified": row[10],
+            "created_by": row[11]
+        }
+    
+    def list_prompt_templates(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+        """List prompt templates with pagination"""
+        import json
+        
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT id, name, description, task, created_date, last_modified, created_by
+            FROM prompt_templates 
+            ORDER BY last_modified DESC
+            LIMIT ? OFFSET ?
+        """, (limit, offset))
+        
+        templates = []
+        for row in cursor.fetchall():
+            templates.append({
+                "id": row[0],
+                "name": row[1],
+                "description": row[2],
+                "task": row[3],
+                "created_date": row[4],
+                "last_modified": row[5],
+                "created_by": row[6]
+            })
+        
+        return templates
+    
+    def update_prompt_template(self, template_id: str, name: str, description: str, builder_data: Dict[str, Any]) -> bool:
+        """Update an existing prompt template"""
+        import json
+        from datetime import datetime
+        
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            UPDATE prompt_templates 
+            SET name = ?, description = ?, task = ?, context_items = ?, instructions = ?,
+                response_format = ?, variables = ?, metadata = ?, last_modified = ?
+            WHERE id = ?
+        """, (
+            name,
+            description,
+            builder_data.get("task", ""),
+            json.dumps(builder_data.get("context", [])),
+            json.dumps(builder_data.get("instructions", [])),
+            json.dumps(builder_data.get("response_format", [])),
+            json.dumps(builder_data.get("variables", [])),
+            json.dumps(builder_data.get("metadata", {})),
+            datetime.now().isoformat(),
+            template_id
+        ))
+        
+        success = cursor.rowcount > 0
+        self.conn.commit()
+        return success
+    
+    def delete_prompt_template(self, template_id: str) -> bool:
+        """Delete a prompt template"""
+        cursor = self.conn.cursor()
+        
+        # Also delete associated sessions
+        cursor.execute("DELETE FROM prompt_builder_sessions WHERE template_id = ?", (template_id,))
+        cursor.execute("DELETE FROM prompt_templates WHERE id = ?", (template_id,))
+        
+        success = cursor.rowcount > 0
+        self.conn.commit()
+        return success
+    
+    def save_builder_session(self, session_name: str, template_id: Optional[str], builder_data: Dict[str, Any]) -> str:
+        """Save a prompt builder session"""
+        import uuid
+        import json
+        from datetime import datetime
+        
+        session_id = f"session_{uuid.uuid4().hex[:8]}"
+        
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            INSERT INTO prompt_builder_sessions 
+            (id, template_id, current_state, created_date, last_accessed, session_name)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            session_id,
+            template_id,
+            json.dumps(builder_data),
+            datetime.now().isoformat(),
+            datetime.now().isoformat(),
+            session_name
+        ))
+        
+        self.conn.commit()
+        return session_id
+    
+    def load_builder_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Load a prompt builder session"""
+        import json
+        from datetime import datetime
+        
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT id, template_id, current_state, created_date, session_name
+            FROM prompt_builder_sessions WHERE id = ?
+        """, (session_id,))
+        
+        row = cursor.fetchone()
+        if not row:
+            return None
+        
+        # Update last accessed time
+        cursor.execute("""
+            UPDATE prompt_builder_sessions 
+            SET last_accessed = ? 
+            WHERE id = ?
+        """, (datetime.now().isoformat(), session_id))
+        self.conn.commit()
+        
+        return {
+            "id": row[0],
+            "template_id": row[1],
+            "builder_data": json.loads(row[2]) if row[2] else {},
+            "created_date": row[3],
+            "session_name": row[4]
+        }
+    
+    def list_builder_sessions(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """List recent builder sessions"""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT id, template_id, session_name, created_date, last_accessed
+            FROM prompt_builder_sessions 
+            ORDER BY last_accessed DESC
+            LIMIT ?
+        """, (limit,))
+        
+        sessions = []
+        for row in cursor.fetchall():
+            sessions.append({
+                "id": row[0],
+                "template_id": row[1],
+                "session_name": row[2],
+                "created_date": row[3],
+                "last_accessed": row[4]
+            })
+        
+        return sessions
 
     def create_prompt(self, name: str, system_prompt: str = None, user_prompt: str = None) -> str:
         """Create a new prompt"""

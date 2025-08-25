@@ -332,7 +332,7 @@ def create_page_layout(
             """)
         ),
         Body(
-            create_navbar(current_page, user),
+            create_navbar_tabs_only(current_page),
             Main(wrapped_content),
             cls=f"page-{current_page}" if current_page else ""
         )

@@ -92,20 +92,18 @@ class DatasetConversationService:
                 return "Analyze interactions and provide classifications"
         
         elif field_type == "input":
-            if 'senior citizen' in text and 'question' in text:
-                return "Technology questions from senior citizens"
+            return "Not clearly specified in prompt"
         
         elif field_type == "output":
             if '<support_interaction>' in text:
                 return "XML format with complete structure including reasoning fields"
+            return "Not clearly specified in prompt"
         
         elif field_type == "domain":
-            if 'it support' in text and 'senior' in text:
-                return "IT support for senior citizens"
+            return "Not clearly specified in prompt"
         
         elif field_type == "use_case":
-            if 'classification' in text and 'confidence' in text:
-                return "Evaluating AI's ability to classify and respond to senior tech support queries"
+            return "Not clearly specified in prompt"
         
         return "Not clearly specified in prompt"
     
@@ -131,20 +129,17 @@ class DatasetConversationService:
             if 'must analyze' in text_lower:
                 return "Analyze interactions and provide classifications"
         
-        # For input - look for context about senior citizens
+        # For input - generic handling
         if 'input' in keywords:
-            if 'senior citizen' in text_lower and 'question' in text_lower:
-                return "Technology questions from senior citizens"
+            return "Not clearly specified in prompt"
         
-        # For domain - look for IT support context
+        # For domain - generic handling  
         if any(k in ['domain', 'field'] for k in keywords):
-            if 'it support' in text_lower:
-                return "IT support for senior citizens"
+            return "Not clearly specified in prompt"
         
-        # For use case - look for evaluation context
+        # For use case - generic handling
         if any(k in ['use case', 'evaluation'] for k in keywords):
-            if 'classification' in text_lower:
-                return "Evaluating AI's ability to classify and respond to senior tech support queries"
+            return "Not clearly specified in prompt"
         
         return "Not clearly specified in prompt"
     

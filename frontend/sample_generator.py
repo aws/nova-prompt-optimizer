@@ -78,22 +78,22 @@ class SampleGeneratorService:
         """Generate 5 unique questions for the dataset"""
         try:
             prompt = f"""
-            Generate 5 unique, varied technology support questions from senior citizens.
+            Generate 5 unique, varied {checklist.domain_expertise or 'customer service'} questions from {checklist.role_persona or 'customers'}.
             
             Context:
             - Role: {checklist.role_persona}
             - Domain: {checklist.domain_expertise}
             - Input Type: {checklist.input_format}
             
-            Create 5 different questions covering various tech issues:
-            1. WiFi/Internet connectivity
-            2. Email problems
-            3. Printing issues
-            4. Software/application troubles
-            5. Computer hardware concerns
+            Create 5 different questions covering various {checklist.domain_expertise or 'customer service'} scenarios:
+            1. Common {checklist.domain_expertise or 'service'} inquiries
+            2. Complex problem resolution
+            3. Account or process issues
+            4. Information requests
+            5. Complaint or feedback scenarios
             
             Make each question realistic and varied in:
-            - Problem type
+            - Problem type relevant to {checklist.domain_expertise or 'the domain'}
             - Language style
             - Level of detail
             - Emotional tone
@@ -188,23 +188,25 @@ class SampleGeneratorService:
             print(f"🔍 DEBUG - Output format text: {output_format_text}")
             
             prompt = f"""
-            Generate a training sample for IT support evaluation.
+            Generate a training sample for {checklist.domain_expertise or 'customer service'} evaluation.
             
             Context: {checklist.role_persona}
             Task: {checklist.task_goal}
             Domain: {checklist.domain_expertise}
+            Use Case: {checklist.use_case}
             
             Output format required: {output_format_text}
             
-            Create 1 unique tech support question and respond using the EXACT format specified above.
+            Create 1 unique {checklist.domain_expertise or 'customer service'} question and respond using the EXACT format specified above.
             
-            Return JSON: {{"input": "realistic user tech question", "output": "complete response in the exact format specified"}}
+            Return JSON: {{"input": "realistic {checklist.domain_expertise or 'customer service'} question", "output": "complete response in the exact format specified"}}
             
             IMPORTANT:
-            - Generate varied questions: WiFi, email, printing, software, hardware
+            - Generate questions relevant to {checklist.domain_expertise or 'the specified domain'}
             - Use the EXACT output format structure from the requirements
             - Include all required fields and reasoning elements
             - Make each question unique (sample #{sample_number})
+            - Focus on {checklist.use_case or 'the specified use case'}
             """
             
             # Call Bedrock with specified model

@@ -3,6 +3,7 @@ Simple routes for dataset generation - flexible format handling
 """
 
 from fasthtml.common import *
+from shad4fast import Button, Input, Textarea
 from flexible_generator import FlexibleGenerator
 from database import Database
 from components.layout import create_main_layout
@@ -33,60 +34,60 @@ def create_simple_generator_routes(app):
         
         content = Div(
             Div(
-                H3("Flexible Dataset Generator", style="margin-bottom: 1rem; font-size: 1.5rem; font-weight: 600;"),
+                H3("Flexible Dataset Generator", cls="text-2xl font-semibold mb-4"),
                 P("Automatically detects and follows any output format specified in your prompt (XML, JSON, text, etc.)", 
-                  style="margin-bottom: 2rem; color: #6b7280; background: #f0f8ff; padding: 1rem; border-radius: 0.5rem;"),
+                  cls="text-sm text-muted-foreground bg-blue-50 p-4 rounded-md mb-6"),
                 
                 Form(
                     Div(
-                        Label("Select Prompt:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                        Label("Select Prompt:", cls="block text-sm font-medium mb-2"),
                         Select(
                             Option("Choose a prompt...", value="", disabled=True, selected=True),
                             *[Option(prompt['name'], value=prompt['id']) 
                               for prompt in prompts if prompt.get('variables', {}).get('system_prompt', '')],
                             name="prompt_id",
                             required=True,
-                            style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;"
+                            cls="w-full p-2 border border-input rounded-md mb-4"
                         ),
-                        style="margin-bottom: 1rem;"
+                        cls="mb-4"
                     ),
                     
                     Div(
-                        Label("Select Model:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                        Label("Select Model:", cls="block text-sm font-medium mb-2"),
                         Select(
                             Option("Nova Pro", value="us.amazon.nova-pro-v1:0", selected=True),
                             Option("Nova Lite", value="us.amazon.nova-lite-v1:0"),
                             Option("Nova Premier", value="us.amazon.nova-premier-v1:0"),
                             name="model_id",
                             required=True,
-                            style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;"
+                            cls="w-full p-2 border border-input rounded-md mb-4"
                         ),
-                        style="margin-bottom: 1rem;"
+                        cls="mb-4"
                     ),
                     
                     Div(
-                        Label("Number of Samples:", style="display: block; margin-bottom: 0.5rem; font-weight: 500;"),
+                        Label("Number of Samples:", cls="block text-sm font-medium mb-2"),
                         Input(
                             type="number",
                             name="num_samples",
                             value="3",
                             min="1",
                             max="100",
-                            style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem;"
+                            cls="w-full p-2 border border-input rounded-md mb-4"
                         ),
-                        style="margin-bottom: 1.5rem;"
+                        cls="mb-6"
                     ),
                     
                     Button("Generate Dataset", type="submit", 
-                           cls="px-4 py-2 text-sm font-medium rounded-md transition-colors text-center w-full bg-primary text-primary-foreground"),
+                           cls="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"),
                     
                     method="post",
                     action="/simple-generator/generate"
                 ),
-                style="background: white; padding: 2rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
+                cls="bg-background border border-border rounded-lg p-6 shadow-sm"
             ),
             
-            Div(id="results", style="margin-top: 2rem;")
+            Div(id="results", cls="mt-6")
         )
         
         return create_main_layout(
@@ -109,7 +110,7 @@ def create_simple_generator_routes(app):
         prompt_data = db.get_prompt(prompt_id)
         
         if not prompt_data:
-            return Div("Error: Prompt not found", style="color: red; padding: 1rem; background: #fee; border: 1px solid #fcc; border-radius: 0.375rem;")
+            return Div("Error: Prompt not found", cls="text-red-600 p-4 bg-red-50 border border-red-200 rounded-md")
         
         variables = prompt_data.get('variables', {})
         system_prompt = variables.get('system_prompt', '')
@@ -126,10 +127,10 @@ def create_simple_generator_routes(app):
             error_message = result.get("error", "Unknown error occurred")
             
             return Div(
-                P(f"Generation Failed: {error_message}", style="color: #dc2626; font-weight: 600; margin-bottom: 1rem;"),
+                P(f"Generation Failed: {error_message}", cls="text-red-600 font-semibold mb-4"),
                 P(f"Detected Format: {result.get('detected_format', 'Unknown')}", 
-                  style="background: #f0f8ff; padding: 0.5rem; border-radius: 0.375rem;"),
-                style="background: #fee; padding: 1rem; border: 1px solid #fcc; border-radius: 0.375rem; margin-top: 1rem;"
+                  cls="bg-blue-50 p-2 rounded-md"),
+                cls="bg-red-50 p-4 border border-red-200 rounded-md mt-4"
             )
         
         # Display results
@@ -172,9 +173,9 @@ def create_simple_generator_routes(app):
         
         return Div(
             P(f"✅ Generated {result['total_generated']} samples successfully", 
-              style="color: #059669; font-weight: 600; background: #ecfdf5; padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem;"),
+              cls="text-green-600 font-semibold bg-green-50 p-4 rounded-md mb-4"),
             P(f"Detected Format: {result.get('detected_format', 'Unknown')}", 
-              style="background: #f0f8ff; padding: 0.5rem; border-radius: 0.375rem; margin-bottom: 1rem;"),
+              cls="bg-blue-50 p-2 rounded-md mb-4"),
             
             # Save as Dataset button
             Form(
@@ -186,11 +187,11 @@ def create_simple_generator_routes(app):
                         name="dataset_name",
                         placeholder="Enter dataset name (e.g., 'Customer Support Samples')",
                         required=True,
-                        style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-right: 0.5rem;"
+                        cls="flex-1 p-2 border border-input rounded-md mr-2"
                     ),
                     Button("Save as Dataset", type="submit",
-                           style="background: #059669; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; font-weight: 500; cursor: pointer;"),
-                    style="display: flex; margin-bottom: 2rem;"
+                           cls="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"),
+                    cls="flex mb-8"
                 ),
                 method="post",
                 action="/simple-generator/save-dataset"
@@ -250,10 +251,11 @@ def create_simple_generator_routes(app):
                 Div(
                     Button("View Datasets", 
                            onclick="window.location.href='/datasets'",
-                           style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; font-weight: 500; cursor: pointer; margin-right: 0.5rem;"),
+                           cls="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                           style="margin-right: 0.5rem;"),
                     Button("Generate More", 
                            onclick="window.location.href='/simple-generator'",
-                           style="background: #6b7280; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; font-weight: 500; cursor: pointer;"),
+                           variant="secondary"),
                     style="margin-top: 1rem;"
                 )
             )

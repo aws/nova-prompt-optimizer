@@ -116,8 +116,12 @@ app = FastHTML(
     ]
 )
 
+# Setup prompt builder routes
+from routes.prompt_builder import setup_prompt_builder_routes
+setup_prompt_builder_routes(app)
+
 # Mount static files
-app.mount("/static", StaticFiles(directory="."), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Add flexible generator routes
 create_simple_generator_routes(app)  # Works with any format
@@ -1499,10 +1503,16 @@ async def prompts_page(request):
             content=Div(
                 P("Create system and user prompts for optimization.", 
                   style="color: #6b7280; margin-bottom: 1rem;"),
-                Button("Create New Prompt", 
-                       onclick="showCreateForm('prompt')",
-                       id="create-prompt-btn",
-                       cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"),
+                Div(
+                    Button("Create New Prompt", 
+                           onclick="showCreateForm('prompt')",
+                           id="create-prompt-btn",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mr-2"),
+                    Button("Prompt Builder", 
+                           onclick="window.location.href='/prompt-builder'",
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
+                    style="margin-bottom: 1rem;"
+                ),
                 
                 # Create form (hidden by default)
                 Div(
@@ -3603,6 +3613,7 @@ async def start_generator(request):
         # Start conversation
         response = conversation_service.start_conversation()
         response['session_id'] = session_id
+        response['success'] = True
         
         return response
         
@@ -4035,14 +4046,21 @@ async def dataset_generator_page(request):
                 
                 if (data.success !== false) {
                     currentSession = data.session_id;
+                    console.log('Session started:', currentSession);
+                    console.log('Response data:', data);
+                    console.log('selectedPrompt:', selectedPrompt);
                     
                     // If prompt selected, analyze it first
-                    if (selectedPrompt) {
+                    if (selectedPrompt && selectedPrompt !== "No prompt - start from scratch") {
+                        console.log('Analyzing selected prompt');
                         await analyzePrompt(selectedPrompt);
                     } else {
                         // No prompt selected, start conversation directly
+                        console.log('No prompt selected, showing step 2');
                         showStep(2);
+                        console.log('Step 2 shown, adding message:', data.message);
                         addMessage('ai', data.message);
+                        console.log('Message added successfully');
                     }
                     
                 } else {
@@ -4127,7 +4145,15 @@ async def dataset_generator_page(request):
         }
         
         function addMessage(sender, message) {
+            console.log('addMessage called with:', sender, message);
             const conversationArea = document.getElementById('conversation-area');
+            console.log('conversationArea element:', conversationArea);
+            
+            if (!conversationArea) {
+                console.error('conversation-area element not found!');
+                return;
+            }
+            
             const messageDiv = document.createElement('div');
             messageDiv.style.marginBottom = '1rem';
             messageDiv.style.padding = '0.75rem';
@@ -4285,6 +4311,15 @@ async def dataset_generator_page(request):
         function formatOutput(output) {
             if (!output || output === 'N/A') return output;
             
+            // Handle objects with summary/classification structure
+            if (typeof output === 'object' && output !== null) {
+                if (output.summary && output.classification) {
+                    return `${output.summary}\n\n**Classification:** ${output.classification}`;
+                } else {
+                    return JSON.stringify(output, null, 2);
+                }
+            }
+            
             // Ensure output is a string
             const outputStr = typeof output === 'string' ? output : String(output);
             
@@ -4348,13 +4383,34 @@ async def dataset_generator_page(request):
                 sampleDiv.className = 'sample-item';
                 sampleDiv.style.cssText = 'border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; background: white;';
                 
+                const outputValue = sample.output || sample.answer || 'N/A';
+                console.log('Sample output value:', outputValue, 'Type:', typeof outputValue);
+                let displayOutput;
+                
+                if (typeof outputValue === 'object' && outputValue !== null) {
+                    console.log('Object detected, checking structure:', outputValue);
+                    // Handle nested objects with summary/classification structure
+                    if (outputValue.summary && outputValue.classification) {
+                        displayOutput = `${outputValue.summary}\n\nClassification: ${outputValue.classification}`;
+                        console.log('Using summary/classification format');
+                    } else {
+                        displayOutput = JSON.stringify(outputValue, null, 2);
+                        console.log('Using JSON stringify');
+                    }
+                } else {
+                    displayOutput = outputValue;
+                    console.log('Using raw value');
+                }
+                
+                console.log('Final display output:', displayOutput);
+                
                 sampleDiv.innerHTML = `
                     <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Sample ${index + 1}</h4>
                     <div style="margin-bottom: 0.5rem;">
                         <strong>Input:</strong> ${sample.input || 'N/A'}
                     </div>
                     <div style="margin-bottom: 1rem;">
-                        <strong>Output:</strong> ${sample.output || sample.answer || 'N/A'}
+                        <strong>Output:</strong> <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">${displayOutput}</pre>
                     </div>
                     <div style="margin-bottom: 0.5rem;">
                         <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Annotation (optional):</label>
