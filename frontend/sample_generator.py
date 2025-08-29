@@ -4,6 +4,7 @@ Generates initial samples, processes annotations, and handles iterative refineme
 """
 
 import json
+import time
 import boto3
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
@@ -180,6 +181,89 @@ class SampleGeneratorService:
             print(f"Error processing question: {e}")
             return {"success": False, "error": str(e)}
     
+    def generate_single_sample_with_annotations(self, checklist, model_id: str, sample_number: int, annotations: list) -> Dict[str, Any]:
+        """Generate a single sample using annotations as few-shot examples"""
+        try:
+            # Extract actual format from the output format description
+            output_format_text = str(checklist.output_format)
+            
+            # Build few-shot examples from annotations
+            few_shot_examples = ""
+            if annotations:
+                few_shot_examples = "\n\nFew-shot examples based on previous annotations:\n"
+                for i, annotation in enumerate(annotations[:3]):  # Use up to 3 examples
+                    few_shot_examples += f"\nExample {i+1} (based on feedback: '{annotation['annotation']}'):\n"
+                    few_shot_examples += "- Apply this feedback to improve quality\n"
+            
+            prompt = f"""
+            Generate a training sample for {checklist.domain_expertise or 'customer service'} evaluation.
+            
+            Context: {checklist.role_persona}
+            Task: {checklist.task_goal}
+            Domain: {checklist.domain_expertise}
+            Use Case: {checklist.use_case}
+            
+            Output format required: {output_format_text}
+            {few_shot_examples}
+            
+            Create 1 unique {checklist.domain_expertise or 'customer service'} question and respond using the EXACT format specified above.
+            
+            Return JSON: {{"input": "realistic {checklist.domain_expertise or 'customer service'} question", "output": "complete response in the exact format specified"}}
+            
+            IMPORTANT:
+            - Generate questions relevant to {checklist.domain_expertise or 'the specified domain'}
+            - Use the EXACT output format structure from the requirements
+            - Include all required fields and reasoning elements
+            - Make each question unique (sample #{sample_number})
+            - Focus on {checklist.use_case or 'the specified use case'}
+            - Apply insights from the annotation feedback above
+            """
+            
+            # Call Bedrock with specified model
+            response = self._call_bedrock_with_model(prompt, model_id)
+            
+            if not response:
+                return {"success": False, "error": "No response from model"}
+            
+            try:
+                # Clean response
+                response_text = response.strip()
+                
+                # Handle code blocks
+                if response_text.startswith('```json'):
+                    response_text = response_text[7:]
+                elif response_text.startswith('```'):
+                    response_text = response_text[3:]
+                    
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]
+                
+                # Parse JSON with proper handling of control characters
+                response_text = response_text.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+                sample_data = json.loads(response_text)
+                
+                # Convert to dict with proper output handling
+                sample = GeneratedSample.from_llm_response(sample_data)
+                
+                # Always provide a string version for compatibility
+                return {
+                    "success": True,
+                    "sample": {
+                        "input": sample.input,
+                        "output": sample.output,
+                        "output_string": sample.get_output_as_string()
+                    }
+                }
+                
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {e}")
+                print(f"Response text: {response_text}")
+                return {"success": False, "error": f"Invalid JSON response: {str(e)}"}
+                
+        except Exception as e:
+            print(f"Error generating sample with annotations: {e}")
+            return {"success": False, "error": str(e)}
+
     def generate_single_sample_from_checklist(self, checklist, model_id: str, sample_number: int) -> Dict[str, Any]:
         """Generate a single sample record from checklist"""
         try:
@@ -345,13 +429,18 @@ class SampleGeneratorService:
         """Generate initial 5 samples based on requirements"""
         
         generation_prompt = generation_config.get('generation_prompt', '')
+        print(f"🔍 DEBUG - Generation prompt: {generation_prompt[:200]}...")
         
         try:
             # Generate samples using AI
+            print(f"🔍 DEBUG - Calling Bedrock with model: {self.model_id}")
             samples_text = self._call_bedrock(generation_prompt)
+            print(f"🔍 DEBUG - Raw Bedrock response: {samples_text[:500]}...")
             
             # Parse generated samples
+            print(f"🔍 DEBUG - Parsing generated samples...")
             samples = self._parse_generated_samples(samples_text, session_id)
+            print(f"🔍 DEBUG - Parsed {len(samples)} samples")
             
             # Create generation session
             session = GenerationSession(
@@ -369,7 +458,9 @@ class SampleGeneratorService:
             }
             
         except Exception as e:
-            print(f"Error generating samples: {e}")
+            print(f"❌ ERROR in generate_initial_samples: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "success": False,
                 "error": str(e),
@@ -429,15 +520,27 @@ class SampleGeneratorService:
         
         session = self.sessions[session_id]
         
+        # Initialize progress tracking
+        self._update_progress(session_id, 0, num_records, "starting")
+        
         # Create batch generation prompt
         batch_prompt = self._create_batch_generation_prompt(session, num_records)
         
         try:
+            # Update progress - generation started
+            self._update_progress(session_id, 0, num_records, "generating")
+            
             # Generate full dataset
             dataset_text = self._call_bedrock(batch_prompt)
             
+            # Update progress - parsing
+            self._update_progress(session_id, num_records // 2, num_records, "parsing")
+            
             # Parse and format dataset
             dataset_records = self._parse_dataset_batch(dataset_text)
+            
+            # Update progress - formatting
+            self._update_progress(session_id, num_records * 3 // 4, num_records, "formatting")
             
             # Format according to requested output format
             if output_format.lower() == 'csv':
@@ -446,6 +549,9 @@ class SampleGeneratorService:
             else:
                 formatted_data = self._format_as_jsonl(dataset_records)
                 file_extension = 'jsonl'
+            
+            # Update progress - completed
+            self._update_progress(session_id, num_records, num_records, "completed")
             
             return {
                 "success": True,
@@ -601,23 +707,36 @@ class SampleGeneratorService:
         
         Generate exactly {num_records} high-quality examples following the established pattern.
         
-        Requirements:
-        - Each example must have "input" and "answer" fields
-        - Ensure maximum diversity in scenarios and language
+        CRITICAL DIVERSITY REQUIREMENTS:
+        - Each example MUST be completely different from all others
+        - Vary the language style, tone, and complexity significantly
+        - Include different scenarios, contexts, and use cases
+        - Mix formal and informal language styles
+        - Include different user types (new customers, experienced users, etc.)
+        - Vary the length and detail level of inputs
         - Include edge cases and challenging examples (20% of total)
+        - Use different sentence structures and vocabulary
+        - Avoid repetitive patterns or similar phrasings
+        - Each input should represent a unique situation or problem
+        
+        FORMAT REQUIREMENTS:
+        - Each example must have "input" and "answer" fields
         - Maintain consistent quality and format
         - Use realistic, natural language
         
         Output format: One JSON object per line (JSONL format)
         {{"input": "example input", "answer": "expected answer"}}
+        
+        IMPORTANT: Make each example distinctly different. No repetitive content or similar scenarios.
         """
         
         return batch_prompt
     
     def _parse_dataset_batch(self, dataset_text: str) -> List[Dict[str, str]]:
-        """Parse batch-generated dataset"""
+        """Parse batch-generated dataset with diversity filtering"""
         
         records = []
+        seen_inputs = set()
         lines = dataset_text.strip().split('\n')
         
         for line in lines:
@@ -626,14 +745,64 @@ class SampleGeneratorService:
                 try:
                     record = json.loads(line)
                     if 'input' in record and 'answer' in record:
-                        records.append({
-                            'input': record['input'],
-                            'answer': record['answer']
-                        })
+                        input_text = record['input'].strip()
+                        
+                        # Check for diversity - reject if too similar to existing
+                        is_duplicate = False
+                        for seen_input in seen_inputs:
+                            if self._is_too_similar(input_text, seen_input):
+                                print(f"🔍 DEBUG - Rejecting similar input: {input_text[:50]}...")
+                                is_duplicate = True
+                                break
+                        
+                        if not is_duplicate:
+                            records.append({
+                                'input': input_text,
+                                'answer': record['answer']
+                            })
+                            seen_inputs.add(input_text)
+                        
                 except json.JSONDecodeError:
                     continue
         
         return records
+    
+    def _update_progress(self, session_id: str, current: int, total: int, status: str):
+        """Update progress for a session"""
+        import os
+        import json
+        
+        os.makedirs("data", exist_ok=True)
+        progress_file = f"data/generation_progress_{session_id}.json"
+        
+        progress_data = {
+            "current": current,
+            "total": total,
+            "status": status,
+            "timestamp": time.time()
+        }
+        
+        try:
+            with open(progress_file, 'w') as f:
+                json.dump(progress_data, f)
+        except Exception as e:
+            print(f"Error updating progress: {e}")
+
+    def _is_too_similar(self, text1: str, text2: str) -> bool:
+        """Check if two texts are too similar (basic similarity check)"""
+        # Simple similarity check - can be enhanced with more sophisticated methods
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
+        
+        if len(words1) == 0 or len(words2) == 0:
+            return False
+            
+        intersection = len(words1.intersection(words2))
+        union = len(words1.union(words2))
+        
+        # If more than 70% of words are the same, consider it too similar
+        similarity = intersection / union if union > 0 else 0
+        return similarity > 0.7
     
     def _format_as_jsonl(self, records: List[Dict[str, str]]) -> str:
         """Format records as JSONL"""

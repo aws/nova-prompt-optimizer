@@ -23,13 +23,10 @@ class MetricService:
     def generate_metric_code(self, name: str, criteria: Dict, model_id: str = "us.amazon.nova-premier-v1:0", rate_limit: int = 60) -> str:
         """Generate MetricAdapter subclass code using Amazon Nova Premier"""
         
-        print(f"🛠️ MetricService - Generating code for: {name}")
-        print(f"🤖 Using model: {model_id}, Rate limit: {rate_limit} RPM")
         
         from prompt_templates import get_metric_code_prompt
         prompt = get_metric_code_prompt(name, criteria)
 
-        print(f"📝 Prompt created: {len(prompt)} characters")
 
         try:
             print("📤 Sending request to Bedrock for code generation...")
@@ -51,12 +48,9 @@ class MetricService:
             
             # Clean the generated code by removing markdown formatting
             cleaned_code = self._clean_generated_code(generated_code)
-            print(f"✅ Code generation successful: {len(cleaned_code)} characters")
             return cleaned_code
             
         except Exception as e:
-            print(f"❌ MetricService error: {str(e)}")
-            print(f"❌ Error type: {type(e)}")
             raise Exception(f"Nova Premier API call failed: {str(e)}")
         
         # Removed fallback code - only use AI-generated metrics
@@ -99,20 +93,18 @@ class MetricService:
             # {field_name} categories validation
             categories_true = y_true.get("{field_name}", {{}})
             categories_pred = y_pred.get("{field_name}", {{}})
-            print(f"🔍 CATEGORIES DEBUG - {field_name}:")
-            print(f"  categories_true: {{categories_true}} (type: {{type(categories_true)}})")
-            print(f"  categories_pred: {{categories_pred}} (type: {{type(categories_pred)}})")
+            print("  categories_true: " + str(categories_true) + " (type: " + str(type(categories_true)) + ")")
+            print("  categories_pred: " + str(categories_pred) + " (type: " + str(type(categories_pred)) + ")")
             if isinstance(categories_true, dict) and isinstance(categories_pred, dict):
                 correct = sum(
                     categories_true.get(k, False) == categories_pred.get(k, False)
                     for k in categories_true
                 )
                 {field_name}_score = correct / len(categories_true) if categories_true else 0.0
-                print(f"  correct matches: {{correct}} / {{len(categories_true)}}")
-                print(f"  {field_name}_score: {{{field_name}_score}}")
+                print("  correct matches: " + str(correct) + " / " + str(len(categories_true)))
             else:
                 {field_name}_score = 0.0
-                print(f"  ❌ Type mismatch or missing data - score: 0.0")
+                print("  ❌ Type mismatch or missing data - score: 0.0")
             result["{field_name}_score"] = {field_name}_score
             weighted_scores.append({field_name}_score * {weight})""")
         
@@ -120,7 +112,10 @@ class MetricService:
         
         return f'''import json
 import re
+import numpy as np
+import pandas as pd
 from typing import Any, List, Dict
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
 
 class {class_name}(MetricAdapter):
@@ -132,34 +127,24 @@ class {class_name}(MetricAdapter):
         result = {{"is_valid_json": False}}
         weighted_scores = []
 
-        print(f"🔍 METRIC DEBUG - Raw inputs:")
-        print(f"  y_pred: {{y_pred}} (type: {{type(y_pred)}})")
-        print(f"  y_true: {{y_true}} (type: {{type(y_true)}})")
 
         try:
             y_true = y_true if isinstance(y_true, dict) else self.parse_json(y_true)
             y_pred = y_pred if isinstance(y_pred, dict) else self.parse_json(y_pred)
-            print(f"🔍 METRIC DEBUG - After parsing:")
-            print(f"  y_pred: {{y_pred}}")
-            print(f"  y_true: {{y_true}}")
         except json.JSONDecodeError as e:
-            print(f"❌ METRIC DEBUG - JSON parsing failed: {{e}}")
             result["total"] = 0.0
             return result
 
         if isinstance(y_pred, str):
-            print(f"❌ METRIC DEBUG - y_pred still string: {{y_pred}}")
             result["total"] = 0.0
             return result
 
         result["is_valid_json"] = True
         {field_validation}
         
-        print(f"🔍 METRIC DEBUG - weighted_scores: {{weighted_scores}}")
         
         # Calculate total weighted score
         result["total"] = sum(weighted_scores) / len(weighted_scores) if weighted_scores else 0.0
-        print(f"🔍 METRIC DEBUG - final total: {{result['total']}}")
         return result
 
     def apply(self, y_pred: Any, y_true: Any):
@@ -177,6 +162,9 @@ class {class_name}(MetricAdapter):
         return f'''from typing import Any, List
 import re
 import math
+import numpy as np
+import pandas as pd
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
 
 class {class_name}(MetricAdapter):
@@ -224,6 +212,9 @@ class {class_name}(MetricAdapter):
         return f'''from typing import Any, List
 import json
 import math
+import numpy as np
+import pandas as pd
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, cohen_kappa_score
 from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
 
 class {class_name}(MetricAdapter):
@@ -315,14 +306,8 @@ class {class_name}(MetricAdapter):
                     pred = sample.get('prediction', '')
                     truth = sample.get('ground_truth', '')
                     
-                    print(f"🔍 SAMPLE {i+1} FULL DEBUG:")
-                    print(f"  prediction: {pred}")
-                    print(f"  ground_truth: {truth}")
-                    print(f"  pred type: {type(pred)}")
-                    print(f"  truth type: {type(truth)}")
                     
                     score = metric.apply(pred, truth)
-                    print(f"  final score: {score}")
                     
                     results.append({
                         'input': sample,
@@ -330,7 +315,6 @@ class {class_name}(MetricAdapter):
                         'success': True
                     })
                 except Exception as e:
-                    print(f"❌ SAMPLE {i+1} ERROR: {str(e)}")
                     results.append({
                         'input': sample,
                         'error': str(e),
@@ -345,3 +329,430 @@ class {class_name}(MetricAdapter):
             
         except Exception as e:
             return {'error': f'Failed to test metric: {str(e)}'}
+    
+    def analyze_dataset_for_metrics(self, dataset_path: str, prompt_data: dict, sample_size: int = 100, focus_description: str = "") -> dict:
+        """Analyze dataset and suggest appropriate metrics"""
+        import pandas as pd
+        import random
+        
+        try:
+            # Sample dataset
+            if dataset_path.endswith('.jsonl'):
+                with open(dataset_path, 'r') as f:
+                    data = [json.loads(line) for line in f]
+                if len(data) > sample_size:
+                    data = random.sample(data, sample_size)
+                df = pd.DataFrame(data)
+            else:
+                df = pd.read_csv(dataset_path)
+                if len(df) > sample_size:
+                    df = df.sample(n=sample_size)
+            
+            # Analyze dataset structure
+            dataset_analysis = f"""
+Dataset Structure:
+- Rows analyzed: {len(df)}
+- Columns: {list(df.columns)}
+- Data types: {df.dtypes.to_dict()}
+- Sample data: {df.head(3).to_dict('records')}
+"""
+            
+            # Create analysis prompt
+            prompt_info = "No prompt provided - analyzing dataset only"
+            if prompt_data:
+                prompt_info = f"""
+- Name: {prompt_data.get('name', 'N/A')}
+- System Prompt: {prompt_data.get('system_prompt', 'N/A')}
+- User Prompt: {prompt_data.get('user_prompt', 'N/A')}"""
+            
+            analysis_prompt = f"""
+You are an expert in evaluation metrics for AI systems. Analyze the dataset and prompt to suggest multiple appropriate evaluation metrics.
+
+DATASET ANALYSIS:
+{dataset_analysis}
+
+PROMPT INFORMATION:
+{prompt_info}
+
+FOCUS: {focus_description if focus_description else 'General evaluation'}
+
+Based on this analysis, suggest 3-5 different evaluation metrics that would be appropriate. Consider:
+- Data structure and types
+- Task complexity (classification, generation, structured output, etc.)
+- Output format requirements (JSON, XML, text, numeric)
+- Evaluation granularity (field-level, overall, weighted)
+
+AVAILABLE LIBRARIES (use these for advanced metrics):
+- Standard: json, re, math, typing (built-in)
+- Scientific: numpy (arrays, statistics, linear algebra)
+- Data: pandas (dataframes, data manipulation)
+- ML: sklearn.metrics (F1, precision, recall, kappa, etc.)
+
+Prefer advanced implementations when appropriate for better accuracy and performance.
+
+For each metric, provide:
+1. Name
+2. Description (technical explanation)
+3. Plain_explanation (simple explanation of what it measures in THIS specific dataset)
+4. Type (accuracy, similarity, classification, structured_validation, etc.)
+5. Complexity (simple, moderate, complex)
+6. Why it's suitable for this data/task
+
+Return your response in this JSON format:
+{{
+    "dataset_summary": "Brief summary of the dataset and task",
+    "task_type": "classification/regression/generation/structured_output/etc",
+    "output_format_detected": "json/xml/text/numeric/mixed",
+    "suggested_metrics": [
+        {{
+            "name": "Metric Name",
+            "description": "Technical description of the metric",
+            "plain_explanation": "Simple explanation of what this measures in your specific data (e.g., 'Checks if the AI correctly identified urgent vs non-urgent customer emails in your dataset')",
+            "type": "accuracy/similarity/structured_validation/etc",
+            "complexity": "simple/moderate/complex",
+            "rationale": "Why this metric is suitable",
+            "handles_format": "json/xml/text/numeric"
+        }}
+    ]
+}}
+"""
+            
+            # Generate analysis using AI
+            response = self.bedrock.invoke_model(
+                modelId="us.amazon.nova-premier-v1:0",
+                body=json.dumps({
+                    "messages": [{"role": "user", "content": [{"text": analysis_prompt}]}],
+                    "inferenceConfig": {
+                        "maxTokens": 1500,
+                        "temperature": 0.1
+                    }
+                })
+            )
+            
+            result = json.loads(response['body'].read())
+            response_text = result['output']['message']['content'][0]['text']
+            
+            # Parse response
+            try:
+                analysis_result = json.loads(response_text.strip())
+            except json.JSONDecodeError:
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                if json_match:
+                    analysis_result = json.loads(json_match.group())
+                else:
+                    return {"success": False, "error": "Could not parse AI analysis response"}
+            
+            return {
+                "success": True,
+                **analysis_result
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def generate_composite_metric_code(self, metrics: list, weights: list = None, original_prompt: str = None) -> str:
+        """Generate composite metric using AI to create self-contained implementation"""
+        print(f"🔍 DEBUG - Starting composite metric generation")
+        print(f"🔍 DEBUG - metrics type: {type(metrics)}, value: {metrics}")
+        print(f"🔍 DEBUG - weights type: {type(weights)}, value: {weights}")
+        
+        if not metrics:
+            raise ValueError("At least one metric required for composite")
+        
+        if weights is None:
+            weights = [1.0 / len(metrics)] * len(metrics)
+            print(f"🔍 DEBUG - Generated default weights: {weights}")
+        
+        # Use AI to generate a proper composite metric
+        from prompt_templates import PromptTemplates
+        prompt_templates = PromptTemplates()
+        
+        print(f"🔍 DEBUG - About to analyze dataset structure")
+        # Analyze dataset structure from a sample
+        dataset_structure = self._analyze_dataset_structure(metrics)
+        print(f"🔍 DEBUG - Dataset structure: {dataset_structure}")
+        
+        print(f"🔍 DEBUG - About to create composite prompt")
+        # Create composite prompt
+        composite_prompt = prompt_templates.get_composite_metric_prompt(metrics, weights, dataset_structure, original_prompt)
+        print(f"🔍 DEBUG - Composite prompt created, length: {len(composite_prompt)}")
+        
+        try:
+            # Generate composite metric code using Nova
+            print(f"🔍 DEBUG - Calling Bedrock for composite metric generation")
+            response = self.bedrock.invoke_model(
+                modelId="us.amazon.nova-pro-v1:0",
+                body=json.dumps({
+                    "messages": [
+                        {
+                            "role": "user", 
+                            "content": [{"text": composite_prompt}]
+                        }
+                    ],
+                    "inferenceConfig": {
+                        "maxTokens": 4000,
+                        "temperature": 0.1
+                    }
+                })
+            )
+            
+            response_body = json.loads(response['body'].read())
+            generated_code = response_body['output']['message']['content'][0]['text']
+            print(f"🔍 DEBUG - Generated code length: {len(generated_code)}")
+            print(f"🔍 DEBUG - RAW BEDROCK OUTPUT:")
+            print("=" * 80)
+            print(generated_code)
+            print("=" * 80)
+            
+            # Parse and clean the code before storing
+            cleaned_code = self._parse_and_clean_code(generated_code)
+            print(f"🔍 DEBUG - Cleaned code length: {len(cleaned_code)}")
+            print(f"🔍 DEBUG - About to save to database")
+            
+            # Save the generated composite metric to database
+            try:
+                from database import Database
+                db = Database()
+                
+                print(f"🔍 DEBUG - Database imported successfully")
+                print(f"🔍 DEBUG - metrics type: {type(metrics)}, metrics: {metrics}")
+                
+                # Create a descriptive name for the composite metric
+                if metrics and len(metrics) > 0:
+                    print(f"🔍 DEBUG - Processing {len(metrics)} metrics")
+                    metric_names = [m.get('name', f'Metric {i+1}') for i, m in enumerate(metrics)]
+                    composite_name = f"Composite Metric: {', '.join(metric_names[:3])}"
+                    if len(metric_names) > 3:
+                        composite_name += f" (+{len(metric_names)-3} more)"
+                    num_metrics = len(metrics)
+                else:
+                    print(f"🔍 DEBUG - No metrics or empty metrics")
+                    composite_name = "Composite Metric"
+                    num_metrics = 0
+                
+                print(f"🔍 DEBUG - About to save metric: {composite_name}")
+                
+                # Save to database
+                metric_id = db.create_metric(
+                    name=composite_name,
+                    description=f"AI-generated composite metric combining {num_metrics} evaluation criteria",
+                    dataset_format="JSON",
+                    scoring_criteria="Composite scoring based on multiple weighted metrics",
+                    generated_code=cleaned_code,
+                    natural_language_input="Generated from multiple metric specifications"
+                )
+                
+                print(f"✅ DEBUG - Saved composite metric to database with ID: {metric_id}")
+                
+            except Exception as db_error:
+                print(f"❌ DEBUG - Database save error: {type(db_error).__name__}: {db_error}")
+                import traceback
+                traceback.print_exc()
+                # Continue anyway since the code generation worked
+            
+            return cleaned_code
+            
+        except Exception as e:
+            # Let the full traceback show
+            raise e
+            
+    def _parse_and_clean_code(self, raw_code: str) -> str:
+        """Parse and clean generated code, extracting only valid Python code"""
+        
+        # Simple approach - just clean the raw code
+        extracted_code = raw_code
+        
+        # Remove markdown code block markers
+        extracted_code = extracted_code.replace('```python', '').replace('```', '')
+        
+        # Clean up any extra text before/after the code
+        lines = extracted_code.split('\n')
+        code_lines = []
+        in_code = False
+        
+        for line in lines:
+            # Start collecting when we see imports or class definition
+            if line.strip().startswith(('from ', 'import ', 'class CompositeMetric')):
+                in_code = True
+            
+            if in_code:
+                code_lines.append(line)
+                
+            # Stop after the instantiation line
+            if 'metric_adapter = CompositeMetric()' in line:
+                break
+        
+        extracted_code = '\n'.join(code_lines).strip()
+        print(f"🔍 DEBUG - Extracted code using simple cleanup approach")
+        
+        print(f"🔍 DEBUG - EXTRACTED CODE:")
+        print("=" * 40)
+        print(extracted_code)
+        print("=" * 40)
+        
+        # Validate the code has required components
+        required_components = [
+            'class CompositeMetric',
+            'def parse_json',
+            'def _calculate_metrics',
+            'def apply',
+            'def batch_apply',
+            'metric_adapter = CompositeMetric()'
+        ]
+        
+        missing_components = []
+        for component in required_components:
+            if component not in extracted_code:
+                missing_components.append(component)
+        
+        if missing_components:
+            error_msg = f"Generated code is missing required components: {missing_components}"
+            print(f"❌ DEBUG - {error_msg}")
+            raise ValueError(error_msg)
+        
+        # Check for forbidden imports
+        forbidden_imports = ['sklearn', 'numpy', 'pandas', 'statsmodels', 'scipy']
+        for forbidden in forbidden_imports:
+            if f'import {forbidden}' in extracted_code or f'from {forbidden}' in extracted_code:
+                error_msg = f"Generated code contains forbidden import: {forbidden}"
+                print(f"❌ DEBUG - {error_msg}")
+                raise ValueError(error_msg)
+        
+        # Final validation - try to compile the code
+        try:
+            compile(extracted_code, '<string>', 'exec')
+            print(f"✅ DEBUG - Code compiles successfully")
+        except SyntaxError as e:
+            error_msg = f"Generated code has syntax errors: {e}. Line {e.lineno}: {e.text}"
+            print(f"❌ DEBUG - {error_msg}")
+            raise ValueError(error_msg)
+        
+        return extracted_code
+        
+    def _analyze_dataset_structure(self, metrics: list) -> dict:
+        """Analyze dataset structure from actual uploaded data"""
+        
+        # Safety check for None metrics
+        if not metrics:
+            raise ValueError("No metrics provided for dataset structure analysis")
+        
+        # Get actual dataset from database/uploads
+        try:
+            from database import Database
+            db = Database()
+            
+            # Try to find uploaded dataset file
+            import os
+            import json
+            
+            uploads_dir = "uploads"
+            dataset_file = None
+            
+            # Look for uploaded dataset files
+            if os.path.exists(uploads_dir):
+                for filename in os.listdir(uploads_dir):
+                    if filename.endswith('.jsonl') or filename.endswith('.json'):
+                        dataset_file = os.path.join(uploads_dir, filename)
+                        break
+            
+            if dataset_file and os.path.exists(dataset_file):
+                print(f"🔍 DEBUG - Analyzing dataset structure from: {dataset_file}")
+                
+                # Read first few lines to analyze structure
+                sample_data = []
+                with open(dataset_file, 'r') as f:
+                    for i, line in enumerate(f):
+                        if i >= 3:  # Just need a few samples
+                            break
+                        try:
+                            data = json.loads(line.strip())
+                            sample_data.append(data)
+                        except json.JSONDecodeError:
+                            continue
+                
+                if sample_data:
+                    # Analyze the actual data structure
+                    first_sample = sample_data[0]
+                    print(f"🔍 DEBUG - Sample data keys: {list(first_sample.keys())}")
+                    
+                    structure = {
+                        "fields": list(first_sample.keys()),
+                        "field_types": {},
+                        "sample_structure": first_sample
+                    }
+                    
+                    # Determine field types from actual data
+                    for key, value in first_sample.items():
+                        if isinstance(value, dict):
+                            structure["field_types"][key] = "dict"
+                        elif isinstance(value, list):
+                            structure["field_types"][key] = "list"
+                        elif isinstance(value, bool):
+                            structure["field_types"][key] = "boolean"
+                        elif isinstance(value, (int, float)):
+                            structure["field_types"][key] = "number"
+                        else:
+                            structure["field_types"][key] = "string"
+                    
+                    print(f"🔍 DEBUG - Detected fields: {structure['fields']}")
+                    print(f"🔍 DEBUG - Field types: {structure['field_types']}")
+                    
+                    return structure
+            
+            # Fallback to old method if no dataset file found
+            print(f"🔍 DEBUG - No dataset file found, using metric-based analysis")
+            
+        except Exception as e:
+            print(f"🔍 DEBUG - Dataset analysis failed: {e}, using metric-based analysis")
+        
+        # Original metric-based analysis as fallback
+        structure = {
+            "fields": [],
+            "field_types": {},
+            "sample_structure": {}
+        }
+        
+        # Try to infer structure from metric names and descriptions
+        for metric in metrics:
+            name = metric.get('name', '')
+            description = metric.get('description', '')
+            
+            # Look for common field patterns
+            if 'categor' in name.lower() or 'categor' in description.lower():
+                structure["fields"].append("categories")
+                structure["field_types"]["categories"] = "dict"
+                structure["sample_structure"]["categories"] = {"field1": True, "field2": False}
+            
+            if 'sentiment' in name.lower() or 'sentiment' in description.lower():
+                structure["fields"].append("sentiment") 
+                structure["field_types"]["sentiment"] = "string"
+                structure["sample_structure"]["sentiment"] = "positive"
+                
+            if 'urgency' in name.lower() or 'urgency' in description.lower():
+                structure["fields"].append("urgency")
+                structure["field_types"]["urgency"] = "string" 
+                structure["sample_structure"]["urgency"] = "high"
+        
+        # If no specific fields detected, fail with clear error
+        if not structure["fields"]:
+            raise ValueError("Could not detect dataset structure from metrics. Please provide more descriptive metric names/descriptions that indicate the data fields (e.g., 'sentiment', 'categories', 'urgency').")
+        
+        return structure
+    
+    def _generate_simple_composite(self, metrics: list, weights: list = None) -> str:
+        """Fallback: Generate simple averaging composite metric"""
+        if weights is None:
+            weights = [1.0] * len(metrics)
+        
+        total_weight = sum(weights)
+        normalized_weights = [w / total_weight for w in weights]
+        
+        return f'''import json
+import re
+import math
+from typing import Any, List, Dict
+from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
+
+# CompositeMetric class will be dynamically generated here when needed
+'''
+

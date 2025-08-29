@@ -76,7 +76,30 @@ def setup_prompt_builder_routes(app):
             Div(id="validation-container", cls="hidden mt-6"),
             
             # JavaScript
-            Script(src="/static/js/prompt_builder.js")
+            Script(src="/static/js/prompt_builder.js"),
+            Script("""
+                // Toggle instructions function
+                function toggleInstructions() {
+                    const helpSections = document.querySelectorAll('.help-section');
+                    const button = document.querySelector('button[onclick="toggleInstructions()"]');
+                    
+                    let allVisible = true;
+                    helpSections.forEach(section => {
+                        if (section.style.display === 'none' || !section.style.display) {
+                            allVisible = false;
+                        }
+                    });
+                    
+                    helpSections.forEach(section => {
+                        section.style.display = allVisible ? 'none' : 'block';
+                    });
+                    
+                    // Update button text
+                    if (button) {
+                        button.textContent = allVisible ? 'Show Instructions' : 'Hide Instructions';
+                    }
+                }
+            """)
         ]
         
         return create_main_layout(

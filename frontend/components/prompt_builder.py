@@ -12,6 +12,20 @@ def builder_form_section(builder_data: Optional[Dict[str, Any]] = None) -> Div:
     data = builder_data or {}
     
     return Div(
+        # Instructions Toggle
+        Div(
+            Div(
+                H3("Nova SDK Optimized Prompt Builder", cls="text-lg font-semibold text-orange-700 mb-2"),
+                P("This builder integrates with Nova's NovaPromptOptimizer and TextPromptAdapter for proven optimization results", 
+                  cls="text-sm text-orange-600 mb-4"),
+            ),
+            Button("Show/Hide Instructions", 
+                   type="button",
+                   onclick="toggleInstructions()",
+                   cls="mb-4 px-3 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"),
+            cls="mb-6"
+        ),
+        
         # Task Section
         task_input_section(data.get("task", "")),
         
@@ -48,10 +62,46 @@ def builder_form_section(builder_data: Optional[Dict[str, Any]] = None) -> Div:
     )
 
 
+def create_help_section(field_name: str, instruction: str, reasoning: str, example: str) -> Div:
+    """Create a toggleable help section for a field"""
+    return Div(
+        Div(
+            Div(
+                H4("Nova SDK Best Practice", cls="text-sm font-semibold text-orange-700 mb-2"),
+                P("This field follows proven Nova optimization patterns from the SDK", cls="text-sm text-orange-600 mb-3"),
+                
+                H4("Instructions", cls="text-sm font-semibold text-blue-700 mb-2"),
+                P(instruction, cls="text-sm text-gray-700 mb-3"),
+                
+                H4("Why This Matters", cls="text-sm font-semibold text-green-700 mb-2"),
+                P(reasoning, cls="text-sm text-gray-700 mb-3"),
+                
+                H4("Example", cls="text-sm font-semibold text-purple-700 mb-2"),
+                Div(
+                    Code(example, cls="text-sm"),
+                    cls="bg-gray-50 p-3 rounded-md border"
+                )
+            ),
+            cls="bg-gradient-to-r from-orange-50 to-blue-50 border border-orange-200 rounded-md p-4 mt-2"
+        ),
+        id=f"{field_name}-help",
+        cls="help-section",
+        style="display: none;"
+    )
+
+
 def task_input_section(task: str = "") -> Div:
     """Task description input section"""
     return Div(
         Label("Task Description", cls="block text-sm font-medium mb-2"),
+        
+        create_help_section(
+            "task",
+            "Clearly describe what you want the AI to accomplish. This creates the foundation for Nova's TextPromptAdapter and NovaPromptOptimizer. Be specific about the action, input type, and desired outcome.",
+            "Nova SDK's optimization engine works best with well-defined tasks. Clear task definitions improve optimization results by giving the NovaPromptOptimizer better baseline understanding and evaluation targets.",
+            "Nova Optimized: 'Analyze customer support emails and classify them as urgent, normal, or low priority based on sentiment and keywords'\nPoor for optimization: 'Look at emails and categorize them'\n\nNova Pattern: Action verb + specific input + measurable output"
+        ),
+        
         Textarea(
             task,
             name="task",
@@ -79,24 +129,57 @@ def context_builder_section(context_items: List[str] = None) -> Div:
     
     return Div(
         Label("Context Information", cls="block text-sm font-medium mb-2"),
-        P("Provide background information that helps the AI understand the task", 
-          cls="text-sm text-muted-foreground mb-3"),
+        
+        create_help_section(
+            "context",
+            "Add background information, constraints, or domain-specific knowledge that helps the AI understand the situation better. Each context item should provide relevant details.",
+            "Context helps the AI make better decisions by providing domain knowledge, constraints, and background information. Good context reduces ambiguity and improves accuracy.",
+            "Examples:\n• 'You are a financial advisor with 10 years of experience'\n• 'The company follows strict GDPR compliance requirements'\n• 'Responses should be appropriate for a technical audience'\n• 'Consider seasonal trends in retail data'"
+        ),
         
         context_list,
         
         Button("+ Add Context", 
                type="button", 
                onclick="addContextItem()",
-               cls="mt-2 px-3 py-1 text-sm border border-input rounded-md hover:bg-accent"),
+               cls="mt-2 px-3 py-1 text-sm border border-dashed border-gray-300 rounded-md hover:border-gray-400"),
         
-        # Hidden template for new context items
-        Div(
-            context_item_row(-1, "", template=True),
-            id="context-template",
-            style="display: none;"
+        P("Context helps the AI understand the domain and constraints", 
+          cls="text-sm text-muted-foreground mt-2"),
+        cls="mb-4"
+    )
+
+
+def context_builder_section(context_items: List[str] = None) -> Div:
+    """Context items builder section"""
+    context_items = context_items or []
+    
+    context_list = Div(
+        *[context_item_row(i, item) for i, item in enumerate(context_items)],
+        id="context-list",
+        cls="space-y-2"
+    )
+    
+    return Div(
+        Label("Context Information", cls="block text-sm font-medium mb-2"),
+        
+        create_help_section(
+            "context",
+            "Add background information, constraints, or domain-specific knowledge that helps the AI understand the situation better. Each context item should provide relevant details.",
+            "Context helps the AI make better decisions by providing domain knowledge, constraints, and background information. Good context reduces ambiguity and improves accuracy.",
+            "Examples:\n• 'You are a financial advisor with 10 years of experience'\n• 'The company follows strict GDPR compliance requirements'\n• 'Responses should be appropriate for a technical audience'\n• 'Consider seasonal trends in retail data'"
         ),
         
-        cls="mb-6"
+        context_list,
+        
+        Button("+ Add Context", 
+               type="button", 
+               onclick="addContextItem()",
+               cls="mt-2 px-3 py-1 text-sm border border-dashed border-gray-300 rounded-md hover:border-gray-400"),
+        
+        P("Context helps the AI understand the domain and constraints", 
+          cls="text-sm text-muted-foreground mt-2"),
+        cls="mb-4"
     )
 
 
@@ -134,6 +217,14 @@ def instructions_builder_section(instructions: List[str] = None) -> Div:
     
     return Div(
         Label("Instructions", cls="block text-sm font-medium mb-2"),
+        
+        create_help_section(
+            "instructions",
+            "Provide specific rules, requirements, and behavioral guidelines that work with Nova's optimization engine. Use clear, directive language that the NovaPromptOptimizer can effectively evaluate and improve.",
+            "Nova SDK's optimization process relies on measurable, specific instructions. Clear behavioral rules help the Evaluator component assess performance improvements and guide the optimization toward better results.",
+            "Nova Instruction Patterns:\n• Measurable Requirements: 'ALWAYS provide confidence scores (0-100) with analysis'\n• Clear Boundaries: 'DO NOT include personal information in summaries'\n• Format Specifications: 'MUST format dates as YYYY-MM-DD'\n• Error Handling: 'If uncertain, respond with \"INSUFFICIENT_DATA\"'\n• Length Constraints: 'Keep responses under 200 words for optimization'"
+        ),
+        
         P("Specific rules and requirements for the AI. Use strong directive language (MUST, DO NOT)", 
           cls="text-sm text-muted-foreground mb-3"),
         
@@ -189,6 +280,14 @@ def response_format_section(formats: List[str] = None) -> Div:
     
     return Div(
         Label("Response Format", cls="block text-sm font-medium mb-2"),
+        
+        create_help_section(
+            "response-format",
+            "Define the structure, style, and format that works best with Nova's evaluation metrics. Consistent formatting helps the MetricAdapter and Evaluator measure optimization improvements accurately.",
+            "Nova SDK's optimization process requires measurable outputs. Well-defined response formats enable the Evaluator to assess improvements and help the NovaPromptOptimizer generate better prompt variations.",
+            "Nova Format Patterns:\n• Structured Output: 'Respond in JSON: {\"summary\": \"\", \"sentiment\": \"\", \"confidence\": 0-100}'\n• Measurable Elements: 'Include confidence score (0-100) for evaluation'\n• Consistent Structure: 'Format as: Problem | Analysis | Recommendation'\n• Length Constraints: 'Maximum 150 words for optimization efficiency'\n• Error Formats: 'Use \"ERROR: [reason]\" for invalid inputs'"
+        ),
+        
         P("Specify how the AI should structure its response", 
           cls="text-sm text-muted-foreground mb-3"),
         
@@ -244,6 +343,14 @@ def variables_manager_section(variables: List[str] = None) -> Div:
     
     return Div(
         Label("Template Variables", cls="block text-sm font-medium mb-2"),
+        
+        create_help_section(
+            "variables",
+            "Define placeholder variables that integrate with Nova's TextPromptAdapter for dynamic, reusable prompts. Variables enable the same optimized prompt to work across different datasets and use cases.",
+            "Nova SDK's TextPromptAdapter supports variable substitution, making optimized prompts reusable. This reduces the need to re-optimize similar prompts and maintains consistency across different applications.",
+            "Nova Variable Patterns:\n• Input Variables: {user_input} - Main content for analysis\n• Context Variables: {domain_context} - Specific domain information\n• Constraint Variables: {max_length} - Dynamic length limits\n• Format Variables: {output_format} - Flexible response formatting\n• Evaluation Variables: {confidence_threshold} - Measurable criteria"
+        ),
+        
         P("Variables that will be replaced with actual values when using the prompt", 
           cls="text-sm text-muted-foreground mb-3"),
         
@@ -334,7 +441,7 @@ def validation_panel(validation: Optional[ValidationResult] = None) -> Div:
     # Status indicator
     if validation.is_valid:
         status_div = Div(
-            Span("✅", cls="text-green-500 text-xl mr-2"),
+            Span("PASS", cls="text-green-500 text-sm font-semibold mr-2"),
             Span("Prompt is valid and ready to build!", cls="text-green-700 font-medium"),
             cls="flex items-center mb-4 p-3 bg-green-50 border border-green-200 rounded-md"
         )
@@ -372,7 +479,7 @@ def validation_panel(validation: Optional[ValidationResult] = None) -> Div:
     if validation.best_practices:
         practices_items = []
         for practice, passed in validation.best_practices.items():
-            icon = "✅" if passed else "❌"
+            icon = "PASS" if passed else "FAIL"
             color = "text-green-600" if passed else "text-red-600"
             label = practice.replace("_", " ").title()
             practices_items.append(

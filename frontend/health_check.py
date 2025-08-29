@@ -96,7 +96,7 @@ def check_database():
     """Check database structure and data"""
     print("🔍 Checking database...")
     
-    db_path = Path("nova_optimizer.db")
+    db_path = Path(__file__).parent / "nova_optimizer.db"
     if not db_path.exists():
         print("❌ Database file not found")
         return False
@@ -181,7 +181,7 @@ def test_imports():
         return False
     
     try:
-        from metric_service import MetricService
+        from services.metric_service import MetricService
         print("✅ MetricService imports successfully")
     except Exception as e:
         print(f"❌ MetricService import failed: {e}")

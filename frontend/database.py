@@ -10,7 +10,7 @@ from typing import List, Dict, Optional, Any
 from datetime import datetime
 
 # Database file location
-DB_PATH = Path("nova_optimizer.db")
+DB_PATH = Path(__file__).parent / "nova_optimizer.db"
 
 class Database:
     def __init__(self, db_path: Path = DB_PATH):
@@ -166,7 +166,7 @@ class Database:
         
         conn.commit()
         # Don't close the connection - keep it for seed_initial_data()
-        print(f"✅ Database initialized: {self.db_path}")
+        # print(f"✅ Database initialized: {self.db_path}")
     
     def seed_initial_data(self):
         """Add initial sample data if tables are empty"""
@@ -179,7 +179,7 @@ class Database:
         
         if datasets_count > 0 or prompts_count > 0 or optimizations_count > 0:
             # Don't close - keep connection alive
-            print("✅ Database already contains data, skipping initial seed")
+            # print("✅ Database already contains data, skipping initial seed")
             return  # Data already exists, don't reseed
         
         print("📊 Database is empty, adding initial sample data...")
@@ -497,7 +497,7 @@ class RelevanceMetric(MetricAdapter):
                 "id": row[0],
                 "name": row[1],
                 "type": row[2],  # prompt_type from database
-                "variables": json.loads(row[3]) if row[3] else [],
+                "variables": json.loads(row[3]) if row[3] else {},
                 "created": row[4],
                 "last_used": row[5],
                 "performance": row[6]
@@ -699,7 +699,8 @@ class RelevanceMetric(MetricAdapter):
                 "progress": row[6],
                 "improvement": row[7],
                 "started": row[8],
-                "completed": row[9]
+                "completed": row[9],
+                "created_at": row[10]
             })
         
         conn.close()

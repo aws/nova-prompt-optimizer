@@ -2,11 +2,33 @@
 Simple routes for dataset generation - flexible format handling
 """
 
+import json
+import time
+import os
 from fasthtml.common import *
 from shad4fast import Button, Input, Textarea
 from flexible_generator import FlexibleGenerator
 from database import Database
 from components.layout import create_main_layout
+
+
+def update_simple_progress(session_id: str, current: int, total: int, status: str):
+    """Update progress for simple generator"""
+    os.makedirs("data", exist_ok=True)
+    progress_file = f"data/simple_progress_{session_id}.json"
+    
+    progress_data = {
+        "current": current,
+        "total": total,
+        "status": status,
+        "timestamp": time.time()
+    }
+    
+    try:
+        with open(progress_file, 'w') as f:
+            json.dump(progress_data, f)
+    except Exception as e:
+        print(f"Error updating simple progress: {e}")
 
 
 def create_simple_generator_routes(app):
@@ -34,7 +56,7 @@ def create_simple_generator_routes(app):
         
         content = Div(
             Div(
-                H3("Flexible Dataset Generator", cls="text-2xl font-semibold mb-4"),
+                H3("Simple Dataset Generator", cls="text-2xl font-semibold mb-4"),
                 P("Automatically detects and follows any output format specified in your prompt (XML, JSON, text, etc.)", 
                   cls="text-sm text-muted-foreground bg-blue-50 p-4 rounded-md mb-6"),
                 
@@ -49,6 +71,18 @@ def create_simple_generator_routes(app):
                             required=True,
                             cls="w-full p-2 border border-input rounded-md mb-4"
                         ),
+                        cls="mb-4"
+                    ),
+                    
+                    Div(
+                        Label("Describe Your Use Case:", cls="block text-sm font-medium mb-2"),
+                        Textarea(
+                            name="use_case_description",
+                            placeholder="Briefly describe what this dataset will be used for (e.g., 'customer support ticket classification', 'product review sentiment analysis', 'FAQ generation for e-commerce')",
+                            rows="3",
+                            cls="w-full p-2 border border-input rounded-md mb-4"
+                        ),
+                        P("This helps generate more relevant and diverse examples", cls="text-sm text-muted-foreground mb-4"),
                         cls="mb-4"
                     ),
                     
@@ -78,7 +112,8 @@ def create_simple_generator_routes(app):
                         cls="mb-6"
                     ),
                     
-                    Button("Generate Dataset", type="submit", 
+                    Button("Generate Dataset", type="button", 
+                           onclick="generateWithProgress()",
                            cls="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"),
                     
                     method="post",
@@ -87,15 +122,144 @@ def create_simple_generator_routes(app):
                 cls="bg-background border border-border rounded-lg p-6 shadow-sm"
             ),
             
-            Div(id="results", cls="mt-6")
+            # Progress bar (hidden initially)
+            Div(
+                Div(
+                    H3("Generating Dataset", cls="text-lg font-semibold mb-4"),
+                    Div(
+                        Div("Progress", cls="flex justify-between text-sm text-gray-600 mb-1"),
+                        Div(
+                            Span("0 / 0 samples", id="simple-progress-text"),
+                            cls="text-sm text-gray-600"
+                        )
+                    ),
+                    Div(
+                        Div(id="simple-progress-bar", cls="bg-blue-600 h-2 rounded-full transition-all duration-300", style="width: 0%"),
+                        cls="w-full bg-gray-200 rounded-full h-2 mb-4"
+                    ),
+                    Div("Starting generation...", id="simple-generation-status", cls="text-sm text-gray-600"),
+                    cls="bg-background border border-border rounded-lg p-6 shadow-sm"
+                ),
+                id="simple-progress-container",
+                cls="hidden mt-6"
+            ),
+            
+            Div(id="results", cls="mt-6"),
+            
+            # JavaScript for progress tracking
+            Script("""
+                let simpleProgressInterval = null;
+
+                async function generateWithProgress() {
+                    const form = document.querySelector('form');
+                    const formData = new FormData(form);
+                    const numSamples = parseInt(formData.get('num_samples') || '3');
+                    
+                    // Show progress bar
+                    document.getElementById('simple-progress-container').classList.remove('hidden');
+                    document.getElementById('results').innerHTML = '';
+                    
+                    // Start fake progress animation
+                    startFakeProgress(numSamples);
+                    
+                    try {
+                        const response = await fetch('/simple-generator/generate', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.text();
+                        
+                        stopFakeProgress();
+                        updateSimpleProgressBar(numSamples, numSamples, 'completed');
+                        
+                        // Small delay to show completion, then hide progress bar
+                        setTimeout(() => {
+                            document.getElementById('simple-progress-container').classList.add('hidden');
+                            document.getElementById('results').innerHTML = result;
+                        }, 1000);
+                        
+                    } catch (error) {
+                        stopFakeProgress();
+                        document.getElementById('simple-generation-status').innerHTML = `<span class="text-red-600">Error: ${error.message}</span>`;
+                    }
+                }
+
+                function startFakeProgress(numSamples) {
+                    let current = 0;
+                    const total = numSamples;
+                    
+                    updateSimpleProgressBar(0, total, 'starting');
+                    
+                    // Slower progress - estimate ~30-60 seconds per sample for realistic timing
+                    const estimatedTimePerSample = 45000; // 45 seconds per sample
+                    const totalTime = estimatedTimePerSample * numSamples;
+                    const updateInterval = totalTime / (total * 10); // 10 updates per sample
+                    
+                    let progress = 0;
+                    
+                    simpleProgressInterval = setInterval(() => {
+                        progress += 1;
+                        const currentSample = Math.floor((progress / 10)) + 1;
+                        const isComplete = currentSample > total;
+                        
+                        if (!isComplete) {
+                            updateSimpleProgressBar(Math.min(currentSample, total), total, 'generating');
+                        }
+                    }, updateInterval);
+                }
+
+                function stopFakeProgress() {
+                    if (simpleProgressInterval) {
+                        clearInterval(simpleProgressInterval);
+                        simpleProgressInterval = null;
+                    }
+                }
+
+                function updateSimpleProgressBar(current, total, status) {
+                    const progressBar = document.getElementById('simple-progress-bar');
+                    const progressText = document.getElementById('simple-progress-text');
+                    const statusDiv = document.getElementById('simple-generation-status');
+                    
+                    if (total > 0) {
+                        const percentage = Math.round((current / total) * 100);
+                        progressBar.style.width = `${percentage}%`;
+                        progressText.textContent = `${current} / ${total} samples`;
+                        
+                        if (status === 'completed') {
+                            statusDiv.innerHTML = '<span class="text-green-600">Generation completed!</span>';
+                        } else if (status === 'error') {
+                            statusDiv.innerHTML = '<span class="text-red-600">Generation failed</span>';
+                        } else if (status === 'starting') {
+                            statusDiv.textContent = 'Starting generation...';
+                        } else {
+                            statusDiv.textContent = `Generating sample ${current}/${total}...`;
+                        }
+                    }
+                }
+            """)
         )
         
         return create_main_layout(
-            "Flexible Dataset Generator",
+            "Simple Dataset Generator",
             content,
             current_page="datasets"
         )
     
+    @app.get("/simple-generator/progress/{session_id}")
+    async def get_simple_progress(session_id: str):
+        """Get generation progress for simple generator"""
+        try:
+            progress_file = f"data/simple_progress_{session_id}.json"
+            if os.path.exists(progress_file):
+                with open(progress_file, 'r') as f:
+                    progress = json.load(f)
+                return progress
+            else:
+                return {"current": 0, "total": 0, "status": "not_started"}
+        except Exception as e:
+            return {"current": 0, "total": 0, "status": "error", "error": str(e)}
+
     @app.post("/simple-generator/generate")
     async def generate_simple_dataset(request):
         """Generate dataset using flexible approach"""
@@ -104,25 +268,48 @@ def create_simple_generator_routes(app):
         prompt_id = form_data.get('prompt_id')
         model_id = form_data.get('model_id', 'us.amazon.nova-pro-v1:0')
         num_samples = int(form_data.get('num_samples', 3))
+        use_case_description = form_data.get('use_case_description', '').strip()
+        session_id = form_data.get('session_id', f'simple_{int(time.time())}')
+        
+        # Initialize progress
+        update_simple_progress(session_id, 0, num_samples, "starting")
         
         # Get prompt content
         db = Database()
         prompt_data = db.get_prompt(prompt_id)
         
         if not prompt_data:
+            update_simple_progress(session_id, 0, num_samples, "error")
             return Div("Error: Prompt not found", cls="text-red-600 p-4 bg-red-50 border border-red-200 rounded-md")
         
         variables = prompt_data.get('variables', {})
         system_prompt = variables.get('system_prompt', '')
         user_prompt = variables.get('user_prompt', '')
         
-        full_prompt = f"System: {system_prompt}\nUser: {user_prompt}"
+        # Enhance prompt with use case context
+        if use_case_description:
+            enhanced_system_prompt = f"""Use Case Context: {use_case_description}
+
+{system_prompt}
+
+Generate diverse, realistic examples that are specifically relevant to the described use case. Vary the scenarios, language styles, and complexity levels to create a comprehensive dataset."""
+        else:
+            enhanced_system_prompt = system_prompt
+        
+        full_prompt = f"System: {enhanced_system_prompt}\nUser: {user_prompt}"
+        
+        # Update progress - generating
+        update_simple_progress(session_id, 0, num_samples, "generating")
         
         # Generate samples using flexible generator
         generator = FlexibleGenerator(model_id=model_id)
         result = generator.generate_dataset(full_prompt, num_samples)
         
+        # Mark as completed
+        update_simple_progress(session_id, num_samples, num_samples, "completed")
+        
         if not result["success"]:
+            update_simple_progress(session_id, 0, num_samples, "error")
             error_type = result.get("error_type", "general")
             error_message = result.get("error", "Unknown error occurred")
             
@@ -234,11 +421,24 @@ def create_simple_generator_routes(app):
             
             # Save to database
             db = Database()
+            
+            # Create temporary CSV file
+            import tempfile
+            import os
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+                f.write(csv_content)
+                temp_file_path = f.name
+            
+            # Calculate file size and row count
+            file_size = f"{os.path.getsize(temp_file_path) / 1024:.1f} KB"
+            row_count = len(samples)
+            
             dataset_id = db.create_dataset(
                 name=dataset_name,
-                description=f"Generated from prompt: {prompt_name}",
-                csv_content=csv_content,
-                rows=len(samples)
+                file_type="CSV",
+                file_size=file_size,
+                row_count=row_count,
+                file_path=temp_file_path
             )
             
             return Div(
@@ -255,7 +455,7 @@ def create_simple_generator_routes(app):
                            style="margin-right: 0.5rem;"),
                     Button("Generate More", 
                            onclick="window.location.href='/simple-generator'",
-                           variant="secondary"),
+                           cls="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"),
                     style="margin-top: 1rem;"
                 )
             )

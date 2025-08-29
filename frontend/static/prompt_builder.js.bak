@@ -2,26 +2,6 @@
  * JavaScript for Prompt Builder Interactive Functionality
  */
 
-// Toggle instructions visibility
-function toggleInstructions() {
-    const helpSections = document.querySelectorAll('.help-section');
-    const button = document.querySelector('button[onclick="toggleInstructions()"]');
-    
-    let allVisible = true;
-    helpSections.forEach(section => {
-        if (section.style.display === 'none' || !section.style.display) {
-            allVisible = false;
-        }
-    });
-    
-    helpSections.forEach(section => {
-        section.style.display = allVisible ? 'none' : 'block';
-    });
-    
-    // Update button text
-    button.textContent = allVisible ? '📖 Show Instructions' : '📖 Hide Instructions';
-}
-
 // Global counter for dynamic elements
 let contextCounter = 0;
 let instructionCounter = 0;

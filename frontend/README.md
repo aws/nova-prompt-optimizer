@@ -475,6 +475,23 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 4. Review and edit samples
 5. Use for prompt optimization
 
+## **🧹 Directory Management**
+
+**Important**: Keep the root directory clean! All application files belong in `frontend/`.
+
+### **Cleanup Script**
+```bash
+# From project root, run cleanup script
+../cleanup.sh
+```
+
+### **Rules**:
+- ✅ Database: `frontend/nova_optimizer.db`
+- ✅ Uploads: `frontend/uploads/`
+- ✅ Data: `frontend/data/`
+- ✅ Logs: `frontend/logs/`
+- ❌ No application files in project root
+
 ---
 
 **🎉 Ready to optimize prompts with Nova!**

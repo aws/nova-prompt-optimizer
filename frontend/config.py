@@ -3,6 +3,7 @@ Configuration settings for Nova Prompt Optimizer Frontend
 """
 
 import os
+from pathlib import Path
 from typing import List, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -24,7 +25,7 @@ class Config(BaseSettings):
     WORKERS: int = Field(default=1, env="WORKERS")
     
     # Database settings
-    DATABASE_URL: str = Field(default="sqlite:///nova_optimizer.db", env="DATABASE_URL")
+    DATABASE_URL: str = Field(default=f"sqlite:///{Path(__file__).parent}/nova_optimizer.db", env="DATABASE_URL")
     DATABASE_ECHO: bool = Field(default=False, env="DATABASE_ECHO")
     
     # Session settings
