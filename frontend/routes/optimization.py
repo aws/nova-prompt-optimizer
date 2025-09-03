@@ -293,7 +293,7 @@ def setup_optimization_routes(app):
             }
             
             # Save config and start worker
-            config_path = f"optimization_config_{optimization_id}.json"
+            config_path = f"opt_conf/optimization_config_{optimization_id}.json"
             with open(config_path, 'w') as f:
                 json.dump(config, f, default=str)
             
@@ -708,7 +708,7 @@ def setup_optimization_routes(app):
                 'optimize_further': True
             }
             
-            config_path = f"optimization_config_{new_optimization_id}.json"
+            config_path = f"opt_conf/optimization_config_{new_optimization_id}.json"
             with open(config_path, 'w') as f:
                 json.dump(config, f, default=str)
             

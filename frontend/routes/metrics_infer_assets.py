@@ -328,6 +328,7 @@ def setup_infer_assets_routes(app):
             
             # Check if we should create a composite metric
             if len(session_data['selected_metrics']) > 1:
+                print(f"🔍 DEBUG - Creating composite metric for {len(session_data['selected_metrics'])} metrics")
                 # Multiple metrics - create composite only
                 composite_name = composite_name or f"Composite: {', '.join([m['name'] for m in session_data['selected_metrics']])}"
                 
@@ -361,6 +362,7 @@ def setup_infer_assets_routes(app):
                     scoring_criteria=f"Weighted combination of {len(session_data['selected_metrics'])} metrics",
                     generated_code=composite_code
                 )
+                print(f"🔍 DEBUG - Created composite metric with ID: {composite_id}")
                 
                 generated_metrics.append({
                     'id': composite_id,
@@ -371,6 +373,7 @@ def setup_infer_assets_routes(app):
                 })
                 
             else:
+                print(f"🔍 DEBUG - Creating single metric")
                 # Single metric - generate individual metric
                 metric = session_data['selected_metrics'][0]
                 criteria = {
@@ -397,6 +400,7 @@ def setup_infer_assets_routes(app):
                         scoring_criteria=f"Type: {metric['type']}, Complexity: {metric['complexity']}",
                         generated_code=generated_code
                     )
+                    print(f"🔍 DEBUG - Created single metric with ID: {metric_id}")
                     
                     generated_metrics.append({
                         'id': metric_id,

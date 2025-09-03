@@ -17,7 +17,7 @@ def check_file_structure():
         'app.py',
         'database.py', 
         'sdk_worker.py',
-        'metric_service.py',
+        'services/metric_service.py',  # Updated path
         'prompt_templates.py',
         'simple_rate_limiter.py',
         'requirements.txt'
@@ -27,7 +27,8 @@ def check_file_structure():
         'components',
         'data',
         'uploads', 
-        'optimized_prompts'
+        'optimized_prompts',
+        'services'  # Added services directory
     ]
     
     missing_files = []
@@ -57,30 +58,30 @@ def check_dependencies():
     print("🔍 Checking dependencies...")
     
     required_packages = [
-        'fasthtml',
-        'starlette',
-        'boto3'
+        ('fasthtml', 'python-fasthtml'),  # (import_name, package_name)
+        ('starlette', 'starlette'),
+        ('boto3', 'boto3')
     ]
     
     optional_packages = [
-        'nova-prompt-optimizer'
+        ('nova-prompt-optimizer', 'amzn_nova_prompt_optimizer')
     ]
     
     missing_required = []
     missing_optional = []
     
-    for package in required_packages:
+    for import_name, package_name in required_packages:
         try:
-            __import__(package.replace('-', '_'))
+            __import__(import_name.replace('-', '_'))
         except ImportError:
-            missing_required.append(package)
+            missing_required.append(package_name)
     
-    for package in optional_packages:
+    for package_name, import_name in optional_packages:
         try:
-            if package == 'nova-prompt-optimizer':
+            if import_name == 'amzn_nova_prompt_optimizer':
                 from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
         except ImportError:
-            missing_optional.append(package)
+            missing_optional.append(package_name)
     
     if missing_required:
         print(f"❌ Missing required packages: {', '.join(missing_required)}")

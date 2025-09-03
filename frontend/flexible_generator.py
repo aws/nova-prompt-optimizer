@@ -13,6 +13,34 @@ class FlexibleGenerator:
         self.bedrock = boto3.client('bedrock-runtime', region_name=region_name)
         self.model_id = model_id
     
+    def get_format_description(self, format_content: str) -> str:
+        """Get a concise description of the detected format"""
+        if not format_content:
+            return "Plain text"
+        
+        # Check if it's JSON
+        if format_content.strip().startswith('{') and format_content.strip().endswith('}'):
+            try:
+                import json
+                parsed = json.loads(format_content)
+                keys = list(parsed.keys()) if isinstance(parsed, dict) else []
+                if keys:
+                    return f"JSON with fields: {', '.join(keys[:3])}{'...' if len(keys) > 3 else ''}"
+                else:
+                    return "JSON object"
+            except:
+                return "JSON-like structure"
+        
+        # Check if it's XML
+        if '<' in format_content and '>' in format_content:
+            return "XML structure"
+        
+        # Check length and provide appropriate description
+        if len(format_content) > 100:
+            return f"Structured format ({len(format_content)} chars)"
+        else:
+            return format_content
+    
     def extract_output_format(self, prompt_content: str) -> str:
         """Extract the expected output format from the prompt"""
         
@@ -148,7 +176,7 @@ CRITICAL:
                 output_str = output_str.strip()
                 
                 sample_data['output'] = output_str
-                print(f"🔍 DEBUG - Cleaned XML formatting: {len(output_str)} chars")
+                print(f"🔍 DEBUG - Cleaned response formatting: {len(output_str)} chars")
             else:
                 sample_data['output'] = "No output generated"
                 print(f"🔍 DEBUG - No output found, using fallback")
@@ -156,7 +184,7 @@ CRITICAL:
             return {
                 "success": True,
                 "sample": sample_data,
-                "detected_format": expected_format[:100] + "..." if len(expected_format) > 100 else expected_format
+                "detected_format": self.get_format_description(expected_format)
             }
             
         except Exception as e:
@@ -168,28 +196,28 @@ CRITICAL:
                     "success": False,
                     "error": "AWS credentials have expired. Please refresh your AWS credentials and try again.",
                     "error_type": "auth_expired",
-                    "detected_format": expected_format[:100] + "..." if len(expected_format) > 100 else expected_format
+                    "detected_format": self.get_format_description(expected_format)
                 }
             elif "UnauthorizedOperation" in error_msg or "AccessDenied" in error_msg:
                 return {
                     "success": False,
                     "error": "AWS authentication failed. Please check your AWS credentials and permissions.",
                     "error_type": "auth_failed",
-                    "detected_format": expected_format[:100] + "..." if len(expected_format) > 100 else expected_format
+                    "detected_format": self.get_format_description(expected_format)
                 }
             elif "NoCredentialsError" in error_msg or "Unable to locate credentials" in error_msg:
                 return {
                     "success": False,
                     "error": "AWS credentials not found. Please configure your AWS credentials.",
                     "error_type": "no_credentials",
-                    "detected_format": expected_format[:100] + "..." if len(expected_format) > 100 else expected_format
+                    "detected_format": self.get_format_description(expected_format)
                 }
             else:
                 return {
                     "success": False,
                     "error": error_msg,
                     "error_type": "general",
-                    "detected_format": expected_format[:100] + "..." if len(expected_format) > 100 else expected_format
+                    "detected_format": self.get_format_description(expected_format)
                 }
     
     def generate_dataset(self, prompt_content: str, num_samples: int = 5) -> Dict[str, Any]:

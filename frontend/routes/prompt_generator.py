@@ -47,8 +47,8 @@ def setup_prompt_generator_routes(app):
                         Label("Task Description", cls="block text-sm font-medium mb-1"),
                         Textarea(name="task_description", rows="3", placeholder="Describe what this prompt should accomplish (e.g., 'classify customer support emails by urgency and category')", required=True, cls="w-full p-2 border rounded mb-3")
                     ),
-                    Button("Generate Prompt", type="submit", cls="px-4 py-2 bg-green-600 text-white rounded mr-2"),
-                    Button("Back to Prompts", onclick="window.location.href='/prompts'", type="button", cls="px-4 py-2 border rounded"),
+                    Button("Generate Prompt", type="submit", cls="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"),
+                    Button("Back to Prompts", onclick="window.location.href='/prompts'", type="button", cls="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"),
                     method="post",
                     action="/prompt-generator/generate"
                 )
