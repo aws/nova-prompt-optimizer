@@ -47,3 +47,5 @@ temp/
 
 # Cleanup script
 cleanup.sh
+# Optimization config files
+frontend/opt_conf/
