@@ -32,8 +32,6 @@ wheels/
 .idea/
 *.swp
 *.swo
-.amazonq/
-.kiro/
 *~
 
 # OS
