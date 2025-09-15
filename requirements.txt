@@ -3,7 +3,7 @@ boto3
 botocore
 boto3-stubs
 dspy
-numpy==2.3.2
+numpy==2.3.3
 virtualenv==20.31.2
 urllib3==2.5.0
 setuptools==80.9.0
