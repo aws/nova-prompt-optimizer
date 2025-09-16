@@ -47,3 +47,15 @@ temp/
 cleanup.sh
 # Optimization config files
 frontend/opt_conf/
+
+# Amazon Q internal documentation and analysis
+.amazonq/
+
+# Kiro files
+.kiro/
+
+# GitHub workflow files (if not needed in public repo)
+.github/
+
+# Jupyter Notebook checkpoints (in any directory)
+**/.ipynb_checkpoints/
