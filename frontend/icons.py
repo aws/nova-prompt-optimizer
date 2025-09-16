@@ -1,1 +1,0 @@
-ICONS = {"circle-alert": "<circle cx=\"12\" cy=\"12\" r=\"10\"></circle><line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\"></line><line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\"></line>", "chevrons-right": "<path d=\"m6 17 5-5-5-5\"></path><path d=\"m13 17 5-5-5-5\"></path>", "chevron-down": "<path d=\"m6 9 6 6 6-6\"></path>", "chevron-up": "<path d=\"m18 15-6-6-6 6\"></path>"}
