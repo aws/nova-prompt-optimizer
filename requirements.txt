@@ -2,7 +2,7 @@ jinja2
 boto3
 botocore
 boto3-stubs
-dspy
+dspy==2.6.27
 numpy==2.3.3
 virtualenv==20.31.2
 urllib3==2.5.0
