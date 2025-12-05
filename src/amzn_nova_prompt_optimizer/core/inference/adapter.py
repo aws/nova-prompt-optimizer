@@ -13,6 +13,7 @@
 # limitations under the License.
 import logging
 import random
+import os
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
 
@@ -58,19 +59,53 @@ class BedrockInferenceAdapter(InferenceAdapter):
         self.max_retries = max_retries
         self.rate_limiter = RateLimiter(rate_limit=self.rate_limit)
 
-        # Initialize AWS session with provided credentials
-        if profile_name:
-            # Use AWS profile if specified
-            session = boto3.Session(profile_name=profile_name)
+        # Check if using Bedrock Proxy
+        if os.environ.get('BEDROCK_PROXY_ENDPOINT'):
+            # Import proxy client dynamically
+            try:
+                import sys
+                from pathlib import Path
+                # Try multiple possible locations for bedrock_proxy
+                possible_paths = [
+                    Path.cwd() / 'bedrock_proxy',  # Current working directory
+                    Path.cwd() / 'Optimizer-Try' / 'bedrock_proxy',  # From workspace root
+                    Path(__file__).parent.parent.parent.parent.parent / 'Optimizer-Try' / 'bedrock_proxy',  # Relative to this file
+                ]
+                
+                proxy_path = None
+                for path in possible_paths:
+                    if path.exists() and (path / 'bedrock_proxy_client.py').exists():
+                        proxy_path = path
+                        break
+                
+                if not proxy_path:
+                    raise ImportError(f"Could not find bedrock_proxy_client.py in any of: {possible_paths}")
+                
+                if str(proxy_path) not in sys.path:
+                    sys.path.insert(0, str(proxy_path))
+                
+                from bedrock_proxy_client import create_proxy_client
+                self.bedrock_client = create_proxy_client()
+                logger.info(f"✅ Using Bedrock Proxy Client from {proxy_path}")
+            except ImportError as e:
+                logger.error(f"Failed to import bedrock_proxy_client: {e}")
+                raise
         else:
-            # Fall back to default credentials (environment variables or IAM role)
-            session = boto3.Session()
+            # Initialize AWS session with provided credentials
+            if profile_name:
+                # Use AWS profile if specified
+                session = boto3.Session(profile_name=profile_name)
+            else:
+                # Fall back to default credentials (environment variables or IAM role)
+                session = boto3.Session()
 
-        # Create Bedrock client
-        self.bedrock_client = session.client(
-            'bedrock-runtime',
-            region_name=region_name
-        )
+            # Create Bedrock client
+            self.bedrock_client = session.client(
+                'bedrock-runtime',
+                region_name=region_name
+            )
+            logger.info("✅ Using standard Bedrock client")
+        
         self.converse_client = BedrockConverseHandler(self.bedrock_client)
 
     def call_model(self, model_id: str, system_prompt: str,
