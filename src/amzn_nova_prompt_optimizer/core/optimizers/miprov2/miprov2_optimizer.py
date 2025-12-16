@@ -28,6 +28,8 @@ from amzn_nova_prompt_optimizer.core.input_adapters.prompt_adapter import (Promp
                                                                            PROMPT_VARIABLE_PATTERN)
 from amzn_nova_prompt_optimizer.core.optimizers import OptimizationAdapter
 from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_lm.rate_limited_lm import RateLimitedLM
+from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_lm.image_aware_lm import ImageAwareLM
+from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_lm.bedrock_adapter_lm import BedrockAdapterLM
 from amzn_nova_prompt_optimizer.core.optimizers.nova_prompt_optimizer.nova_grounded_proposer import NovaGroundedProposer
 from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_adapters.custom_chat_adapter import CustomChatAdapter
 
@@ -87,6 +89,14 @@ class PredictorFactory:
 
 
 class MIPROv2OptimizationAdapter(OptimizationAdapter):
+    
+    def _create_image_aware_lm(self, model_id: str, bedrock_client):
+        """Create an image-aware LM for multimodal support that bypasses LiteLLM."""
+        # Use BedrockAdapterLM which calls our BedrockInferenceAdapter directly
+        # This avoids LiteLLM's "File name too long" errors
+        adapter_lm = BedrockAdapterLM(self.inference_adapter, model_id)
+        return RateLimitedLM(adapter_lm, rate_limit=self.inference_adapter.rate_limit)
+    
     def _process_dataset_adapter(self, train_split):
         if self.dataset_adapter is None:
             raise ValueError("dataset_adapter is required for MIPROv2 optimization")
@@ -250,11 +260,17 @@ class MIPROv2OptimizationAdapter(OptimizationAdapter):
         else:
             os.environ["AWS_REGION_NAME"] = 'us-west-2'
 
-        # Setup dspy.LM
-        task_lm = RateLimitedLM(dspy.LM(f'bedrock/{task_model_id}'), rate_limit=self.inference_adapter.rate_limit)
-        logger.info(f"Using {task_model_id} for Evaluation")
+        # Setup dspy.LM with image support
+        import boto3
+        bedrock_client = boto3.client('bedrock-runtime', region_name=self.inference_adapter.region)
+        
+        # Use BedrockAdapterLM for task model (needs image support)
+        task_lm = self._create_image_aware_lm(task_model_id, bedrock_client)
+        logger.info(f"Using {task_model_id} for Evaluation (with image support)")
+        
+        # Use standard dspy.LM for prompt model (doesn't need images, avoids compatibility issues)
         prompt_lm = RateLimitedLM(dspy.LM(f'bedrock/{prompter_model_id}'), rate_limit=self.inference_adapter.rate_limit)
-        logger.info(f"Using {prompter_model_id} for Prompting")
+        logger.info(f"Using {prompter_model_id} for Prompting (standard DSPy LM)")
 
         # Configure DSPy
         dspy.configure(lm=task_lm)
@@ -371,11 +387,17 @@ class NovaMIPROv2OptimizationAdapter(MIPROv2OptimizationAdapter):
         else:
             os.environ["AWS_REGION_NAME"] = 'us-west-2'
 
-        # Setup dspy.LM
-        task_lm = RateLimitedLM(dspy.LM(f'bedrock/{task_model_id}'), rate_limit=self.inference_adapter.rate_limit)
-        logger.info(f"Using {task_model_id} for Evaluation")
+        # Setup dspy.LM with image support
+        import boto3
+        bedrock_client = boto3.client('bedrock-runtime', region_name=self.inference_adapter.region)
+        
+        # Use BedrockAdapterLM for task model (needs image support)
+        task_lm = self._create_image_aware_lm(task_model_id, bedrock_client)
+        logger.info(f"Using {task_model_id} for Evaluation (with image support)")
+        
+        # Use standard dspy.LM for prompt model (doesn't need images, avoids compatibility issues)
         prompt_lm = RateLimitedLM(dspy.LM(f'bedrock/{prompter_model_id}'), rate_limit=self.inference_adapter.rate_limit)
-        logger.info(f"Using {prompter_model_id} for Prompting")
+        logger.info(f"Using {prompter_model_id} for Prompting (standard DSPy LM)")
 
         # Configure DSPy
         dspy.configure(lm=task_lm)
