@@ -1,4 +1,3 @@
-import os
 import unittest
 from unittest.mock import Mock, patch, PropertyMock, MagicMock
 
@@ -318,9 +317,6 @@ class TestMIPROOptimizationAdapter(unittest.TestCase):
             train_split=0.7
         )
 
-        # Assert AWS REGION is default to us-west-2
-        self.assertEqual(os.getenv('AWS_REGION_NAME'), 'us-west-2')
-
         # Verify that MIPROv2 was initialized correctly
         mock_miprov2.assert_called_once()
 
@@ -552,9 +548,6 @@ class TestNovaMIPROv2OptimizationAdapter(unittest.TestCase):
                 minibatch_size=10,
                 train_split=0.7
             )
-
-        # Assert AWS REGION has been set
-        self.assertEqual(os.getenv('AWS_REGION_NAME'), 'us-east-1')
 
         # Verify that MIPROv2 was initialized correctly
         mock_miprov2.assert_called_once()

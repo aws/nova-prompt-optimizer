@@ -1,1 +1,19 @@
-Analyze the input text and classify it into a JSON object with "urgency", "sentiment", and "categories" keys. Ensure all categories are covered with boolean values, and the output is a valid JSON string without extra formatting.
+Task: Analyze and categorize the incoming text to determine urgency, sentiment, and relevant categories.
+
+Context:
+- The input will be analyzed to determine urgency, sentiment, and relevant categories.
+- Urgency must be classified as one of `high`, `medium`, or `low`.
+- Sentiment must be classified as one of `negative`, `neutral`, or `positive`.
+- Categories must be a dictionary with keys from the list: `emergency_repair_services`, `routine_maintenance_requests`, `quality_and_safety_concerns`, `specialized_cleaning_services`, `general_inquiries`, `sustainability_and_environmental_practices`, `training_and_support_requests`, `cleaning_services_scheduling`, `customer_feedback_and_complaints`, `facility_management_issues`. Each category will have a boolean value indicating whether it is the best matching support category tag.
+
+Instructions:
+- Carefully analyze the input to accurately determine urgency and sentiment.
+- Match the input to the most appropriate category from the provided list and set its value to True, while setting all others to False.
+- The output must be a valid JSON string containing only the specified keys: "urgency", "sentiment", and "categories".
+- The JSON must be compact with no unnecessary whitespace or newlines and should not be enclosed in triple backticks or any other formatting.
+
+Response Format:
+- The response MUST be a valid JSON string.
+- The JSON MUST contain exactly the keys: "urgency", "sentiment", and "categories".
+- The JSON MUST be on a single line with no extra spaces or line breaks.
+- The response MUST NOT include any additional text, explanations, or formatting outside the JSON structure.

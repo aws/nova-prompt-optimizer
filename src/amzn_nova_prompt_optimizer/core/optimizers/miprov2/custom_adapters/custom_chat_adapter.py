@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class CustomChatAdapter(ChatAdapter):
-    def __init__(self, user_prompt_template:str, callbacks: Optional[list[BaseCallback]] = None,
+    def __init__(self, user_prompt_template: str, callbacks: Optional[list] = None,
                  enable_json_fallback: bool = False,  **kwargs):
         super().__init__(callbacks)
         logger.info(f"Initializing CustomChatAdapter with enable_json_fallback={enable_json_fallback}")
@@ -36,11 +36,11 @@ class CustomChatAdapter(ChatAdapter):
     def __call__(
             self,
             lm: LM,
-            lm_kwargs: dict[str, Any],
+            lm_kwargs: dict,
             signature: Type[Signature],
-            demos: list[dict[str, Any]],
-            inputs: dict[str, Any],
-    ) -> list[dict[str, Any]]:
+            demos: list,
+            inputs: dict,
+    ) -> list:
         try:
             return Adapter.__call__(self, lm, lm_kwargs, signature, demos, inputs)
         except Exception as e:
@@ -70,7 +70,7 @@ class CustomChatAdapter(ChatAdapter):
     def format_user_message_content(
             self,
             signature: Type[Signature],
-            inputs: dict[str, Any],
+            inputs: dict,
             prefix: str = "",
             suffix: str = "",
             main_request: bool = False,
@@ -94,8 +94,8 @@ class CustomChatAdapter(ChatAdapter):
     def format_assistant_message_content(
             self,
             signature: Type[Signature],
-            outputs: dict[str, Any],
-            missing_field_message: str | None = None,
+            outputs: dict,
+            missing_field_message: Optional[str] = None,
     ) -> str:
         assistant_message_content = "\n".join(
             str(outputs.get(k, missing_field_message))
@@ -103,7 +103,7 @@ class CustomChatAdapter(ChatAdapter):
         )
         return assistant_message_content
 
-    def parse(self, signature: Type[Signature], completion: str) -> dict[str, Any]:
+    def parse(self, signature: Type[Signature], completion: str) -> dict:
         try:
             return {k: completion for k in signature.output_fields}  # simplistic assumption
         except Exception as e:

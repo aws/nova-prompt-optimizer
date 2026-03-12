@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-import os
 import textwrap
 from typing import Type, Optional, List, Dict
 
@@ -32,7 +31,7 @@ from amzn_nova_prompt_optimizer.core.optimizers.nova_prompt_optimizer.nova_groun
 from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_adapters.custom_chat_adapter import CustomChatAdapter
 
 DEFAULT_TASK_MODEL = "us.amazon.nova-pro-v1:0"
-DEFAULT_PROMPT_MODEL = "us.amazon.nova-premier-v1:0"
+DEFAULT_PROMPT_MODEL = "us.amazon.nova-2-lite-v1:0"
 
 logger = logging.getLogger(__name__)
 
@@ -244,16 +243,17 @@ class MIPROv2OptimizationAdapter(OptimizationAdapter):
         elif num_trials is None:
             raise ValueError("num_trials must be specified when num_candidates is provided")
 
-        # Set AWS region
-        if self.inference_adapter.region:
-            os.environ["AWS_REGION_NAME"] = self.inference_adapter.region
-        else:
-            os.environ["AWS_REGION_NAME"] = 'us-west-2'
-
-        # Setup dspy.LM
-        task_lm = RateLimitedLM(dspy.LM(f'bedrock/{task_model_id}'), rate_limit=self.inference_adapter.rate_limit)
+        # Setup DSPy-compatible LM using InferenceAdapter
+        task_lm = RateLimitedLM(
+            self.inference_adapter.to_dspy_lm(task_model_id),
+            rate_limit=self.inference_adapter.rate_limit
+        )
         logger.info(f"Using {task_model_id} for Evaluation")
-        prompt_lm = RateLimitedLM(dspy.LM(f'bedrock/{prompter_model_id}'), rate_limit=self.inference_adapter.rate_limit)
+        
+        prompt_lm = RateLimitedLM(
+            self.inference_adapter.to_dspy_lm(prompter_model_id),
+            rate_limit=self.inference_adapter.rate_limit
+        )
         logger.info(f"Using {prompter_model_id} for Prompting")
 
         # Configure DSPy
@@ -365,16 +365,17 @@ class NovaMIPROv2OptimizationAdapter(MIPROv2OptimizationAdapter):
         elif num_trials is None:
             raise ValueError("num_trials must be specified when num_candidates is provided")
 
-        # Set AWS region
-        if self.inference_adapter.region:
-            os.environ["AWS_REGION_NAME"] = self.inference_adapter.region
-        else:
-            os.environ["AWS_REGION_NAME"] = 'us-west-2'
-
-        # Setup dspy.LM
-        task_lm = RateLimitedLM(dspy.LM(f'bedrock/{task_model_id}'), rate_limit=self.inference_adapter.rate_limit)
+        # Setup DSPy-compatible LM using InferenceAdapter
+        task_lm = RateLimitedLM(
+            self.inference_adapter.to_dspy_lm(task_model_id),
+            rate_limit=self.inference_adapter.rate_limit
+        )
         logger.info(f"Using {task_model_id} for Evaluation")
-        prompt_lm = RateLimitedLM(dspy.LM(f'bedrock/{prompter_model_id}'), rate_limit=self.inference_adapter.rate_limit)
+        
+        prompt_lm = RateLimitedLM(
+            self.inference_adapter.to_dspy_lm(prompter_model_id),
+            rate_limit=self.inference_adapter.rate_limit
+        )
         logger.info(f"Using {prompter_model_id} for Prompting")
 
         # Configure DSPy
