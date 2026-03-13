@@ -519,7 +519,6 @@ optimized_prompt = optimizer.optimize(mode="lite")
 - Cross-region support
 - Independent rate limiting per adapter
 
-For more details, see the [Separate Inference Adapters Guide](docs/SeparateInferenceAdapters.md).
 
 ### SageMaker Endpoint Support
 
@@ -568,8 +567,6 @@ if adapter.test_connection():
 else:
     print("✗ Endpoint connection failed")
 ```
-
-For a complete guide, see the [SageMaker Quick Start](docs/QUICK_START_SAGEMAKER.md).
 
 ## Optimization Recommendations
 1. Provide representative real-world evaluation sets and split them into training and testing sets. Ensure dataset is balanced on output label when splitting train and test sets.
