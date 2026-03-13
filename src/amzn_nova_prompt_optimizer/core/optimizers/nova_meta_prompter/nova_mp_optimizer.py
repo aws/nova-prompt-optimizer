@@ -29,7 +29,7 @@ from amzn_nova_prompt_optimizer.core.optimizers.nova_meta_prompter.nova_prompt_t
 from typing import Optional, List
 
 logger = logging.getLogger(__name__)
-DEFAULT_PROMPTER_MODEL_ID = "us.amazon.nova-premier-v1:0"
+DEFAULT_PROMPTER_MODEL_ID = "us.amazon.nova-2-lite-v1:0"
 
 class NovaMPOptimizationAdapter(OptimizationAdapter):
     def __init__(self, prompt_adapter: PromptAdapter,

@@ -120,10 +120,8 @@ class TestNovaMPOptimizationAdapter(unittest.TestCase):
         self.prompt_adapter.fetch_system_template.return_value = "System template {var1}"
         self.prompt_adapter.fetch_user_template.return_value = "User template {var2}"
 
-        # Create a real method instead of mocking _format_prompt_with_variables
-        self.optimizer._format_prompt_with_variables = staticmethod(
-            lambda p, v: p if p else ""
-        )
+        # Mock _format_prompt_with_variables as a regular method
+        self.optimizer._format_prompt_with_variables = lambda p, v: p if p else ""
 
         # Mock the inference adapter to return invalid responses
         self.inference_adapter.call_model.side_effect = ["Invalid", "Invalid"]

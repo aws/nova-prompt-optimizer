@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 NOVA_PROMPT_OPTIMIZER_MODE: Dict[str, Dict[str, Any]] = {
     "micro": {
-        "meta_prompt_model_id": "us.amazon.nova-premier-v1:0",
-        "prompter_model_id": "us.amazon.nova-premier-v1:0",
+        "meta_prompt_model_id": "us.amazon.nova-2-lite-v1:0",
+        "prompter_model_id": "us.amazon.nova-2-lite-v1:0",
         "task_model_id": "us.amazon.nova-micro-v1:0",
         "num_candidates": 20,
         "num_trials": 30,
@@ -35,8 +35,8 @@ NOVA_PROMPT_OPTIMIZER_MODE: Dict[str, Dict[str, Any]] = {
         "max_labeled_demos": 4
     },
     "lite": {
-        "meta_prompt_model_id": "us.amazon.nova-premier-v1:0",
-        "prompter_model_id": "us.amazon.nova-premier-v1:0",
+        "meta_prompt_model_id": "us.amazon.nova-2-lite-v1:0",
+        "prompter_model_id": "us.amazon.nova-2-lite-v1:0",
         "task_model_id": "us.amazon.nova-lite-v1:0",
         "num_candidates": 20,
         "num_trials": 30,
@@ -44,18 +44,18 @@ NOVA_PROMPT_OPTIMIZER_MODE: Dict[str, Dict[str, Any]] = {
         "max_labeled_demos": 4
     },
     "pro": {
-        "meta_prompt_model_id": "us.amazon.nova-premier-v1:0",
-        "prompter_model_id": "us.amazon.nova-premier-v1:0",
+        "meta_prompt_model_id": "us.amazon.nova-2-lite-v1:0",
+        "prompter_model_id": "us.amazon.nova-2-lite-v1:0",
         "task_model_id": "us.amazon.nova-pro-v1:0",
         "num_candidates": 20,
         "num_trials": 30,
         "max_bootstrapped_demos": 4,
         "max_labeled_demos": 4
     },
-    "premier": {
-        "meta_prompt_model_id": "us.amazon.nova-premier-v1:0",
-        "prompter_model_id": "us.amazon.nova-premier-v1:0",
-        "task_model_id": "us.amazon.nova-premier-v1:0",
+    "lite-2": {
+        "meta_prompt_model_id": "us.amazon.nova-2-lite-v1:0",
+        "prompter_model_id": "us.amazon.nova-2-lite-v1:0",
+        "task_model_id": "us.amazon.nova-2-lite-v1:0",
         "num_candidates": 20,
         "num_trials": 30,
         "max_bootstrapped_demos": 4,
@@ -68,20 +68,72 @@ class NovaPromptOptimizer(OptimizationAdapter):
     """
     NovaPromptOptimizer is a combination of Meta Prompting and MIPROv2 for Nova Models that yields a stable
     prompt optimization result.
+    
+    This optimizer supports using separate inference adapters for:
+    - Meta-prompting phase (generating optimized prompts)
+    - Task model optimization phase (evaluating prompts on the target model)
+    
+    This allows you to use Bedrock for meta-prompting while optimizing a SageMaker endpoint.
     """
-    def __init__(self, prompt_adapter: PromptAdapter,
+    def __init__(self, 
+                 prompt_adapter: PromptAdapter,
                  inference_adapter: InferenceAdapter,
                  dataset_adapter: DatasetAdapter,
-                 metric_adapter: MetricAdapter):
+                 metric_adapter: MetricAdapter,
+                 meta_prompt_inference_adapter: Optional[InferenceAdapter] = None):
+        """
+        Initialize NovaPromptOptimizer.
+        
+        Args:
+            prompt_adapter: Adapter for managing prompts
+            inference_adapter: Adapter for task model inference (used in MIPROv2 optimization)
+            dataset_adapter: Adapter for dataset management
+            metric_adapter: Adapter for evaluation metrics
+            meta_prompt_inference_adapter: Optional separate adapter for meta-prompting phase.
+                If not provided, creates a default BedrockInferenceAdapter with Nova 2.0 Lite
+                for meta-prompting, while using inference_adapter for task optimization.
+                This allows using Bedrock for meta-prompting while optimizing a SageMaker endpoint.
+        """
         # Call parent class's __init__
         super().__init__(prompt_adapter, inference_adapter, dataset_adapter, metric_adapter)
         self.prompt_adapter = prompt_adapter
         self.inference_adapter = inference_adapter
         self.dataset_adapter = dataset_adapter
         self.metric_adapter = metric_adapter
-        self.meta_prompt_optimization_adapter = NovaMPOptimizationAdapter(prompt_adapter, inference_adapter)
+        
+        # Use separate adapter for meta-prompting if provided, otherwise create default Bedrock adapter
+        if meta_prompt_inference_adapter is not None:
+            self.meta_prompt_inference_adapter = meta_prompt_inference_adapter
+        else:
+            # Import here to avoid circular dependency
+            from amzn_nova_prompt_optimizer.core.inference import BedrockInferenceAdapter
+            
+            # Create default Bedrock adapter for meta-prompting with Nova 2.0 Lite
+            logger.info(
+                "No meta_prompt_inference_adapter provided. "
+                "Creating default BedrockInferenceAdapter with Nova 2.0 Lite for meta-prompting."
+            )
+            self.meta_prompt_inference_adapter = BedrockInferenceAdapter(
+                region_name=getattr(inference_adapter, 'region', 'us-east-1'),
+                rate_limit=5
+            )
+        
+        self.meta_prompt_optimization_adapter = NovaMPOptimizationAdapter(
+            prompt_adapter, 
+            self.meta_prompt_inference_adapter
+        )
 
     def optimize(self, mode: str = "pro", custom_params = None) -> PromptAdapter:
+        """
+        Optimize the prompt using Nova Meta Prompter followed by MIPROv2.
+        
+        Args:
+            mode: Optimization mode ('micro', 'lite', 'pro', 'lite-2', or 'custom')
+            custom_params: Custom parameters for 'custom' mode
+            
+        Returns:
+            Optimized PromptAdapter
+        """
         if mode == "custom":
             if not custom_params:
                 raise ValueError("Custom mode requires custom_params dictionary")
@@ -99,10 +151,19 @@ class NovaPromptOptimizer(OptimizationAdapter):
             meta_prompt_model_id = config.pop("meta_prompt_model_id")
             optimization_params = config
 
-
         if not self.inference_adapter:
             raise ValueError("Inference Adapter not passed. "
                              "Initialize and Pass Inference Adapter to use this Optimizer")
+        
+        # Log which adapters are being used
+        if self.meta_prompt_inference_adapter is not self.inference_adapter:
+            logger.info(
+                f"Using separate inference adapters: "
+                f"Meta-prompting with {type(self.meta_prompt_inference_adapter).__name__}, "
+                f"Task optimization with {type(self.inference_adapter).__name__}"
+            )
+        
+        # Phase 1: Meta-prompting (uses meta_prompt_inference_adapter)
         if meta_prompt_model_id:
             intermediate_prompt_adapter = (
                 self.meta_prompt_optimization_adapter.optimize(prompter_model_id=meta_prompt_model_id))
@@ -113,6 +174,7 @@ class NovaPromptOptimizer(OptimizationAdapter):
             logger.info("[Nova Prompt Optimizer] No Dataset or No metric provided, running only Nova Meta Prompter")
             return intermediate_prompt_adapter
 
+        # Phase 2: MIPROv2 optimization (uses main inference_adapter for task model)
         nova_prompt_optimizer = NovaMIPROv2OptimizationAdapter(
             prompt_adapter=intermediate_prompt_adapter,
             dataset_adapter=self.dataset_adapter,

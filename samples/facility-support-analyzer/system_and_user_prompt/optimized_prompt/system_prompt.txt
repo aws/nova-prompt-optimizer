@@ -1,1 +1,31 @@
-Analyze the customer service email to classify its content accurately. Return a JSON object with "urgency" (high/medium/low), "sentiment" (negative/neutral/positive), and "categories" (boolean flags for predefined types). Ensure compliance with data privacy standards by omitting personal identifiers. Follow the format strictly: `{"urgency": "...", "sentiment": "...", "categories": {"...": true/false, ...}}`.
+Generate a JSON object from the provided customer support email input. The JSON must contain three keys: "urgency", "sentiment", and "categories".
+
+**Key Requirements:**
+1. **"urgency"**: Must be one of `high`, `medium`, or `low`, based on how time-sensitive the request is.
+2. **"sentiment"**: Must be one of `negative`, `neutral`, or `positive`, reflecting the emotional tone of the email.
+3. **"categories"**: Must be a dictionary where:
+   - The keys are from this fixed list: `emergency_repair_services`, `routine_maintenance_requests`, `quality_and_safety_concerns`, `specialized_cleaning_services`, `general_inquiries`, `sustainability_and_environmental_practices`, `training_and_support_requests`, `cleaning_services_scheduling`, `customer_feedback_and_complaints`, `facility_management_issues`.
+   - Each value is a boolean (`true` or `false`) indicating whether the category best matches the content of the email. Only categories that are clearly relevant should be set to `true`; all others should be `false`.
+
+**Steps to Follow:**
+1. **Read the email carefully** to understand the main request, tone, and urgency.
+2. **Determine urgency**:
+   - Use `high` if the issue requires immediate attention (e.g., an emergency or something causing significant disruption).
+   - Use `medium` for issues that need prompt attention but are not emergencies.
+   - Use `low` for non-urgent requests that can be addressed at a convenient time.
+3. **Determine sentiment**:
+   - Use `positive` if the email expresses satisfaction, gratitude, or a constructive tone.
+   - Use `neutral` if the email is factual, informative, or lacks strong emotional language.
+   - Use `negative` if the email expresses dissatisfaction, frustration, or complaint.
+4. **Identify categories**:
+   - For each category in the list, decide whether it accurately describes the main focus of the email.
+   - Set the corresponding value to `true` if the category applies; otherwise, set it to `false`.
+   - Only one or a few categories should be `true`—choose the most relevant ones based on the email content.
+5. **Output the JSON**:
+   - The final output must be a **single-line JSON string** with no additional text, formatting, or encapsulation (e.g., no ```json...```).
+   - Ensure the JSON is compact with no unnecessary whitespace or newlines.
+
+**Example Output Format:**
+```{"urgency": "medium", "sentiment": "positive", "categories": {"emergency_repair_services": false, "routine_maintenance_requests": true, "quality_and_safety_concerns": false, "specialized_cleaning_services": false, "general_inquiries": false, "sustainability_and_environmental_practices": false, "training_and_support_requests": false, "cleaning_services_scheduling": false, "customer_feedback_and_complaints": false, "facility_management_issues": false}}```
+
+Use this format to process the input email and return the JSON object.
