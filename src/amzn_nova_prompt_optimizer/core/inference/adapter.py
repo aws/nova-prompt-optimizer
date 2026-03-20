@@ -11,22 +11,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
-import random
+
+"""
+Base Inference Adapter
+
+This module provides the abstract base class for all inference adapters.
+"""
+
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 
-import boto3
-import time
-from botocore.exceptions import ClientError
-
-from amzn_nova_prompt_optimizer.core.inference.bedrock_converse import BedrockConverseHandler
-from amzn_nova_prompt_optimizer.util.rate_limiter import RateLimiter
-
-logger = logging.getLogger(__name__)
 
 class InferenceAdapter(ABC):
+    """
+    Abstract base class for inference adapters.
+
+    All inference adapters must inherit from this class and implement
+    the call_model method. This provides a consistent interface for
+    making inference calls across different backends (Bedrock, SageMaker, etc.).
+
+    Attributes:
+        region: AWS region or endpoint region
+        rate_limit: Maximum requests per second
+    """
+
     def __init__(self, region: str, rate_limit: int = 2):
+        """
+        Initialize the inference adapter.
+
+        Args:
+            region: AWS region or endpoint region
+            rate_limit: Maximum requests per second (default: 2)
+        """
         self.region = region
         self.rate_limit = rate_limit
 
@@ -34,80 +50,50 @@ class InferenceAdapter(ABC):
     def call_model(self, model_id: str, system_prompt: str,
                    messages: List[Dict[str, str]],
                    inf_config: Dict[str, Any]) -> str:
-        pass
-
-
-class BedrockInferenceAdapter(InferenceAdapter):
-    def __init__(self,
-                 region_name: str = 'us-east-1',
-                 profile_name: Optional[str] = None,
-                 max_retries: int = 5,
-                 rate_limit: int = 2,
-                 initial_backoff: int = 1,
-                 enable_image_support: bool = False):
         """
-        Initialize Bedrock Inference Adapter with AWS credentials
+        Call the model for inference.
+
+        This method must be implemented by all subclasses.
 
         Args:
-            region_name: AWS region name
-            profile_name: Optional. AWS credential profile name.
-            max_retries: Maximum number of retries for API calls
-            rate_limit: Max TPS of the bedrock call this adapter can make. Default to 2.
-            enable_image_support: Set to True to enable multimodal image support.
-                                  Requires Pillow and requests to be installed.
-                                  Default is False (text-only, backward compatible).
+            model_id: Model identifier
+            system_prompt: System prompt text
+            messages: List of conversation messages in format:
+                     [{"user": "..."}, {"assistant": "..."}, ...]
+            inf_config: Inference configuration parameters
+
+        Returns:
+            Model response text
+
+        Raises:
+            NotImplementedError: If not implemented by subclass
         """
-        super().__init__(region=region_name, rate_limit=rate_limit)
-        self.initial_backoff = initial_backoff
-        self.max_retries = max_retries
-        self.rate_limiter = RateLimiter(rate_limit=self.rate_limit)
+        pass
 
-        # Initialize AWS session with provided credentials
-        if profile_name:
-            session = boto3.Session(profile_name=profile_name)
-        else:
-            session = boto3.Session()
+    def to_dspy_lm(self, model_id: str, **kwargs):
+        """
+        Create a DSPy-compatible wrapper for this adapter.
 
-        self.bedrock_client = session.client(
-            'bedrock-runtime',
-            region_name=region_name
+        This is a convenience method that automatically creates the
+        appropriate DSPy-compatible adapter based on the adapter type.
+
+        Args:
+            model_id: Model identifier to use
+            **kwargs: Additional parameters for the DSPy adapter
+
+        Returns:
+            DSPy-compatible adapter instance
+
+        Example:
+            >>> adapter = BedrockInferenceAdapter(region_name="us-east-1")
+            >>> dspy_lm = adapter.to_dspy_lm("us.amazon.nova-pro-v1:0")
+            >>> import dspy
+            >>> dspy.configure(lm=dspy_lm)
+        """
+        from amzn_nova_prompt_optimizer.core.inference.dspy_compatible import (
+            create_dspy_adapter
         )
-        self.converse_client = BedrockConverseHandler(
-            self.bedrock_client,
-            enable_image_support=enable_image_support
-        )
+        return create_dspy_adapter(self, model_id, **kwargs)
 
-    def call_model(self, model_id: str, system_prompt: str,
-                   messages: List[Dict[str, str]], inf_config: Dict[str, Any]) -> str:
-        self.rate_limiter.apply_rate_limiting()
-        return self._call_model_with_retry(model_id, system_prompt, messages, inf_config)
 
-    def _call_model_with_retry(self, model_id:str, system_prompt: str,
-                               messages: List[Dict[str, str]], inf_config: Dict[str, Any]) -> str:
-        retries = 0
-        while retries < self.max_retries:
-            try:
-                return self.converse_client.call_model(model_id, system_prompt, messages, inf_config)
-            except ClientError as e:
-                if e.response['Error']['Code'] == 'ThrottlingException':
-                    wait_time = self._calculate_backoff_time(retries)
-                    logger.debug(f"Throttled. Retrying in {wait_time} seconds... (Attempt {retries + 1}/{self.max_retries})")
-                    time.sleep(wait_time)
-                    retries += 1
-                elif e.response['Error']['Code'] == 'ModelErrorException':
-                    wait_time = self._calculate_backoff_time(retries)
-                    logger.debug(f"Encountered ModelErrorException, Retrying in {wait_time} seconds...(Attempt {retries + 1}/{self.max_retries})")
-                    time.sleep(wait_time)
-                    retries += 1
-                elif e.response['Error']['Code'] == 'ServiceUnavailableException':
-                    wait_time = self._calculate_backoff_time(retries)
-                    logger.debug(f"Retryable exception: ServiceUnavailableException {model_id}. Retrying in {wait_time} seconds... (Attempt {retries + 1}/{self.max_retries})")
-                    time.sleep(wait_time)
-                    retries += 1
-                else:
-                    raise e
-        raise Exception(f"Max retries ({self.max_retries}) exceeded for model call")
-
-    def _calculate_backoff_time(self, retry_count):
-        # Exponential backoff with jitter
-        return self.initial_backoff * (2 ** retry_count) + random.uniform(0, 1)
+__all__ = ['InferenceAdapter']

@@ -28,13 +28,12 @@ from amzn_nova_prompt_optimizer.core.input_adapters.prompt_adapter import (Promp
                                                                            PROMPT_VARIABLE_PATTERN)
 from amzn_nova_prompt_optimizer.core.optimizers import OptimizationAdapter
 from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_lm.rate_limited_lm import RateLimitedLM
-from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_lm.image_aware_lm import ImageAwareLM
 from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_lm.bedrock_adapter_lm import BedrockAdapterLM
 from amzn_nova_prompt_optimizer.core.optimizers.nova_prompt_optimizer.nova_grounded_proposer import NovaGroundedProposer
 from amzn_nova_prompt_optimizer.core.optimizers.miprov2.custom_adapters.custom_chat_adapter import CustomChatAdapter
 
 DEFAULT_TASK_MODEL = "us.amazon.nova-pro-v1:0"
-DEFAULT_PROMPT_MODEL = "us.amazon.nova-premier-v1:0"
+DEFAULT_PROMPT_MODEL = "us.amazon.nova-2-lite-v1:0"
 
 logger = logging.getLogger(__name__)
 

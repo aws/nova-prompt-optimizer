@@ -1,7 +1,7 @@
 import unittest
 import time
 
-from amzn_nova_prompt_optimizer.core.inference.adapter import BedrockInferenceAdapter
+from amzn_nova_prompt_optimizer.core.inference.bedrock_adapter import BedrockInferenceAdapter
 from amzn_nova_prompt_optimizer.core.inference.bedrock_converse import BedrockConverseHandler
 
 from unittest.mock import Mock, patch
@@ -21,7 +21,7 @@ class TestBedrockInferenceAdapter(unittest.TestCase):
         self.test_max_retries = 5
 
         # Create patcher for boto3.Session
-        self.session_patcher = patch('amzn_nova_prompt_optimizer.core.inference.adapter.boto3.Session')
+        self.session_patcher = patch('amzn_nova_prompt_optimizer.core.inference.bedrock_adapter.boto3.Session')
         self.mock_session_class = self.session_patcher.start()
 
         # Setup mock session and client

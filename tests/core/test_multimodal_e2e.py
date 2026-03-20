@@ -342,12 +342,12 @@ class TestMultimodalEndToEnd(unittest.TestCase):
         dataset_adapter.adapt([{"topic": "Python", "answer": "a language"}])
 
         mock_bedrock = _make_bedrock_mock_client("Python is a language.")
-        with patch("amzn_nova_prompt_optimizer.core.inference.adapter.boto3.Session") as mock_session_cls:
+        with patch("amzn_nova_prompt_optimizer.core.inference.bedrock_adapter.boto3.Session") as mock_session_cls:
             mock_session = MagicMock()
             mock_session.client.return_value = mock_bedrock
             mock_session_cls.return_value = mock_session
 
-            from amzn_nova_prompt_optimizer.core.inference.adapter import BedrockInferenceAdapter
+            from amzn_nova_prompt_optimizer.core.inference.bedrock_adapter import BedrockInferenceAdapter
             inference_adapter = BedrockInferenceAdapter(region_name="us-east-1")
 
         runner = InferenceRunner(prompt_adapter, dataset_adapter, inference_adapter)
@@ -389,12 +389,12 @@ class TestMultimodalEndToEnd(unittest.TestCase):
 
             # 3. Inference adapter with image support enabled
             mock_bedrock = _make_bedrock_mock_client("cat")
-            with patch("amzn_nova_prompt_optimizer.core.inference.adapter.boto3.Session") as mock_session_cls:
+            with patch("amzn_nova_prompt_optimizer.core.inference.bedrock_adapter.boto3.Session") as mock_session_cls:
                 mock_session = MagicMock()
                 mock_session.client.return_value = mock_bedrock
                 mock_session_cls.return_value = mock_session
 
-                from amzn_nova_prompt_optimizer.core.inference.adapter import BedrockInferenceAdapter
+                from amzn_nova_prompt_optimizer.core.inference.bedrock_adapter import BedrockInferenceAdapter
                 inference_adapter = BedrockInferenceAdapter(
                     region_name="us-east-1",
                     enable_image_support=True,
@@ -444,12 +444,12 @@ class TestMultimodalEndToEnd(unittest.TestCase):
         prompt_adapter = self._build_prompt_adapter()
 
         mock_bedrock = _make_bedrock_mock_client("cat")
-        with patch("amzn_nova_prompt_optimizer.core.inference.adapter.boto3.Session") as mock_session_cls:
+        with patch("amzn_nova_prompt_optimizer.core.inference.bedrock_adapter.boto3.Session") as mock_session_cls:
             mock_session = MagicMock()
             mock_session.client.return_value = mock_bedrock
             mock_session_cls.return_value = mock_session
 
-            from amzn_nova_prompt_optimizer.core.inference.adapter import BedrockInferenceAdapter
+            from amzn_nova_prompt_optimizer.core.inference.bedrock_adapter import BedrockInferenceAdapter
             inference_adapter = BedrockInferenceAdapter(
                 region_name="us-east-1",
                 enable_image_support=True,
