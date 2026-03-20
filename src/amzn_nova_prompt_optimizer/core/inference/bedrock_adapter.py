@@ -56,7 +56,8 @@ class BedrockInferenceAdapter(InferenceAdapter):
                  profile_name: Optional[str] = None,
                  max_retries: int = 5,
                  rate_limit: int = 2,
-                 initial_backoff: int = 1):
+                 initial_backoff: int = 1,
+                 enable_image_support: bool = False):
         """
         Initialize Bedrock Inference Adapter with AWS credentials.
 
@@ -66,6 +67,9 @@ class BedrockInferenceAdapter(InferenceAdapter):
             max_retries: Maximum number of retries for API calls (default: 5)
             rate_limit: Max requests per second (default: 2)
             initial_backoff: Initial backoff time in seconds (default: 1)
+            enable_image_support: Set to True to enable multimodal image support.
+                                  Requires Pillow and requests to be installed.
+                                  Default is False (text-only, backward compatible).
         """
         super().__init__(region=region_name, rate_limit=rate_limit)
         self.initial_backoff = initial_backoff
@@ -85,7 +89,10 @@ class BedrockInferenceAdapter(InferenceAdapter):
             'bedrock-runtime',
             region_name=region_name
         )
-        self.converse_client = BedrockConverseHandler(self.bedrock_client)
+        self.converse_client = BedrockConverseHandler(
+            self.bedrock_client,
+            enable_image_support=enable_image_support
+        )
 
     def call_model(self, model_id: str, system_prompt: str,
                    messages: List[Dict[str, str]], inf_config: Dict[str, Any]) -> str:

@@ -68,9 +68,19 @@ class InferenceRunner:
         self.inference_results: List[Dict] = []
         self.warned_user_on_missing_prompt_variables = False
 
-    def _format_template(self, template: str, variables: List[str], inputs: Dict[str, Any]) -> str:
-        """Format a single template with its variables"""
-        template_vars = {var: str(inputs.get(var, '')) for var in variables}
+    def _format_template(self, template: str, variables: List[str], inputs: Dict[str, Any],
+                         image_variables: set = None) -> str:
+        """Format a single template with its variables.
+        Image variables are substituted with a placeholder rather than their bytes value.
+        """
+        image_variables = image_variables or set()
+        # For image variables, use a placeholder so bytes don't get stringified into the prompt
+        template_vars = {}
+        for var in variables:
+            if var in image_variables:
+                template_vars[var] = f"[{var}]"  # placeholder, actual bytes passed separately
+            else:
+                template_vars[var] = str(inputs.get(var, ''))
 
         def replace_variable(match):
             var = match.group(1)
@@ -78,9 +88,9 @@ class InferenceRunner:
 
         formatted_prompt = PROMPT_VARIABLE_PATTERN.sub(replace_variable, template)
 
-        # Check for unused variables
+        # Check for unused non-image variables
         used_vars = set(PROMPT_VARIABLE_PATTERN.findall(template))
-        unused_vars = set(template_vars.keys()) - used_vars
+        unused_vars = set(template_vars.keys()) - used_vars - image_variables
 
         if unused_vars:
             formatted_prompt += "\n\nHere are the additional inputs:\n"
@@ -134,14 +144,24 @@ class InferenceRunner:
         user_template = user_component.get(PROMPT_TEMPLATE_FIELD)
         if user_template and user_template.strip():
             user_variables = user_component.get(PROMPT_VARIABLES_FIELD, [])
-            formatted_user = self._format_template(user_template, user_variables, inputs)
+            image_variables = set(user_component.get("image_variables", []))
+            formatted_user = self._format_template(user_template, user_variables, inputs, image_variables)
 
             # Append few-shot examples to user prompt if specified
             if few_shot_format == APPEND_TO_USER_PROMPT_FEW_SHOT_FORMAT:
                 formatted_user = f"{formatted_user}{few_shot_text}"
 
             if formatted_user:
-                messages.append({"user": formatted_user})
+                # If any image variables are present, build a structured multimodal message
+                # so BedrockConverseHandler receives pre-loaded bytes rather than a path string
+                image_data = {var: inputs[var] for var in image_variables
+                              if var in inputs and isinstance(inputs[var], bytes)}
+                if image_data:
+                    # Use the first image variable's bytes (multimodal: one image per turn)
+                    image_bytes = next(iter(image_data.values()))
+                    messages.append({"user": {"text": formatted_user, "image_bytes": image_bytes}})
+                else:
+                    messages.append({"user": formatted_user})
 
         return system_prompt, messages
 

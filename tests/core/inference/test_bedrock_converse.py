@@ -198,18 +198,67 @@ class TestBedrockConverseHandler(unittest.TestCase):
         self.assertEqual(result, {})
 
     def test_get_messages(self):
-        """Test _get_messages static method"""
+        """Test _get_messages instance method with text-only input"""
         # Arrange
-        user_input = [{"user": "user prompt"}, {"assistant":"assistant message"}, {"user": "user message"}]
+        user_input = [{"user": "user prompt"}, {"assistant": "assistant message"}, {"user": "user message"}]
 
         # Act
-        result = BedrockConverseHandler._get_messages(user_input)
+        result = self.handler._get_messages(user_input)
 
         # Assert
         expected = [{"role": "user", "content": [{"text": "user prompt"}]},
                     {"role": "assistant", "content": [{"text": "assistant message"}]},
                     {"role": "user", "content": [{"text": "user message"}]}]
         self.assertEqual(result, expected)
+
+    def test_enable_image_support_default_false(self):
+        """Test that image support is disabled by default"""
+        handler = BedrockConverseHandler(self.mock_client)
+        self.assertFalse(handler.enable_image_support)
+
+    def test_enable_image_support_opt_in(self):
+        """Test that image support can be explicitly enabled"""
+        from amzn_nova_prompt_optimizer.core.inference.bedrock_converse import IMAGE_SUPPORT_AVAILABLE
+        handler = BedrockConverseHandler(self.mock_client, enable_image_support=True)
+        # Only True if PIL/requests are installed
+        self.assertEqual(handler.enable_image_support, IMAGE_SUPPORT_AVAILABLE)
+
+    def test_get_messages_text_only_when_image_support_disabled(self):
+        """Test that image paths are treated as plain text when image support is off"""
+        handler = BedrockConverseHandler(self.mock_client, enable_image_support=False)
+        user_input = [{"user": "Analyze this image for watermarks: /some/image.jpg"}]
+        result = handler._get_messages(user_input)
+        # Should be plain text, not an image block
+        self.assertEqual(result[0]["content"], [{"text": "Analyze this image for watermarks: /some/image.jpg"}])
+
+    def test_process_multimodal_content_template_variable_in_sentence(self):
+        """Test that template variables embedded in sentences are not treated as image paths"""
+        from amzn_nova_prompt_optimizer.core.inference.bedrock_converse import BedrockConverseHandler
+        result = BedrockConverseHandler._process_multimodal_content(
+            "Analyze this image for watermarks: {input}"
+        )
+        self.assertEqual(result, [{"text": "Analyze this image for watermarks: {input}"}])
+
+    def test_process_multimodal_content_template_variable_double_braces(self):
+        """Test that {{input}} template variables are not treated as image paths"""
+        result = BedrockConverseHandler._process_multimodal_content(
+            "Analyze this image for watermarks: {{input}}"
+        )
+        self.assertEqual(result, [{"text": "Analyze this image for watermarks: {{input}}"}])
+
+    def test_process_multimodal_content_dspy_template(self):
+        """Test that DSPy [[ ## ]] format is not treated as image path"""
+        result = BedrockConverseHandler._process_multimodal_content(
+            "[[ ## input ## ]]"
+        )
+        self.assertEqual(result, [{"text": "[[ ## input ## ]]"}])
+
+    def test_process_multimodal_content_plain_text(self):
+        """Test that plain text with no image indicators is returned as-is"""
+        result = BedrockConverseHandler._process_multimodal_content(
+            "What is machine learning?"
+        )
+        self.assertEqual(result, [{"text": "What is machine learning?"}])
 
     def test_get_system_config_with_prompt(self):
         """Test _get_system_config static method with prompt"""
@@ -233,3 +282,39 @@ class TestBedrockConverseHandler(unittest.TestCase):
 
         # Assert
         self.assertIsNone(result)
+
+
+    # --- _build_content_blocks tests ---
+
+    def test_build_content_blocks_plain_string(self):
+        """Plain string returns a single text block"""
+        result = self.handler._build_content_blocks("hello world")
+        self.assertEqual(result, [{"text": "hello world"}])
+
+    def test_build_content_blocks_bytes_image_support_disabled(self):
+        """bytes with image support off returns a text placeholder"""
+        handler = BedrockConverseHandler(self.mock_client, enable_image_support=False)
+        result = handler._build_content_blocks(b"\x89PNG\r\n")
+        self.assertEqual(result, [{"text": "[image]"}])
+
+    def test_build_content_blocks_dict_with_text_only(self):
+        """dict with only 'text' key returns a text block"""
+        result = self.handler._build_content_blocks({"text": "describe this"})
+        self.assertEqual(result, [{"text": "describe this"}])
+
+    def test_build_content_blocks_dict_with_image_bytes_support_disabled(self):
+        """dict with image_bytes but image support off returns only text block"""
+        handler = BedrockConverseHandler(self.mock_client, enable_image_support=False)
+        result = handler._build_content_blocks({"text": "describe", "image_bytes": b"data"})
+        self.assertEqual(result, [{"text": "describe"}])
+
+    def test_get_messages_with_bytes_image_support_disabled(self):
+        """bytes in user message with image support off produces text placeholder"""
+        handler = BedrockConverseHandler(self.mock_client, enable_image_support=False)
+        result = handler._get_messages([{"user": b"\x89PNG\r\n"}])
+        self.assertEqual(result[0]["content"], [{"text": "[image]"}])
+
+    def test_get_messages_with_structured_dict_text_only(self):
+        """dict message with only text key produces text block"""
+        result = self.handler._get_messages([{"user": {"text": "hello"}}])
+        self.assertEqual(result[0]["content"], [{"text": "hello"}])

@@ -92,3 +92,37 @@ class TestTextPromptAdapter(unittest.TestCase):
         adapter = TextPromptAdapter()
         self.assertEqual(adapter.get_format(), "text")
         self.assertEqual(adapter.get_file_extension(), ".txt")
+
+
+    # --- image_variables tests ---
+
+    def test_set_user_prompt_with_image_variables(self):
+        """image_variables are stored and appear in standardized prompt"""
+        adapter = TextPromptAdapter()
+        adapter.set_user_prompt(
+            content="Describe this image: {{image}}",
+            variables={"image"},
+            image_variables={"image"}
+        )
+        adapter.adapt()
+        component = adapter.fetch()["user_prompt"]
+        self.assertIn("image_variables", component)
+        self.assertEqual(set(component["image_variables"]), {"image"})
+
+    def test_image_variables_must_be_subset_of_variables(self):
+        """image_variables not in variables should raise ValueError"""
+        adapter = TextPromptAdapter()
+        with self.assertRaises(ValueError):
+            adapter.set_user_prompt(
+                content="Hello {{name}}",
+                variables={"name"},
+                image_variables={"image"}  # not in variables
+            )
+
+    def test_no_image_variables_by_default(self):
+        """image_variables defaults to empty set"""
+        adapter = TextPromptAdapter()
+        adapter.set_user_prompt(content="Hello {{name}}", variables={"name"})
+        adapter.adapt()
+        component = adapter.fetch()["user_prompt"]
+        self.assertEqual(component.get("image_variables", []), [])
