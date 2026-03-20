@@ -16,24 +16,46 @@ import csv
 import random
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Set, Tuple, Union, Any
+from pathlib import Path
+from typing import List, Dict, Set, Tuple, Union, Any, Optional
 
 OUTPUTS_FIELD = "outputs"
 INPUTS_FIELD = "inputs"
 
+# Supported image extensions for auto-loading
+IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+
+
+def _load_image_bytes(path: str) -> Optional[bytes]:
+    """Load image bytes from a local file path. Returns None if not a valid image path."""
+    try:
+        p = Path(path)
+        if p.suffix.lower() in IMAGE_EXTENSIONS and p.exists():
+            return p.read_bytes()
+    except Exception:
+        pass
+    return None
+
 
 class DatasetAdapter(ABC):
-    def __init__(self, input_columns: Set[str], output_columns: Set[str]):
+    def __init__(self, input_columns: Set[str], output_columns: Set[str],
+                 image_columns: Optional[Set[str]] = None):
         """
         Initialize the adapter with input and output column specifications.
 
         :param input_columns: Set of column names to be included in inputs
         :param output_columns: Set of column names to be included in outputs
+        :param image_columns: Optional subset of input_columns whose values are image file
+                              paths. At adapt time the paths are loaded as raw bytes so the
+                              inference layer can send them directly to the Bedrock image API.
         """
         self.input_columns: Set[str] = input_columns
         self.output_columns: Set[str] = output_columns
         if len(output_columns) > 1:
             raise ValueError("output_columns must be a singleton set (contain exactly one element)")
+        if image_columns and not image_columns.issubset(input_columns):
+            raise ValueError("image_columns must be a subset of input_columns")
+        self.image_columns: Set[str] = image_columns or set()
         self.standardized_dataset: List[Dict] = []
 
     @abstractmethod
@@ -57,6 +79,29 @@ class DatasetAdapter(ABC):
         :return: List of data rows
         """
         pass
+
+    def _standardize_row(self, row: Dict) -> Dict:
+        """
+        Convert a raw data row into the standardized {inputs, outputs} format.
+        For columns listed in image_columns, the string file path is replaced with
+        the raw image bytes so the inference layer can pass them directly to Bedrock.
+        """
+        inputs = {}
+        for col in self.input_columns:
+            value = row.get(col, "")
+            if col in self.image_columns:
+                image_bytes = _load_image_bytes(str(value))
+                if image_bytes is not None:
+                    inputs[col] = image_bytes
+                else:
+                    # Keep as string if file not found; inference layer will handle gracefully
+                    inputs[col] = value
+            else:
+                inputs[col] = value
+        return {
+            INPUTS_FIELD: inputs,
+            OUTPUTS_FIELD: {col: row.get(col, "") for col in self.output_columns}
+        }
 
     def show(self, n: int = 10) -> None:
         """
@@ -120,8 +165,8 @@ class DatasetAdapter(ABC):
             train_data = shuffled_data[:train_size]
             test_data = shuffled_data[train_size:]
 
-        train_adapter = self.__class__(self.input_columns, self.output_columns)
-        test_adapter = self.__class__(self.input_columns, self.output_columns)
+        train_adapter = self.__class__(self.input_columns, self.output_columns, self.image_columns)
+        test_adapter = self.__class__(self.input_columns, self.output_columns, self.image_columns)
 
         train_adapter.standardized_dataset = train_data
         test_adapter.standardized_dataset = test_data
@@ -130,6 +175,10 @@ class DatasetAdapter(ABC):
 
 
 class JSONDatasetAdapter(DatasetAdapter):
+    def __init__(self, input_columns: Set[str], output_columns: Set[str],
+                 image_columns: Optional[Set[str]] = None):
+        super().__init__(input_columns, output_columns, image_columns)
+
     def _load_dataset(self, data_source: Union[str, List[Dict]]) -> List[Dict]:
         if isinstance(data_source, str):
             rows = []
@@ -142,24 +191,17 @@ class JSONDatasetAdapter(DatasetAdapter):
         else:
             raise ValueError("Invalid data_source type. Expected str or List[Dict]")
 
-    def adapt(self, data_source: Union[str, List[Dict]]) -> DatasetAdapter:
+    def adapt(self, data_source: Union[str, List[Dict]]) -> 'JSONDatasetAdapter':
         dataset = self._load_dataset(data_source)
-
-        self.standardized_dataset = []
-        for row in dataset:
-            standardized_row = {
-                INPUTS_FIELD: {
-                    col: row.get(col, "") for col in self.input_columns
-                },
-                OUTPUTS_FIELD: {
-                    col: row.get(col, "") for col in self.output_columns
-                }
-            }
-            self.standardized_dataset.append(standardized_row)
-
+        self.standardized_dataset = [self._standardize_row(row) for row in dataset]
         return self
 
+
 class CSVDatasetAdapter(DatasetAdapter):
+    def __init__(self, input_columns: Set[str], output_columns: Set[str],
+                 image_columns: Optional[Set[str]] = None):
+        super().__init__(input_columns, output_columns, image_columns)
+
     def _load_dataset(self, data_source: Union[str, List[Dict]]) -> List[Dict]:
         if isinstance(data_source, str):
             rows = []
@@ -173,20 +215,8 @@ class CSVDatasetAdapter(DatasetAdapter):
         else:
             raise ValueError("Invalid data_source type. Expected str or List[Dict]")
 
-    def adapt(self, data_source: Union[str, List[Dict]]) -> DatasetAdapter:
+    def adapt(self, data_source: Union[str, List[Dict]]) -> 'CSVDatasetAdapter':
         dataset = self._load_dataset(data_source)
-
-        self.standardized_dataset = []
-        for row in dataset:
-            standardized_row = {
-                INPUTS_FIELD: {
-                    col: row.get(col, "") for col in self.input_columns
-                },
-                OUTPUTS_FIELD: {
-                    col: row.get(col, "") for col in self.output_columns
-                }
-            }
-            self.standardized_dataset.append(standardized_row)
-
+        self.standardized_dataset = [self._standardize_row(row) for row in dataset]
         return self
 

@@ -190,3 +190,55 @@ class TestDatasetAdapter(unittest.TestCase):
         with self.assertRaises(ValueError):
             extra_output_columns = {"abc", "xyz"}
             JSONDatasetAdapter(self.input_columns, extra_output_columns)
+
+
+    # --- image_columns tests ---
+
+    def test_image_columns_must_be_subset_of_input_columns(self):
+        """image_columns that are not in input_columns should raise ValueError"""
+        with self.assertRaises(ValueError):
+            JSONDatasetAdapter({"title"}, {"sentiment"}, image_columns={"image"})
+
+    def test_image_columns_stored_on_adapter(self):
+        """image_columns are stored and accessible"""
+        adapter = JSONDatasetAdapter({"title", "image"}, {"sentiment"}, image_columns={"image"})
+        self.assertEqual(adapter.image_columns, {"image"})
+
+    def test_non_image_columns_unchanged(self):
+        """Columns not in image_columns are stored as plain strings"""
+        adapter = JSONDatasetAdapter({"title", "image"}, {"sentiment"}, image_columns={"image"})
+        data = [{"title": "hello", "image": "nonexistent.jpg", "sentiment": "pos"}]
+        adapter.adapt(data)
+        # title is a plain string
+        self.assertEqual(adapter.standardized_dataset[0]["inputs"]["title"], "hello")
+
+    def test_image_column_missing_file_kept_as_string(self):
+        """If image file does not exist, value is kept as the original string"""
+        adapter = JSONDatasetAdapter({"title", "image"}, {"sentiment"}, image_columns={"image"})
+        data = [{"title": "t", "image": "/nonexistent/path/img.jpg", "sentiment": "pos"}]
+        adapter.adapt(data)
+        self.assertEqual(adapter.standardized_dataset[0]["inputs"]["image"], "/nonexistent/path/img.jpg")
+
+    def test_image_column_loads_bytes_for_existing_file(self):
+        """If image file exists, value is replaced with bytes"""
+        import tempfile, os
+        adapter = JSONDatasetAdapter({"title", "image"}, {"sentiment"}, image_columns={"image"})
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
+            f.write(b"fake_image_bytes")
+            tmp_path = f.name
+        try:
+            data = [{"title": "t", "image": tmp_path, "sentiment": "pos"}]
+            adapter.adapt(data)
+            self.assertIsInstance(adapter.standardized_dataset[0]["inputs"]["image"], bytes)
+            self.assertEqual(adapter.standardized_dataset[0]["inputs"]["image"], b"fake_image_bytes")
+        finally:
+            os.unlink(tmp_path)
+
+    def test_split_preserves_image_columns(self):
+        """split() passes image_columns through to child adapters"""
+        adapter = JSONDatasetAdapter({"title", "image"}, {"sentiment"}, image_columns={"image"})
+        data = [{"title": f"t{i}", "image": "x.jpg", "sentiment": "pos"} for i in range(10)]
+        adapter.adapt(data)
+        train, test = adapter.split(0.7)
+        self.assertEqual(train.image_columns, {"image"})
+        self.assertEqual(test.image_columns, {"image"})

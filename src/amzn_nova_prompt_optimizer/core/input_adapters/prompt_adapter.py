@@ -40,6 +40,9 @@ PROMPT_MODEL_INPUT_FIELD = "model_input"
 
 PROMPT_VARIABLE_PATTERN = re.compile(r'\{+\s*(\w+)\s*\}+')
 
+# Sentinel type to mark a variable as carrying image data rather than text
+IMAGE_VARIABLE_TYPE = "image"
+
 class FewShotFormat:
     """Handler for different few-shot example formats"""
 
@@ -88,6 +91,7 @@ class PromptAdapter(ABC):
         self.system_prompt: Optional[str] = None
         self.user_variables: Set[str] = set()
         self.system_variables: Set[str] = set()
+        self.image_variables: Set[str] = set()  # Variables that carry image file paths
 
     def load_few_shot(self, file_path: str, format_type: str = "converse") -> 'PromptAdapter':
         """
@@ -137,17 +141,25 @@ class PromptAdapter(ABC):
     def set_user_prompt(self,
                         content: Optional[str] = None,
                         file_path: Optional[str] = None,
-                        variables: Optional[Set[str]] = None) -> 'PromptAdapter':
+                        variables: Optional[Set[str]] = None,
+                        image_variables: Optional[Set[str]] = None) -> 'PromptAdapter':
         """
-        Set the user prompt content and its variables
+        Set the user prompt content and its variables.
 
         :param content: Prompt content as string
         :param file_path: Path to prompt file
-        :param variables: Set of variables used in the user prompt
+        :param variables: Set of all variables used in the user prompt
+        :param image_variables: Optional subset of variables that carry image file paths.
+                                These will be loaded as image bytes at inference time.
         """
         self.user_prompt = self._get_content(content, file_path)
         if variables is not None:
             self.user_variables = variables
+        if image_variables is not None:
+            # image_variables must be a subset of variables
+            if variables is not None and not image_variables.issubset(variables):
+                raise ValueError("image_variables must be a subset of variables")
+            self.image_variables = image_variables
         return self
 
     def set_system_prompt(self,
@@ -196,7 +208,8 @@ class PromptAdapter(ABC):
                 PROMPT_TEMPLATE_FIELD: self.user_prompt,
                 PROMPT_METADATA_FIELD: {
                     PROMPT_FORMAT_FIELD: self.get_format()
-                }
+                },
+                "image_variables": list(self.image_variables)
             }
         else:
             # If it does not exist but System prompt does, then we are missing user input, raise an error

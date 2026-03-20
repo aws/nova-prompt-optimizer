@@ -30,11 +30,12 @@ except ImportError:
 
 
 class BedrockConverseHandler:
-    def __init__(self, bedrock_client, enable_image_support=True):
+    def __init__(self, bedrock_client, enable_image_support=False):
         """
         Bedrock Converse Handler to manage converse API calls to Bedrock given a model_id
         :param bedrock_client: Bedrock Client
-        :param enable_image_support: Enable automatic image loading from paths (default: True)
+        :param enable_image_support: Enable automatic image loading from paths (default: False).
+                                     Set to True to enable multimodal support.
         """
         self.client = bedrock_client
         self.enable_image_support = enable_image_support and IMAGE_SUPPORT_AVAILABLE
@@ -101,46 +102,89 @@ class BedrockConverseHandler:
     def _get_messages(self, user_input):
         """
         Format messages for Bedrock Converse API.
-        Supports text and multimodal (image) content when enabled.
+        Supports three content types per user message:
+        - str: plain text (default)
+        - bytes: raw image bytes (loaded by DatasetAdapter for image_columns)
+        - dict with 'text' and/or 'image_bytes' keys: structured multimodal content
+        When enable_image_support=False, bytes values are skipped with a warning.
         """
         formatted_messages = []
 
         for message in user_input:
             if "user" in message:
                 user_content = message["user"]
-                
-                # Quick check: Does this look like it might contain an image?
-                might_have_image = (
-                    self.enable_image_support and
-                    isinstance(user_content, str) and 
-                    (
-                        'image' in user_content.lower() or
-                        user_content.startswith('http') or
-                        any(ext in user_content.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp'])
-                    )
-                )
-                
-                if might_have_image:
-                    logger.debug(f"Processing potential multimodal content: {user_content[:100]}...")
-                    content_blocks = self._process_multimodal_content(user_content)
-                else:
-                    # Fast path for text-only (original behavior)
-                    content_blocks = [{"text": str(user_content)}]
-                
-                formatted_message = {
-                    "role": "user",
-                    "content": content_blocks
-                }
-                formatted_messages.append(formatted_message)
+                content_blocks = self._build_content_blocks(user_content)
+                formatted_messages.append({"role": "user", "content": content_blocks})
 
             if "assistant" in message:
-                formatted_message = {
+                formatted_messages.append({
                     "role": "assistant",
                     "content": [{"text": message["assistant"]}]
-                }
-                formatted_messages.append(formatted_message)
+                })
 
         return formatted_messages
+
+    def _build_content_blocks(self, user_content) -> list:
+        """
+        Convert a user message value into a list of Bedrock content blocks.
+
+        Handles:
+        - bytes: treat as raw image bytes (requires enable_image_support=True)
+        - dict with keys 'text' and/or 'image_bytes': structured multimodal
+        - str: plain text, or legacy path-based image detection when enable_image_support=True
+        """
+        # --- Case 1: raw image bytes from DatasetAdapter ---
+        if isinstance(user_content, bytes):
+            if not self.enable_image_support:
+                logger.warning("Received image bytes but enable_image_support=False; sending as text placeholder")
+                return [{"text": "[image]"}]
+            return self._bytes_to_image_block(user_content)
+
+        # --- Case 2: structured dict with explicit text + image_bytes ---
+        if isinstance(user_content, dict):
+            blocks = []
+            if "image_bytes" in user_content and self.enable_image_support:
+                blocks.extend(self._bytes_to_image_block(user_content["image_bytes"]))
+            if "text" in user_content:
+                blocks.append({"text": str(user_content["text"])})
+            return blocks if blocks else [{"text": str(user_content)}]
+
+        # --- Case 3: plain string ---
+        if not isinstance(user_content, str):
+            return [{"text": str(user_content)}]
+
+        # Fast path: image support off or no image indicators → plain text
+        if not self.enable_image_support:
+            return [{"text": user_content}]
+
+        might_have_image = (
+            'image' in user_content.lower() or
+            user_content.startswith('http') or
+            any(ext in user_content.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp'])
+        )
+        if might_have_image:
+            logger.debug(f"Processing potential multimodal content: {user_content}")
+            return self._process_multimodal_content(user_content)
+
+        return [{"text": user_content}]
+
+    @staticmethod
+    def _bytes_to_image_block(image_bytes: bytes) -> list:
+        """Convert raw image bytes to a Bedrock image content block."""
+        if not IMAGE_SUPPORT_AVAILABLE:
+            logger.warning("PIL not available; cannot determine image format. Skipping image block.")
+            return [{"text": "[image]"}]
+        try:
+            from io import BytesIO
+            img = Image.open(BytesIO(image_bytes))
+            img_format = (img.format or 'JPEG').lower()
+            if img_format == 'jpg':
+                img_format = 'jpeg'
+            logger.info(f"Building image block: {img.size} pixels, format={img_format}")
+            return [{"image": {"format": img_format, "source": {"bytes": image_bytes}}}]
+        except Exception as e:
+            logger.warning(f"Failed to parse image bytes: {e}; sending as text placeholder")
+            return [{"text": "[image]"}]
     
     @staticmethod
     def _process_multimodal_content(user_content):
@@ -160,9 +204,10 @@ class BedrockConverseHandler:
         stripped = user_content.strip()
         
         # Check if it's a template variable (skip image processing)
+        template_patterns = ['[input]', '{input}', '{{input}}', '[[input]]']
         is_template = (
             stripped.startswith('[[ ##') or
-            stripped in ['[input]', '{input}', '{{input}}', '[[input]]'] or
+            any(pattern in stripped for pattern in template_patterns) or
             (stripped.startswith('{') and '}' in stripped and not Path(stripped).exists())
         )
         
@@ -175,14 +220,14 @@ class BedrockConverseHandler:
             if len(parts) == 2:
                 prompt_text = parts[0].strip()
                 potential_image_path = parts[1].strip()
-                logger.debug(f"Found image pattern, extracted path: {potential_image_path[:50]}")
+                logger.debug(f"Found image pattern, extracted path: {potential_image_path}")
                 
                 # Handle MIPROv2 format: [][actual_path]
                 if potential_image_path.startswith('[]'):
                     potential_image_path = potential_image_path[2:]
                     if potential_image_path.startswith('[') and potential_image_path.endswith(']'):
                         potential_image_path = potential_image_path[1:-1]
-                    logger.debug(f"Cleaned MIPROv2 format to: {potential_image_path[:50]}")
+                    logger.debug(f"Cleaned MIPROv2 format to: {potential_image_path}")
                 
                 # Skip if it's a template variable
                 if potential_image_path not in ['[input]', '{{input}}', '{input}', '[[input]]', 'input', '']:
