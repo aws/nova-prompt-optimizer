@@ -25,20 +25,20 @@ from typing import Dict, Any, List
 class InferenceAdapter(ABC):
     """
     Abstract base class for inference adapters.
-
+    
     All inference adapters must inherit from this class and implement
     the call_model method. This provides a consistent interface for
     making inference calls across different backends (Bedrock, SageMaker, etc.).
-
+    
     Attributes:
         region: AWS region or endpoint region
         rate_limit: Maximum requests per second
     """
-
+    
     def __init__(self, region: str, rate_limit: int = 2):
         """
         Initialize the inference adapter.
-
+        
         Args:
             region: AWS region or endpoint region
             rate_limit: Maximum requests per second (default: 2)
@@ -52,38 +52,38 @@ class InferenceAdapter(ABC):
                    inf_config: Dict[str, Any]) -> str:
         """
         Call the model for inference.
-
+        
         This method must be implemented by all subclasses.
-
+        
         Args:
             model_id: Model identifier
             system_prompt: System prompt text
             messages: List of conversation messages in format:
                      [{"user": "..."}, {"assistant": "..."}, ...]
             inf_config: Inference configuration parameters
-
+        
         Returns:
             Model response text
-
+        
         Raises:
             NotImplementedError: If not implemented by subclass
         """
         pass
-
+    
     def to_dspy_lm(self, model_id: str, **kwargs):
         """
         Create a DSPy-compatible wrapper for this adapter.
-
+        
         This is a convenience method that automatically creates the
         appropriate DSPy-compatible adapter based on the adapter type.
-
+        
         Args:
             model_id: Model identifier to use
             **kwargs: Additional parameters for the DSPy adapter
-
+        
         Returns:
             DSPy-compatible adapter instance
-
+        
         Example:
             >>> adapter = BedrockInferenceAdapter(region_name="us-east-1")
             >>> dspy_lm = adapter.to_dspy_lm("us.amazon.nova-pro-v1:0")

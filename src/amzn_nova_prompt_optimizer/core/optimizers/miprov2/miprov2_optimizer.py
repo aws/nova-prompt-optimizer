@@ -88,12 +88,12 @@ class PredictorFactory:
 
 
 class MIPROv2OptimizationAdapter(OptimizationAdapter):
-    
+
     def _create_image_aware_lm(self, model_id: str):
         """Create an image-aware LM for multimodal support that bypasses LiteLLM."""
         adapter_lm = BedrockAdapterLM(self.inference_adapter, model_id)
         return RateLimitedLM(adapter_lm, rate_limit=self.inference_adapter.rate_limit)
-    
+
     def _process_dataset_adapter(self, train_split):
         if self.dataset_adapter is None:
             raise ValueError("dataset_adapter is required for MIPROv2 optimization")
@@ -251,17 +251,20 @@ class MIPROv2OptimizationAdapter(OptimizationAdapter):
         elif num_trials is None:
             raise ValueError("num_trials must be specified when num_candidates is provided")
 
-        # Set AWS region
+        # Set AWS region for DSPy LiteLLM compatibility
         if self.inference_adapter.region:
             os.environ["AWS_REGION_NAME"] = self.inference_adapter.region
         else:
             os.environ["AWS_REGION_NAME"] = 'us-west-2'
 
-        # Setup dspy.LM - use BedrockAdapterLM for task model (image support, bypasses LiteLLM)
+        # Setup DSPy-compatible LM using InferenceAdapter
         task_lm = self._create_image_aware_lm(task_model_id)
         logger.info(f"Using {task_model_id} for Evaluation")
-
-        prompt_lm = RateLimitedLM(dspy.LM(f'bedrock/{prompter_model_id}'), rate_limit=self.inference_adapter.rate_limit)
+        
+        prompt_lm = RateLimitedLM(
+            self.inference_adapter.to_dspy_lm(prompter_model_id),
+            rate_limit=self.inference_adapter.rate_limit
+        )
         logger.info(f"Using {prompter_model_id} for Prompting")
 
         # Configure DSPy
@@ -270,7 +273,6 @@ class MIPROv2OptimizationAdapter(OptimizationAdapter):
         # Create a predictor
         prompt = self.prompt_adapter.fetch_system_template() + "\n\n" + self.prompt_adapter.fetch_user_template()
         initial_predictor = self._create_predictor(prompt)
-
         # Prepare the dataset
         train_data, test_data = self._process_dataset_adapter(train_split)
 
@@ -373,17 +375,20 @@ class NovaMIPROv2OptimizationAdapter(MIPROv2OptimizationAdapter):
         elif num_trials is None:
             raise ValueError("num_trials must be specified when num_candidates is provided")
 
-        # Set AWS region
+        # Set AWS region for DSPy LiteLLM compatibility
         if self.inference_adapter.region:
             os.environ["AWS_REGION_NAME"] = self.inference_adapter.region
         else:
             os.environ["AWS_REGION_NAME"] = 'us-west-2'
 
-        # Setup dspy.LM - use BedrockAdapterLM for task model (image support, bypasses LiteLLM)
+        # Setup DSPy-compatible LM using InferenceAdapter
         task_lm = self._create_image_aware_lm(task_model_id)
         logger.info(f"Using {task_model_id} for Evaluation")
-
-        prompt_lm = RateLimitedLM(dspy.LM(f'bedrock/{prompter_model_id}'), rate_limit=self.inference_adapter.rate_limit)
+        
+        prompt_lm = RateLimitedLM(
+            self.inference_adapter.to_dspy_lm(prompter_model_id),
+            rate_limit=self.inference_adapter.rate_limit
+        )
         logger.info(f"Using {prompter_model_id} for Prompting")
 
         # Configure DSPy

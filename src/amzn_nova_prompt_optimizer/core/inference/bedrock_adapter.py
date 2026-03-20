@@ -37,10 +37,10 @@ logger = logging.getLogger(__name__)
 class BedrockInferenceAdapter(InferenceAdapter):
     """
     Inference adapter for Amazon Bedrock models.
-
+    
     This adapter handles communication with Bedrock models using the Converse API,
     including automatic retry logic with exponential backoff and rate limiting.
-
+    
     Attributes:
         region: AWS region name
         rate_limit: Maximum requests per second
@@ -50,7 +50,7 @@ class BedrockInferenceAdapter(InferenceAdapter):
         converse_client: Handler for Bedrock Converse API calls
         rate_limiter: Rate limiter instance
     """
-
+    
     def __init__(self,
                  region_name: str = 'us-east-1',
                  profile_name: Optional[str] = None,
@@ -78,8 +78,10 @@ class BedrockInferenceAdapter(InferenceAdapter):
 
         # Initialize AWS session with provided credentials
         if profile_name:
+            # Use AWS profile if specified
             session = boto3.Session(profile_name=profile_name)
         else:
+            # Fall back to default credentials (environment variables or IAM role)
             session = boto3.Session()
 
         # Create Bedrock client
@@ -96,16 +98,16 @@ class BedrockInferenceAdapter(InferenceAdapter):
                    messages: List[Dict[str, str]], inf_config: Dict[str, Any]) -> str:
         """
         Call a Bedrock model with rate limiting and retry logic.
-
+        
         Args:
             model_id: Bedrock model identifier
             system_prompt: System prompt text
             messages: List of conversation messages
             inf_config: Inference configuration parameters
-
+        
         Returns:
             Model response text
-
+        
         Raises:
             Exception: If max retries exceeded or non-retryable error occurs
         """
@@ -114,13 +116,34 @@ class BedrockInferenceAdapter(InferenceAdapter):
 
     def _call_model_with_retry(self, model_id: str, system_prompt: str,
                                messages: List[Dict[str, str]], inf_config: Dict[str, Any]) -> str:
+        """
+        Call model with automatic retry logic for transient errors.
+        
+        Retries on:
+        - ThrottlingException
+        - ModelErrorException
+        - ServiceUnavailableException
+        
+        Args:
+            model_id: Bedrock model identifier
+            system_prompt: System prompt text
+            messages: List of conversation messages
+            inf_config: Inference configuration parameters
+        
+        Returns:
+            Model response text
+        
+        Raises:
+            ClientError: For non-retryable errors
+            Exception: If max retries exceeded
+        """
         retries = 0
         while retries < self.max_retries:
             try:
                 return self.converse_client.call_model(model_id, system_prompt, messages, inf_config)
             except ClientError as e:
                 error_code = e.response['Error']['Code']
-
+                
                 if error_code == 'ThrottlingException':
                     wait_time = self._calculate_backoff_time(retries)
                     logger.debug(
@@ -146,10 +169,20 @@ class BedrockInferenceAdapter(InferenceAdapter):
                     time.sleep(wait_time)
                     retries += 1
                 else:
+                    # Non-retryable error
                     raise e
-
+        
         raise Exception(f"Max retries ({self.max_retries}) exceeded for model call")
 
     def _calculate_backoff_time(self, retry_count: int) -> float:
-        """Calculate exponential backoff time with jitter."""
+        """
+        Calculate exponential backoff time with jitter.
+        
+        Args:
+            retry_count: Current retry attempt number
+        
+        Returns:
+            Wait time in seconds
+        """
+        # Exponential backoff with jitter
         return self.initial_backoff * (2 ** retry_count) + random.uniform(0, 1)
