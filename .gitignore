@@ -35,3 +35,6 @@ ENV/
 
 # Misc
 .DS_Store
+
+# Design documentation (not for commit)
+design_docs/

@@ -34,7 +34,7 @@ nova_mp_optimization_adapter = NovaMPOptimizationAdapter(prompt_adapter=prompt_a
 
 nova_mp_optimized_prompt_adapter = nova_mp_optimization_adapter.optimize(max_retries=5)
 ```
-Nova Meta Prompter uses Premier for Meta Prompting. Max Retries to retry optimization if optimized prompts do not contain prompt variables.
+Nova Meta Prompter uses Nova 2.0 Lite for Meta Prompting. Max Retries to retry optimization if optimized prompts do not contain prompt variables.
 
 #### MIPROv2
 
@@ -55,7 +55,7 @@ from amzn_nova_prompt_optimizer.core.optimizers.miprov2.miprov2_optimizer import
 mipro_optimization_adapter = MIPROv2OptimizationAdapter(prompt_adapter=prompt_adapter, dataset_adapter=train_dataset_adapter, metric_adapter=metric_adapter)
 
 mipro_prompt_adapter = mipro_optimization_adapter.optimize(task_model_id="us.amazon.nova-lite-v1:0",
-                                                           prompter_model_id ="us.amazon.nova-premier-v1:0", 
+                                                           prompter_model_id ="us.amazon.nova-2-lite-v1:0", 
                                                            num_candidates=None, 
                                                            num_threads= 2,
                                                            num_trials=None,
@@ -66,7 +66,7 @@ mipro_prompt_adapter = mipro_optimization_adapter.optimize(task_model_id="us.ama
                                                            enable_json_fallback = False)
 ```
 
-MIPROv2 uses Premier for Prompting and the task model provided as `task_model_id`.
+MIPROv2 uses Nova 2.0 Lite for Prompting and the task model provided as `task_model_id`.
 By default, it uses "medium" optimization i.e. Generating 6 instruction candidates and num_trials proportional to it
 
 You can specify enable_json_fallback=False to disable the behavior that MIPROv2 will [fallback to use JSONAdapter to parse LM model output](https://github.com/stanfordnlp/dspy/blob/main/dspy/adapters/chat_adapter.py#L44-L51). This will force MIPROv2 use structured output (pydantic model) to parse LM output.

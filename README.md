@@ -1,11 +1,13 @@
 # Nova Prompt Optimizer
 
-A Python SDK for optimizing prompts for Nova.
+A Python SDK for optimizing prompts for Amazon Nova and other models deployed on AWS.
 
 ## 📚 Table of contents
 * [Installation](#installation)
 * [Pre-Requisites](#pre-requisites)
+* [What's New](#-whats-new)
 * [Quick Start: Facility Support Analyzer Dataset](#-quick-start)
+* [Quick Start: SageMaker Endpoints](#-quick-start-sagemaker-endpoints)
 * [Core Concepts](#core-concepts)
   * [Input Adapters](#input-adapters)
     * [1. Prompt Adapter](#1-prompt-adapter)
@@ -16,6 +18,9 @@ A Python SDK for optimizing prompts for Nova.
   * [Optimizers](#optimizers)
     * [NovaPromptOptimizer](#novapromptoptimizer)
   * [Evaluator](#evaluator)
+* [Advanced Features](#advanced-features)
+  * [Separate Inference Adapters](#separate-inference-adapters)
+  * [SageMaker Endpoint Support](#sagemaker-endpoint-support)
 * [Optimization Recommendations](#optimization-recommendations)
 * [Preview Status](#-preview-status)
 * [Interaction with AWS Bedrock](#interaction-with-aws-bedrock)
@@ -50,11 +55,131 @@ export AWS_SECRET_ACCESS_KEY="..."
 5. Wait for approval (instant in most cases)
 
 
+## 🎉 What's New
+
+### SageMaker Endpoint Support
+Optimize prompts for models deployed on Amazon SageMaker! The optimizer now supports:
+- **SageMaker endpoints** as task models for optimization
+- **Automatic Bedrock integration** for meta-prompting with Nova 2.0 Lite
+- **OpenAI-compatible** payload format for SageMaker endpoints
+
+### Separate Inference Adapters
+Use different models for different optimization phases:
+- **Meta-prompting**: Automatically uses Bedrock with Nova 2.0 Lite (or specify your own)
+- **Task optimization**: Use any supported backend (Bedrock, SageMaker, etc.)
+
+### Example: Optimize for SageMaker
+```python
+from amzn_nova_prompt_optimizer.core.inference import SageMakerInferenceAdapter
+from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
+
+# Your SageMaker endpoint
+sagemaker_adapter = SageMakerInferenceAdapter(
+    endpoint_name="my-model-endpoint",
+    region_name="us-west-2"
+)
+
+# Optimizer automatically uses Bedrock Nova 2.0 Lite for meta-prompting
+optimizer = NovaPromptOptimizer(
+    prompt_adapter=prompt_adapter,
+    inference_adapter=sagemaker_adapter,  # Your SageMaker endpoint
+    dataset_adapter=dataset_adapter,
+    metric_adapter=metric_adapter
+)
+
+optimized_prompt = optimizer.optimize(mode="lite")
+```
+
+See the [Quick Start for SageMaker](#-quick-start-sagemaker-endpoints) section below for a complete example.
+
+
 ## 🏁 Quick Start
 ### Facility Support Analyzer Dataset
 The Facility Support Analyzer dataset consists of emails that are to be classified based on category, urgency and sentiment.
 
 Please see the [samples](samples/facility-support-analyzer/) folder for example notebooks of how to optimize a prompt in the scenario where a [user prompt template is to be optimized](samples/facility-support-analyzer/user_prompt_only) and the scenario where a [user and system prompt is to be optimized together](samples/facility-support-analyzer/system_and_user_prompt)
+
+
+## 🚀 Quick Start: SageMaker Endpoints
+
+Optimize prompts for models deployed on Amazon SageMaker in just a few steps:
+
+### 1. Install and Configure
+```bash
+pip install nova-prompt-optimizer
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+```
+
+### 2. Prepare Your Dataset
+```jsonl
+{"input": "What is machine learning?", "answer": "Machine learning is..."}
+{"input": "Explain neural networks", "answer": "Neural networks are..."}
+```
+
+### 3. Run Optimization
+```python
+from amzn_nova_prompt_optimizer.core.inference import SageMakerInferenceAdapter
+from amzn_nova_prompt_optimizer.core.input_adapters.dataset_adapter import JSONDatasetAdapter
+from amzn_nova_prompt_optimizer.core.input_adapters.prompt_adapter import TextPromptAdapter
+from amzn_nova_prompt_optimizer.core.input_adapters.metric_adapter import MetricAdapter
+from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
+
+# Define your metric
+class ExactMatchMetric(MetricAdapter):
+    def apply(self, prediction: str, ground_truth: str) -> float:
+        return 1.0 if prediction.strip() == ground_truth.strip() else 0.0
+    
+    def batch_apply(self, predictions: list, ground_truths: list) -> float:
+        matches = sum(self.apply(p, g) for p, g in zip(predictions, ground_truths))
+        return matches / len(predictions) if predictions else 0.0
+
+# Setup SageMaker adapter for your endpoint
+sagemaker_adapter = SageMakerInferenceAdapter(
+    endpoint_name="YOUR-ENDPOINT-NAME",
+    region_name="us-west-2"
+)
+
+# Load dataset
+dataset_adapter = JSONDatasetAdapter(
+    input_columns={"input"},
+    output_columns={"answer"}
+)
+dataset_adapter.adapt("your_dataset.jsonl")
+train_set, test_set = dataset_adapter.split(0.5)
+
+# Setup initial prompt
+prompt_adapter = TextPromptAdapter()
+prompt_adapter.set_system_prompt(content="You are a helpful assistant.")
+prompt_adapter.set_user_prompt(
+    content="Answer this question: {{input}}",
+    variables={"input"}
+)
+prompt_adapter.adapt()
+
+# Setup metric
+metric_adapter = ExactMatchMetric()
+
+# Create optimizer (automatically uses Bedrock Nova 2.0 Lite for meta-prompting)
+optimizer = NovaPromptOptimizer(
+    prompt_adapter=prompt_adapter,
+    inference_adapter=sagemaker_adapter,  # Your SageMaker endpoint
+    dataset_adapter=dataset_adapter,
+    metric_adapter=metric_adapter
+)
+
+# Run optimization
+optimized_prompt = optimizer.optimize(mode="lite")
+
+# Save results
+optimized_prompt.save("optimized_prompts/")
+```
+
+**What happens during optimization:**
+1. **Meta-Prompting Phase**: Uses Bedrock with Nova 2.0 Lite to generate an improved prompt structure (~30 seconds)
+2. **Task Optimization Phase**: Tests multiple prompt variations on your SageMaker endpoint (~5-15 minutes)
+
+For more details, see the [SageMaker Quick Start Guide](docs/QUICK_START_SAGEMAKER.md).
 
 
 ## Core Concepts
@@ -88,32 +213,57 @@ prompt_adapter.adapt()
 Learn More about the Prompt Adapter [here](docs/PromptAdapter.md)
 
 ### 2. Inference Adapter
-**Responsibility:** Ability to call an inference backend for the models e.g. Bedrock, etc.
+**Responsibility:** Ability to call an inference backend for the models e.g. Bedrock, SageMaker, etc.
 
-**Sample use of Inference Adapter**
+**Sample use of Bedrock Inference Adapter**
 
 ```python
-from amzn_nova_prompt_optimizer.core.inference.adapter import BedrockInferenceAdapter
+from amzn_nova_prompt_optimizer.core.inference import BedrockInferenceAdapter
 
 inference_adapter = BedrockInferenceAdapter(region_name="us-east-1")
 ```
 
-You can pass `rate_limit` into constructor of InferenceAdapter to limit the max TPS of bedrock call to avoid throttle. Default to 2 if not set.
+**Sample use of SageMaker Inference Adapter**
 
 ```python
-from amzn_nova_prompt_optimizer.core.inference.adapter import BedrockInferenceAdapter
+from amzn_nova_prompt_optimizer.core.inference import SageMakerInferenceAdapter
+
+inference_adapter = SageMakerInferenceAdapter(
+    endpoint_name="my-model-endpoint",
+    region_name="us-west-2"
+)
+```
+
+You can pass `rate_limit` into constructor of InferenceAdapter to limit the max TPS of calls to avoid throttle. Default to 2 if not set.
+
+```python
+from amzn_nova_prompt_optimizer.core.inference import BedrockInferenceAdapter
 
 inference_adapter = BedrockInferenceAdapter(region_name="us-east-1", rate_limit=10) # Max 10 TPS
 ```
 
-**Supported Inference Adapters:** `BedrockInferenceAdapter`
+**Supported Inference Adapters:** 
+- `BedrockInferenceAdapter` - For Amazon Bedrock models
+- `SageMakerInferenceAdapter` - For SageMaker endpoints (OpenAI-compatible format)
 
 **Core Functions**
 
 Call the model using the parameters
 ```python
-# Call the model with the passed parametrs
-inference_output = inference_adapter.call_model(model_id: str, system_prompt: str, messages: List[Dict[str, str]], inf_config: Dict[str, Any])
+# Call the model with the passed parameters
+inference_output = inference_adapter.call_model(
+    model_id: str, 
+    system_prompt: str, 
+    messages: List[Dict[str, str]], 
+    inf_config: Dict[str, Any]
+)
+```
+
+Test endpoint connectivity (SageMaker)
+```python
+# Test if endpoint is accessible
+if inference_adapter.test_connection():
+    print("✓ Endpoint is ready")
 ```
 
 The Inference Adapter accepts the `system_prompt` as a string.
@@ -256,9 +406,23 @@ nova_prompt_optimizer = NovaPromptOptimizer(prompt_adapter=prompt_adapter, infer
 
 optimized_prompt_adapter = nova_prompt_optimizer.optimize(mode="lite")
 ```
-NovaPromptOptimizer uses Premier for Meta Prompting and then uses MIPROv2 with 20 candidates and 50 trials with Premier as Prompting model and task model dependent on the mode it's set at.
+NovaPromptOptimizer uses Nova 2.0 Lite for Meta Prompting and then uses MIPROv2 with 20 candidates and 30 trials. The task model depends on the mode it's set at.
+
+**Automatic Meta-Prompting with Bedrock:**
+When you don't provide a `meta_prompt_inference_adapter`, NovaPromptOptimizer automatically creates a BedrockInferenceAdapter with Nova 2.0 Lite for the meta-prompting phase. This means you can use any inference adapter (including SageMaker) for your task model, and the optimizer will handle meta-prompting with Bedrock automatically.
+
+**Optimization Modes:**
+
+| Mode | Meta-Prompt Model | Task Model | Use Case |
+|------|-------------------|------------|----------|
+| `micro` | Nova 2.0 Lite | Nova Micro | Fast, cost-effective |
+| `lite` | Nova 2.0 Lite | Nova Lite | Balanced (default) |
+| `pro` | Nova 2.0 Lite | Nova Pro | High quality |
+| `lite-2` | Nova 2.0 Lite | Nova 2.0 Lite | Maximum quality |
+
 You can specify enable_json_fallback=False to disable the behavior that MIPROv2 will [fallback to use JSONAdapter to parse LM model output](https://github.com/stanfordnlp/dspy/blob/main/dspy/adapters/chat_adapter.py#L44-L51). This will force MIPROv2 use structured output (pydantic model) to parse LM output.
 
+**Custom Mode:**
 You could also define a custom mode and pass your own parameter values to NovaPromptOptimizer
 
 ```python
@@ -314,10 +478,100 @@ evaluator.save("eval_results.jsonl")
 WARNING amzn_nova_prompt_optimizer.core.inference: Warn: Prompt Variables not found in User Prompt, injecting them at the end of the prompt
 ```
 
+## Advanced Features
+
+### Separate Inference Adapters
+
+Use different inference adapters for meta-prompting and task optimization phases. This is particularly useful when optimizing prompts for SageMaker endpoints while using Bedrock for meta-prompting.
+
+**Example:**
+```python
+from amzn_nova_prompt_optimizer.core.inference import (
+    BedrockInferenceAdapter,
+    SageMakerInferenceAdapter
+)
+from amzn_nova_prompt_optimizer.core.optimizers import NovaPromptOptimizer
+
+# Bedrock for meta-prompting (generates optimized prompts)
+meta_adapter = BedrockInferenceAdapter(region_name="us-east-1")
+
+# SageMaker for task model (the model being optimized)
+task_adapter = SageMakerInferenceAdapter(
+    endpoint_name="my-endpoint",
+    region_name="us-west-2"
+)
+
+# Create optimizer with separate adapters
+optimizer = NovaPromptOptimizer(
+    prompt_adapter=prompt_adapter,
+    inference_adapter=task_adapter,           # For task optimization
+    dataset_adapter=dataset_adapter,
+    metric_adapter=metric_adapter,
+    meta_prompt_inference_adapter=meta_adapter  # For meta-prompting
+)
+
+optimized_prompt = optimizer.optimize(mode="lite")
+```
+
+**Benefits:**
+- Use the best model for each optimization phase
+- Optimize SageMaker endpoints with Bedrock intelligence
+- Cross-region support
+- Independent rate limiting per adapter
+
+
+### SageMaker Endpoint Support
+
+The SDK now supports optimizing prompts for models deployed on Amazon SageMaker. SageMaker endpoints must use an OpenAI-compatible message format:
+
+**Required Payload Format:**
+```json
+{
+  "messages": [
+    {"role": "system", "content": "You are helpful"},
+    {"role": "user", "content": "Hello"}
+  ],
+  "max_tokens": 1000,
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "top_k": 50
+}
+```
+
+**Expected Response Format:**
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I help you?"
+      }
+    }
+  ]
+}
+```
+
+**Testing Your Endpoint:**
+```python
+from amzn_nova_prompt_optimizer.core.inference import SageMakerInferenceAdapter
+
+adapter = SageMakerInferenceAdapter(
+    endpoint_name="my-endpoint",
+    region_name="us-west-2"
+)
+
+# Test connectivity
+if adapter.test_connection():
+    print("✓ Endpoint is ready for optimization")
+else:
+    print("✗ Endpoint connection failed")
+```
+
 ## Optimization Recommendations
 1. Provide representative real-world evaluation sets and split them into training and testing sets. Ensure dataset is balanced on output label when splitting train and test sets.
 2. For evaluation sets, the ground truth column should be as close to the inference output as possible. e.g. If the inference output is {"answer": "POSITIVE"} ground truth should also be in the same format {"answer": "POSITIVE"}
-3. For NovaPromptOptimizer, choose the mode (mode= "premier" | ""pro" | "lite" | "micro") based on your Nova Model of choice. By default, we use "pro".
+3. For NovaPromptOptimizer, choose the mode (mode= "lite-2" | ""pro" | "lite" | "micro") based on your Nova Model of choice. By default, we use "pro".
 4. The `apply` function of the evaluation metric should return a numerical value between 0 and 1 for NovaPromptOptimizer or MIPROv2.
 
 ## ⚠️ Preview Status

@@ -65,7 +65,13 @@ class Evaluator:
 
         if cache_key not in self._inference_cache:
             self.logger.info("Cache miss - Running new inference on Dataset")
-            self._inference_cache[cache_key] = self.inference_runner.run(model_id)
+            inference_results = self.inference_runner.run(model_id)
+            if inference_results and len(inference_results) > 0:
+                self._inference_cache[cache_key] = inference_results
+            else:
+                self.logger.warning("No inference results returned. Check the inference logs for any errors.")
+                return inference_results
+
         else:
             self.logger.info("Using cached inference results")
 

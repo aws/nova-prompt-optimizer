@@ -113,7 +113,7 @@ class TestNovaPromptOptimizer(unittest.TestCase):
         
         # Verify meta prompt optimization was called
         self.nova_prompt_optimizer.meta_prompt_optimization_adapter.optimize.assert_called_once_with(
-            prompter_model_id="us.amazon.nova-premier-v1:0"
+            prompter_model_id="us.amazon.nova-2-lite-v1:0"
         )
         
         # Verify MIPROv2 was initialized and called
@@ -125,7 +125,7 @@ class TestNovaPromptOptimizer(unittest.TestCase):
         )
         
         mock_miprov2_instance.optimize.assert_called_once_with(
-            prompter_model_id="us.amazon.nova-premier-v1:0",
+            prompter_model_id="us.amazon.nova-2-lite-v1:0",
             task_model_id="us.amazon.nova-pro-v1:0",
             num_candidates=20,
             num_trials=30,
@@ -153,11 +153,11 @@ class TestNovaPromptOptimizer(unittest.TestCase):
 
         # Verify meta prompt optimization was called
         self.nova_prompt_optimizer.meta_prompt_optimization_adapter.optimize.assert_called_once_with(
-            prompter_model_id="us.amazon.nova-premier-v1:0"
+            prompter_model_id="us.amazon.nova-2-lite-v1:0"
         )
         
         mock_miprov2_instance.optimize.assert_called_once_with(
-            prompter_model_id="us.amazon.nova-premier-v1:0",
+            prompter_model_id="us.amazon.nova-2-lite-v1:0",
             task_model_id="us.amazon.nova-lite-v1:0",
             num_candidates=20,
             num_trials=30,
@@ -249,6 +249,79 @@ class TestNovaPromptOptimizer(unittest.TestCase):
         
         self.assertIn("Custom mode requires custom_params dictionary", str(context.exception))
 
+    @patch('amzn_nova_prompt_optimizer.core.optimizers.nova_prompt_optimizer.nova_prompt_optimizer.NovaMIPROv2OptimizationAdapter')
+    def test_optimize_with_separate_meta_prompt_adapter(self, mock_miprov2_class):
+        """Test using separate inference adapters for meta-prompting and task optimization."""
+        # Create separate mock adapters
+        meta_prompt_adapter = Mock(spec=InferenceAdapter)
+        task_adapter = Mock(spec=InferenceAdapter)
+        
+        # Create optimizer with separate adapters
+        optimizer = NovaPromptOptimizer(
+            prompt_adapter=self.prompt_adapter,
+            inference_adapter=task_adapter,
+            dataset_adapter=self.dataset_adapter,
+            metric_adapter=self.metric_adapter,
+            meta_prompt_inference_adapter=meta_prompt_adapter
+        )
+        
+        # Verify the adapters are set correctly
+        self.assertIs(optimizer.inference_adapter, task_adapter)
+        self.assertIs(optimizer.meta_prompt_inference_adapter, meta_prompt_adapter)
+        self.assertIs(optimizer.meta_prompt_optimization_adapter.inference_adapter, meta_prompt_adapter)
+        
+        # Mock the optimization process
+        mock_intermediate_prompt_adapter = Mock(spec=PromptAdapter)
+        mock_final_prompt_adapter = Mock(spec=PromptAdapter)
+        
+        optimizer.meta_prompt_optimization_adapter.optimize = Mock(
+            return_value=mock_intermediate_prompt_adapter
+        )
+        
+        mock_miprov2_instance = Mock()
+        mock_miprov2_instance.optimize.return_value = mock_final_prompt_adapter
+        mock_miprov2_class.return_value = mock_miprov2_instance
+        
+        # Run optimization
+        result = optimizer.optimize(mode="pro")
+        
+        # Verify meta-prompt adapter was used for meta-prompting
+        optimizer.meta_prompt_optimization_adapter.optimize.assert_called_once()
+        
+        # Verify task adapter was passed to MIPROv2
+        mock_miprov2_class.assert_called_once()
+        call_kwargs = mock_miprov2_class.call_args[1]
+        self.assertIs(call_kwargs['inference_adapter'], task_adapter)
+        
+        self.assertIs(result, mock_final_prompt_adapter)
+
+    @patch('amzn_nova_prompt_optimizer.core.inference.BedrockInferenceAdapter')
+    def test_separate_adapter_defaults_to_bedrock(self, mock_bedrock_class):
+        """Test that meta_prompt_inference_adapter defaults to BedrockInferenceAdapter if not provided."""
+        mock_bedrock_instance = Mock(spec=InferenceAdapter)
+        mock_bedrock_class.return_value = mock_bedrock_instance
+        
+        optimizer = NovaPromptOptimizer(
+            prompt_adapter=self.prompt_adapter,
+            inference_adapter=self.inference_adapter,
+            dataset_adapter=self.dataset_adapter,
+            metric_adapter=self.metric_adapter
+        )
+        
+        # Should create a default BedrockInferenceAdapter for meta-prompting
+        mock_bedrock_class.assert_called_once()
+        call_kwargs = mock_bedrock_class.call_args[1]
+        self.assertEqual(call_kwargs['rate_limit'], 5)
+        
+        # Should use the created Bedrock adapter for meta-prompting
+        self.assertIs(optimizer.meta_prompt_inference_adapter, mock_bedrock_instance)
+        
+        # Should use the provided adapter for task optimization
+        self.assertIs(optimizer.inference_adapter, self.inference_adapter)
+        
+        # Meta-prompt optimization adapter should use the Bedrock adapter
+        self.assertIs(optimizer.meta_prompt_optimization_adapter.inference_adapter, mock_bedrock_instance)
+
     def test_optimize_custom_mode_missing_required_keys(self):
         incomplete_params = {
             "task_model_id": "custom-model",
@@ -283,7 +356,7 @@ class TestNovaPromptOptimizer(unittest.TestCase):
 
         # Verify meta prompt optimization was called
         self.nova_prompt_optimizer.meta_prompt_optimization_adapter.optimize.assert_called_once_with(
-            prompter_model_id="us.amazon.nova-premier-v1:0"
+            prompter_model_id="us.amazon.nova-2-lite-v1:0"
         )
 
         # Verify MIPROv2 was initialized and called
@@ -295,7 +368,7 @@ class TestNovaPromptOptimizer(unittest.TestCase):
         )
 
         mock_miprov2_instance.optimize.assert_called_once_with(
-            prompter_model_id="us.amazon.nova-premier-v1:0",
+            prompter_model_id="us.amazon.nova-2-lite-v1:0",
             task_model_id="us.amazon.nova-pro-v1:0",
             num_candidates=20,
             num_trials=30,
@@ -308,12 +381,12 @@ class TestNovaPromptOptimizer(unittest.TestCase):
 
     @patch('amzn_nova_prompt_optimizer.core.optimizers.nova_prompt_optimizer.nova_prompt_optimizer.NovaMIPROv2OptimizationAdapter')
     def test_optimize_all_modes(self, mock_miprov2_class):
-        modes = ["micro", "lite", "pro", "premier"]
+        modes = ["micro", "lite", "pro", "lite-2"]
         expected_task_models = {
             "micro": "us.amazon.nova-micro-v1:0",
             "lite": "us.amazon.nova-lite-v1:0",
             "pro": "us.amazon.nova-pro-v1:0",
-            "premier": "us.amazon.nova-premier-v1:0"
+            "lite-2": "us.amazon.nova-2-lite-v1:0"
         }
         
         for mode in modes:
@@ -332,7 +405,7 @@ class TestNovaPromptOptimizer(unittest.TestCase):
                 result = self.nova_prompt_optimizer.optimize(mode=mode)
                 
                 mock_miprov2_instance.optimize.assert_called_with(
-                    prompter_model_id="us.amazon.nova-premier-v1:0",
+                    prompter_model_id="us.amazon.nova-2-lite-v1:0",
                     task_model_id=expected_task_models[mode],
                     num_candidates=20,
                     num_trials=30,

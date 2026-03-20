@@ -13,7 +13,21 @@
 # limitations under the License.
 import logging
 
-from amzn_nova_prompt_optimizer.core.inference.adapter import InferenceAdapter
+from amzn_nova_prompt_optimizer.core.inference.adapter import (
+    InferenceAdapter
+)
+from amzn_nova_prompt_optimizer.core.inference.bedrock_adapter import (
+    BedrockInferenceAdapter
+)
+from amzn_nova_prompt_optimizer.core.inference.sagemaker_adapter import (
+    SageMakerInferenceAdapter
+)
+from amzn_nova_prompt_optimizer.core.inference.dspy_compatible import (
+    DSPyCompatibleInferenceAdapter,
+    DSPyBedrockAdapter,
+    DSPySageMakerAdapter,
+    create_dspy_adapter
+)
 from amzn_nova_prompt_optimizer.core.inference.inference_constants import (
     MAX_TOKENS_FIELD, TEMPERATURE_FIELD, TOP_P_FIELD, TOP_K_FIELD
 )
